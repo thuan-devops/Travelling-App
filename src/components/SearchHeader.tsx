@@ -1,40 +1,53 @@
 import React from 'react';
-import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface SearchHeaderProps {
   searchQuery: string;
   onSearchChange: (text: string) => void;
   onClear: () => void;
+  onPress?: () => void;
 }
 
 export const SearchHeader: React.FC<SearchHeaderProps> = ({
   searchQuery,
   onSearchChange,
   onClear,
+  onPress,
 }) => {
   return (
     <View style={styles.container}>
-      <View style={styles.searchBar}>
+      <TouchableOpacity
+        style={styles.searchBar}
+        activeOpacity={0.8}
+        onPress={onPress}
+      >
         <Ionicons name="search-outline" size={20} color="#374151" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Where do you want to stay?"
-          placeholderTextColor="#9CA3AF"
-          value={searchQuery}
-          onChangeText={onSearchChange}
-          returnKeyType="search"
-          clearButtonMode="never"
-        />
+        {onPress ? (
+          <Text style={[styles.searchInput, { color: searchQuery ? '#1F2937' : '#9CA3AF' }]}>
+            {searchQuery || 'Where do you want to stay?'}
+          </Text>
+        ) : (
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Where do you want to stay?"
+            placeholderTextColor="#9CA3AF"
+            value={searchQuery}
+            onChangeText={onSearchChange}
+            returnKeyType="search"
+            clearButtonMode="never"
+          />
+        )}
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={onClear} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="close-circle" size={18} color="#9CA3AF" />
           </TouchableOpacity>
         )}
-      </View>
+      </TouchableOpacity>
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {

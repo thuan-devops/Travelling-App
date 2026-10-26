@@ -1,28 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { AuthProvider, useAuth } from './src/context/AuthContext';
-import { SplashScreen } from './src/screens/SplashScreen';
-import { AuthScreen } from './src/screens/AuthScreen';
-import { HomeScreen } from './src/screens/HomeScreen';
-
-const RootNavigator: React.FC = () => {
-  const { user } = useAuth();
-  const [showSplash, setShowSplash] = useState<boolean>(true);
-
-  if (showSplash) {
-    return <SplashScreen onFinish={() => setShowSplash(false)} />;
-  }
-
-  // If user is not authenticated, show AuthScreen (Login/Register)
-  if (!user) {
-    return <AuthScreen />;
-  }
-
-  // Once authenticated, show HomeScreen
-  return <HomeScreen />;
-};
+import { AuthProvider } from './src/context/AuthContext';
+import { AppNavigator } from './src/navigation/AppNavigator';
 
 export default function App() {
   return (
@@ -30,12 +11,13 @@ export default function App() {
       <View style={styles.container}>
         <StatusBar style="auto" />
         <AuthProvider>
-          <RootNavigator />
+          <AppNavigator />
         </AuthProvider>
       </View>
     </SafeAreaProvider>
   );
 }
+
 
 const styles = StyleSheet.create({
   outerContainer: {
