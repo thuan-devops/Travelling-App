@@ -32,7 +32,7 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Bookings</Text>
+        <Text style={styles.headerTitle}>Chuyến đi của tôi</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -49,7 +49,7 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
               />
               <View style={styles.badgeConfirmed}>
                 <Ionicons name="checkmark-circle" size={14} color="#10B981" style={{ marginRight: 4 }} />
-                <Text style={styles.badgeConfirmedText}>Confirmed</Text>
+                <Text style={styles.badgeConfirmedText}>Đã xác nhận</Text>
               </View>
             </View>
 
@@ -59,23 +59,23 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
 
               <View style={styles.detailRow}>
                 <View style={styles.detailCol}>
-                  <Text style={styles.detailLabel}>Check-in</Text>
+                  <Text style={styles.detailLabel}>Nhận phòng</Text>
                   <Text style={styles.detailVal}>{lastBooking.checkIn}</Text>
                 </View>
                 <View style={styles.detailCol}>
-                  <Text style={styles.detailLabel}>Check-out</Text>
+                  <Text style={styles.detailLabel}>Trả phòng</Text>
                   <Text style={styles.detailVal}>{lastBooking.checkOut}</Text>
                 </View>
                 <View style={styles.detailCol}>
-                  <Text style={styles.detailLabel}>Guests</Text>
-                  <Text style={styles.detailVal}>{lastBooking.guests} guest</Text>
+                  <Text style={styles.detailLabel}>Số khách</Text>
+                  <Text style={styles.detailVal}>{lastBooking.guests} khách</Text>
                 </View>
               </View>
 
               <View style={styles.divider} />
 
               <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Total paid</Text>
+                <Text style={styles.totalLabel}>Tổng tiền đã trả</Text>
                 <Text style={styles.totalAmount}>${lastBooking.paidAmount}</Text>
               </View>
 
@@ -83,23 +83,24 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
                 style={styles.viewDetailBtn}
                 onPress={() => onSelectBookingDetail(lastBooking)}
               >
-                <Text style={styles.viewDetailBtnText}>View Receipt & Details</Text>
+                <Text style={styles.viewDetailBtnText}>Xem biên lai & chi tiết</Text>
               </TouchableOpacity>
             </View>
           </View>
         ) : (
           <View style={styles.emptyContainer}>
             <Ionicons name="calendar-outline" size={54} color="#D1D5DB" />
-            <Text style={styles.emptyTitle}>No bookings yet</Text>
+            <Text style={styles.emptyTitle}>Chưa có chuyến đi nào</Text>
             <Text style={styles.emptySubtitle}>
-              When you book a place, your trip details and receipts will appear here.
+              Khi bạn đặt phòng, thông tin chi tiết và biên lai sẽ xuất hiện tại đây.
             </Text>
             <TouchableOpacity style={styles.exploreBtn} onPress={onExplore}>
-              <Text style={styles.exploreBtnText}>Start exploring</Text>
+              <Text style={styles.exploreBtnText}>Bắt đầu khám phá</Text>
             </TouchableOpacity>
           </View>
         )}
       </ScrollView>
+
 
       {/* BOTTOM TAB BAR */}
       <BottomTabBar activeTab="Bookings" onTabChange={onTabChange} />

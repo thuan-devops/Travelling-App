@@ -22,8 +22,8 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
 }) => {
   const handleDownloadReceipt = () => {
     Alert.alert(
-      'Receipt Downloaded',
-      `Receipt #${booking.bookingId} for $${booking.paidAmount} has been saved.`
+      'Đã tải biên lai',
+      `Biên lai mã #${booking.bookingId} với số tiền $${booking.paidAmount} đã được lưu thành công.`
     );
   };
 
@@ -50,32 +50,32 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
         </View>
 
         {/* TITLE */}
-        <Text style={styles.title}>Payment success!</Text>
+        <Text style={styles.title}>Thanh toán thành công!</Text>
 
         {/* RECEIPT CARD */}
         <View style={styles.receiptCard}>
           <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>Ref number</Text>
+            <Text style={styles.receiptLabel}>Mã tham chiếu</Text>
             <Text style={styles.receiptValueBold}>{booking.bookingId}</Text>
           </View>
 
           <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>Date</Text>
+            <Text style={styles.receiptLabel}>Ngày thanh toán</Text>
             <Text style={styles.receiptValueBold}>{booking.paymentDate}</Text>
           </View>
 
           <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>Time</Text>
+            <Text style={styles.receiptLabel}>Thời gian</Text>
             <Text style={styles.receiptValueBold}>{booking.paymentTime}</Text>
           </View>
 
           <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>Payment method</Text>
+            <Text style={styles.receiptLabel}>Phương thức thanh toán</Text>
             <Text style={styles.receiptValueBold}>{booking.paymentMethod}</Text>
           </View>
 
           <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>Amount</Text>
+            <Text style={styles.receiptLabel}>Số tiền</Text>
             <Text style={styles.receiptAmount}>${booking.paidAmount}</Text>
           </View>
 
@@ -86,7 +86,7 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
             onPress={handleDownloadReceipt}
           >
             <Ionicons name="download-outline" size={18} color="#6B7280" style={{ marginRight: 8 }} />
-            <Text style={styles.pdfButtonText}>Get PDF receipt</Text>
+            <Text style={styles.pdfButtonText}>Tải biên lai PDF</Text>
           </TouchableOpacity>
         </View>
 
@@ -97,13 +97,14 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
             activeOpacity={0.8}
             onPress={onViewBooking}
           >
-            <Text style={styles.viewBookingText}>View booking</Text>
+            <Text style={styles.viewBookingText}>Xem đặt phòng</Text>
           </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
   );
 };
+
 
 const styles = StyleSheet.create({
   safeArea: {

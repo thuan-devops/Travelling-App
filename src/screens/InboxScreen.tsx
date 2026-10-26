@@ -21,18 +21,18 @@ export const InboxScreen: React.FC<InboxScreenProps> = ({ onTabChange }) => {
   const messages = [
     {
       id: 'msg-1',
-      sender: 'Ketut Astawa (Host - Balian treehouse)',
+      sender: 'Ketut Astawa (Chủ nhà - Balian treehouse)',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
-      lastMessage: 'Hello! Looking forward to welcoming you to Balian treehouse. Let me know if you need airport pickup!',
-      time: '10:30 AM',
+      lastMessage: 'Xin chào! Rất mong được chào đón bạn đến Balian treehouse. Hãy nhắn cho tôi nếu bạn cần hỗ trợ đón tại sân bay nhé!',
+      time: '10:30',
       unread: true,
     },
     {
       id: 'msg-2',
-      sender: 'Travelling Support',
+      sender: 'Hỗ trợ Travelling App',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-      lastMessage: 'Your payment was successful! Have a wonderful trip.',
-      time: '05:41 AM',
+      lastMessage: 'Thanh toán của bạn đã thành công! Chúc bạn có một chuyến đi thật tuyệt vời.',
+      time: '05:41',
       unread: false,
     },
   ];
@@ -42,8 +42,9 @@ export const InboxScreen: React.FC<InboxScreenProps> = ({ onTabChange }) => {
       <StatusBar style="dark" />
 
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Inbox</Text>
+        <Text style={styles.headerTitle}>Hộp thư</Text>
       </View>
+
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {messages.map((item) => (

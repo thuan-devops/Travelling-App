@@ -121,16 +121,16 @@ export const SearchModal: React.FC<SearchModalProps> = ({
         </View>
 
         <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
-          {/* STEP 1: WHERE TO? (Page 4) */}
+          {/* STEP 1: WHERE TO? */}
           {currentStep === 1 && (
             <View style={styles.stepContainer}>
-              <Text style={styles.title}>Where to?</Text>
+              <Text style={styles.title}>Bạn muốn đi đâu?</Text>
 
               <View style={styles.searchBar}>
                 <Ionicons name="search-outline" size={20} color="#374151" style={{ marginRight: 8 }} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Search"
+                  placeholder="Tìm kiếm điểm đến hoặc thành phố"
                   placeholderTextColor="#9CA3AF"
                   value={searchQuery}
                   onChangeText={(text) => {
@@ -142,61 +142,61 @@ export const SearchModal: React.FC<SearchModalProps> = ({
 
               <View style={styles.destinationsRow}>
                 <TouchableOpacity
-                  style={[styles.destCard, destination === 'Anywhere' && styles.destCardSelected]}
-                  onPress={() => setDestination('Anywhere')}
+                  style={[styles.destCard, destination === 'Bất kỳ đâu' && styles.destCardSelected]}
+                  onPress={() => setDestination('Bất kỳ đâu')}
                 >
                   <Image
                     source={{ uri: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=400&q=80' }}
                     style={styles.destImage}
                   />
-                  <Text style={styles.destLabel}>Anywhere</Text>
+                  <Text style={styles.destLabel}>Bất kỳ đâu</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.destCard, destination === 'Europe' && styles.destCardSelected]}
-                  onPress={() => setDestination('Europe')}
+                  style={[styles.destCard, destination === 'Châu Âu' && styles.destCardSelected]}
+                  onPress={() => setDestination('Châu Âu')}
                 >
                   <Image
                     source={{ uri: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=400&q=80' }}
                     style={styles.destImage}
                   />
-                  <Text style={styles.destLabel}>Europe</Text>
+                  <Text style={styles.destLabel}>Châu Âu</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.destCard, destination === 'Asia' && styles.destCardSelected]}
-                  onPress={() => setDestination('Asia')}
+                  style={[styles.destCard, destination === 'Châu Á' && styles.destCardSelected]}
+                  onPress={() => setDestination('Châu Á')}
                 >
                   <Image
                     source={{ uri: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=400&q=80' }}
                     style={styles.destImage}
                   />
-                  <Text style={styles.destLabel}>Asia</Text>
+                  <Text style={styles.destLabel}>Châu Á</Text>
                 </TouchableOpacity>
               </View>
 
               {/* Collapsible Rows */}
               <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(2)}>
-                <Text style={styles.summaryLabel}>When</Text>
-                <Text style={styles.summaryValueAction}>Add time</Text>
+                <Text style={styles.summaryLabel}>Thời gian</Text>
+                <Text style={styles.summaryValueAction}>Thêm ngày</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(3)}>
-                <Text style={styles.summaryLabel}>Guests</Text>
-                <Text style={styles.summaryValueAction}>Add guests</Text>
+                <Text style={styles.summaryLabel}>Khách</Text>
+                <Text style={styles.summaryValueAction}>Thêm khách</Text>
               </TouchableOpacity>
             </View>
           )}
 
-          {/* STEP 2: WHEN STAYING (Page 5) */}
+          {/* STEP 2: WHEN STAYING */}
           {currentStep === 2 && (
             <View style={styles.stepContainer}>
               <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(1)}>
-                <Text style={styles.summaryLabel}>Location</Text>
+                <Text style={styles.summaryLabel}>Địa điểm</Text>
                 <Text style={styles.summaryValueBold}>{destination}</Text>
               </TouchableOpacity>
 
-              <Text style={styles.title}>When staying</Text>
+              <Text style={styles.title}>Thời gian lưu trú</Text>
 
               {/* Segmented Buttons */}
               <View style={styles.segmentedContainer}>
@@ -205,7 +205,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                   onPress={() => setWhenMode('choose')}
                 >
                   <Text style={[styles.segmentText, whenMode === 'choose' && styles.segmentTextActive]}>
-                    Choose dates
+                    Chọn ngày
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -213,14 +213,14 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                   onPress={() => setWhenMode('anytime')}
                 >
                   <Text style={[styles.segmentText, whenMode === 'anytime' && styles.segmentTextActive]}>
-                    Anytime
+                    Bất kỳ lúc nào
                   </Text>
                 </TouchableOpacity>
               </View>
 
               {/* Month Navigation */}
               <View style={styles.monthHeader}>
-                <Text style={styles.monthTitle}>{selectedMonth}</Text>
+                <Text style={styles.monthTitle}>Tháng 2 năm 2022</Text>
                 <View style={styles.arrowsRow}>
                   <TouchableOpacity style={styles.arrowButton}>
                     <Ionicons name="chevron-back" size={18} color="#374151" />
@@ -233,7 +233,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
 
               {/* Weekdays */}
               <View style={styles.weekdaysRow}>
-                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((day) => (
                   <Text key={day} style={styles.weekdayText}>
                     {day}
                   </Text>
@@ -272,7 +272,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                 })}
               </View>
 
-              {/* Counter: 1 days */}
+              {/* Counter */}
               <View style={styles.durationRow}>
                 <TouchableOpacity
                   style={styles.counterBtn}
@@ -280,7 +280,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                 >
                   <Ionicons name="remove" size={18} color="#6B7280" />
                 </TouchableOpacity>
-                <Text style={styles.durationText}>{daysCount} days</Text>
+                <Text style={styles.durationText}>{daysCount} ngày</Text>
                 <TouchableOpacity
                   style={styles.counterBtn}
                   onPress={() => setDaysCount((prev) => prev + 1)}
@@ -292,37 +292,37 @@ export const SearchModal: React.FC<SearchModalProps> = ({
               {/* Skip / Next */}
               <View style={styles.stepActionsRow}>
                 <TouchableOpacity onPress={() => setCurrentStep(3)}>
-                  <Text style={styles.skipText}>Skip</Text>
+                  <Text style={styles.skipText}>Bỏ qua</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.nextButton}
                   onPress={() => setCurrentStep(3)}
                 >
-                  <Text style={styles.nextButtonText}>Next</Text>
+                  <Text style={styles.nextButtonText}>Tiếp tục</Text>
                 </TouchableOpacity>
               </View>
             </View>
           )}
 
-          {/* STEP 3: HOW MANY GUESTS? (Page 6) */}
+          {/* STEP 3: HOW MANY GUESTS? */}
           {currentStep === 3 && (
             <View style={styles.stepContainer}>
               <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(1)}>
-                <Text style={styles.summaryLabel}>Location</Text>
+                <Text style={styles.summaryLabel}>Địa điểm</Text>
                 <Text style={styles.summaryValueBold}>{destination}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(2)}>
-                <Text style={styles.summaryLabel}>Dates</Text>
-                <Text style={styles.summaryValueBold}>23 - 31 May</Text>
+                <Text style={styles.summaryLabel}>Thời gian</Text>
+                <Text style={styles.summaryValueBold}>23 - 31 Thg 5</Text>
               </TouchableOpacity>
 
               {/* Guests Card */}
               <View style={styles.guestsCard}>
-                <Text style={styles.title}>How many guests?</Text>
+                <Text style={styles.title}>Có bao nhiêu khách?</Text>
 
                 <View style={styles.guestRow}>
-                  <Text style={styles.guestType}>Adults</Text>
+                  <Text style={styles.guestType}>Người lớn</Text>
                   <View style={styles.counterRow}>
                     <TouchableOpacity
                       style={styles.counterCircle}
@@ -341,7 +341,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                 </View>
 
                 <View style={[styles.guestRow, { borderBottomWidth: 0 }]}>
-                  <Text style={styles.guestType}>Children</Text>
+                  <Text style={styles.guestType}>Trẻ em</Text>
                   <View style={styles.counterRow}>
                     <TouchableOpacity
                       style={styles.counterCircle}
@@ -363,17 +363,18 @@ export const SearchModal: React.FC<SearchModalProps> = ({
           )}
         </ScrollView>
 
-        {/* FOOTER BAR (Always available: Clear all + Search button) */}
+        {/* FOOTER BAR */}
         <View style={styles.footerBar}>
           <TouchableOpacity onPress={resetFilters}>
-            <Text style={styles.clearAllText}>Clear all</Text>
+            <Text style={styles.clearAllText}>Xóa tất cả</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.searchButton} onPress={handleExecuteSearch}>
             <Ionicons name="search" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
-            <Text style={styles.searchButtonText}>Search</Text>
+            <Text style={styles.searchButtonText}>Tìm kiếm</Text>
           </TouchableOpacity>
         </View>
+
       </SafeAreaView>
     </Modal>
   );

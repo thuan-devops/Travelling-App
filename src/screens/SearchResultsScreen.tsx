@@ -67,7 +67,7 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
     await mockApi.toggleFavorite(id);
   };
 
-  const headerSummaryText = `${currentFilters.destination || 'Anywhere'}, ${currentFilters.startDate} - ${currentFilters.endDate}, ${currentFilters.adults + currentFilters.children || 2} guests`;
+  const headerSummaryText = `${currentFilters.destination === 'Anywhere' ? 'Bất kỳ đâu' : currentFilters.destination}, ${currentFilters.startDate} - ${currentFilters.endDate}, ${currentFilters.adults + currentFilters.children || 2} khách`;
 
   const renderStayCard = ({ item }: { item: Accommodation }) => {
     const displayPrice = presentTotalPrice
@@ -112,11 +112,11 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
           <View style={styles.cardInfoRow}>
             <View style={styles.bedroomInfo}>
               <Ionicons name="bed-outline" size={14} color="#6B7280" style={{ marginRight: 4 }} />
-              <Text style={styles.bedroomText}>{item.bedrooms || 1} bedroom</Text>
+              <Text style={styles.bedroomText}>{item.bedrooms || 1} phòng ngủ</Text>
             </View>
             <Text style={styles.priceText}>
               <Text style={styles.priceBold}>${displayPrice}</Text>
-              /night
+              /đêm
             </Text>
           </View>
         </View>
@@ -147,8 +147,8 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
       {/* TOGGLE ROW: Present total price (Page 7) */}
       <View style={styles.totalPriceToggleRow}>
         <View>
-          <Text style={styles.toggleTitle}>Present total price</Text>
-          <Text style={styles.toggleSubtitle}>All-inclusive, pre-tax</Text>
+          <Text style={styles.toggleTitle}>Hiển thị tổng giá</Text>
+          <Text style={styles.toggleSubtitle}>Trọn gói, trước thuế</Text>
         </View>
         <TouchableOpacity
           style={[styles.checkbox, presentTotalPrice && styles.checkboxActive]}
@@ -157,6 +157,7 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
           {presentTotalPrice && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
         </TouchableOpacity>
       </View>
+
 
       {/* LIST OF HOMES */}
       {isLoading ? (

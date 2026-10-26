@@ -61,7 +61,7 @@ export const ReviewsScreen: React.FC<ReviewsScreenProps> = ({ stay, onBack }) =>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color="#111827" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Reviews</Text>
+        <Text style={styles.headerTitle}>Đánh giá</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -73,7 +73,8 @@ export const ReviewsScreen: React.FC<ReviewsScreenProps> = ({ stay, onBack }) =>
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={() => (
           <View style={styles.summaryContainer}>
-            <Text style={styles.totalReviewsHeader}>{stay.reviewCount || 262} reviews</Text>
+            <Text style={styles.totalReviewsHeader}>{stay.reviewCount || 262} đánh giá</Text>
+
 
             <View style={styles.ratingStatsRow}>
               {/* Left Score */}

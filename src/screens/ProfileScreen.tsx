@@ -23,9 +23,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange }) => 
   const { user, logout } = useAuth();
 
   const handleLogout = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log out', style: 'destructive', onPress: () => logout() },
+    Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất không?', [
+      { text: 'Hủy', style: 'cancel' },
+      { text: 'Đăng xuất', style: 'destructive', onPress: () => logout() },
     ]);
   };
 
@@ -34,7 +34,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange }) => 
       <StatusBar style="dark" />
 
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
+        <Text style={styles.headerTitle}>Hồ sơ cá nhân</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -49,8 +49,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange }) => 
             style={styles.avatar}
           />
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user?.name || 'Traveler'}</Text>
-            <Text style={styles.userSub}>{user?.phoneNumber || user?.email || '+1 987 654 321'}</Text>
+            <Text style={styles.userName}>{user?.name || 'Khách du lịch'}</Text>
+            <Text style={styles.userSub}>{user?.phoneNumber || user?.email || '+84 987 654 321'}</Text>
           </View>
         </View>
 
@@ -58,25 +58,25 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange }) => 
         <View style={styles.menuSection}>
           <TouchableOpacity style={styles.menuItem}>
             <Ionicons name="person-outline" size={20} color="#1F2937" style={styles.menuIcon} />
-            <Text style={styles.menuText}>Personal information</Text>
+            <Text style={styles.menuText}>Thông tin cá nhân</Text>
             <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
             <Ionicons name="card-outline" size={20} color="#1F2937" style={styles.menuIcon} />
-            <Text style={styles.menuText}>Payments and payouts</Text>
+            <Text style={styles.menuText}>Thanh toán & chi trả</Text>
             <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
             <Ionicons name="shield-checkmark-outline" size={20} color="#1F2937" style={styles.menuIcon} />
-            <Text style={styles.menuText}>Login & security</Text>
+            <Text style={styles.menuText}>Đăng nhập & bảo mật</Text>
             <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
             <Ionicons name="notifications-outline" size={20} color="#1F2937" style={styles.menuIcon} />
-            <Text style={styles.menuText}>Notifications</Text>
+            <Text style={styles.menuText}>Cài đặt thông báo</Text>
             <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
           </TouchableOpacity>
         </View>
@@ -84,9 +84,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange }) => 
         {/* Log out */}
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={20} color="#EF4444" style={{ marginRight: 8 }} />
-          <Text style={styles.logoutText}>Log out</Text>
+          <Text style={styles.logoutText}>Đăng xuất</Text>
         </TouchableOpacity>
       </ScrollView>
+
 
       <BottomTabBar activeTab="Profile" onTabChange={onTabChange} />
     </SafeAreaView>

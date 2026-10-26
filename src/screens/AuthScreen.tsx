@@ -96,13 +96,13 @@ export const AuthScreen: React.FC = () => {
           {/* Header */}
           <View style={styles.headerContainer}>
             <Text style={styles.title}>
-              {isLoginMode ? 'Welcome back' : 'Create an account'}
+              {isLoginMode ? 'Chào mừng trở lại' : 'Tạo tài khoản'}
             </Text>
           </View>
 
           {/* Form */}
           <View style={styles.formContainer}>
-            <Text style={styles.inputLabel}>Enter your mobile number:</Text>
+            <Text style={styles.inputLabel}>Nhập số điện thoại của bạn:</Text>
 
             <View style={styles.phoneInputRow}>
               {/* Country Picker Button */}
@@ -119,7 +119,7 @@ export const AuthScreen: React.FC = () => {
               <View style={[styles.inputBox, errorMessage ? styles.inputBoxError : null]}>
                 <TextInput
                   style={styles.textInput}
-                  placeholder={`${selectedCountry.dialCode} Mobile number`}
+                  placeholder={`${selectedCountry.dialCode} Số điện thoại`}
                   placeholderTextColor="#9CA3AF"
                   keyboardType="phone-pad"
                   value={phoneNumber}
@@ -150,14 +150,14 @@ export const AuthScreen: React.FC = () => {
               {isLoading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.continueButtonText}>Continue</Text>
+                <Text style={styles.continueButtonText}>Tiếp tục</Text>
               )}
             </TouchableOpacity>
 
             {/* "or" divider */}
             <View style={styles.dividerRow}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
+              <Text style={styles.dividerText}>hoặc</Text>
               <View style={styles.dividerLine} />
             </View>
 
@@ -169,7 +169,7 @@ export const AuthScreen: React.FC = () => {
               disabled={isLoading}
             >
               <Ionicons name="logo-apple" size={20} color="#111827" style={styles.socialIcon} />
-              <Text style={styles.appleButtonText}>Continue with Apple</Text>
+              <Text style={styles.appleButtonText}>Tiếp tục với Apple</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -179,7 +179,7 @@ export const AuthScreen: React.FC = () => {
               disabled={isLoading}
             >
               <Ionicons name="logo-facebook" size={20} color="#1877F2" style={styles.socialIcon} />
-              <Text style={styles.facebookButtonText}>Continue with Facebook</Text>
+              <Text style={styles.facebookButtonText}>Tiếp tục với Facebook</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -189,15 +189,15 @@ export const AuthScreen: React.FC = () => {
               disabled={isLoading}
             >
               <Ionicons name="logo-google" size={18} color="#EA4335" style={styles.socialIcon} />
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
+              <Text style={styles.googleButtonText}>Tiếp tục với Google</Text>
             </TouchableOpacity>
 
             {/* Terms and Privacy */}
             <View style={styles.termsContainer}>
               <Text style={styles.termsText}>
-                By signing up, you agree to our{' '}
-                <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
-                <Text style={styles.termsLink}>Privacy Policy</Text>.
+                Bằng việc tiếp tục, bạn đồng ý với{' '}
+                <Text style={styles.termsLink}>Điều khoản dịch vụ</Text> và{' '}
+                <Text style={styles.termsLink}>Chính sách quyền riêng tư</Text> của chúng tôi.
               </Text>
             </View>
 
@@ -214,7 +214,7 @@ export const AuthScreen: React.FC = () => {
           {/* Bottom Switch Login/Register */}
           <View style={styles.footerContainer}>
             <Text style={styles.footerText}>
-              {isLoginMode ? "Don't have an account? " : 'Already had an account? '}
+              {isLoginMode ? 'Chưa có tài khoản? ' : 'Bạn đã có tài khoản? '}
             </Text>
             <TouchableOpacity
               onPress={() => {
@@ -223,10 +223,11 @@ export const AuthScreen: React.FC = () => {
               }}
             >
               <Text style={styles.footerLink}>
-                {isLoginMode ? 'Sign up' : 'Log in'}
+                {isLoginMode ? 'Đăng ký' : 'Đăng nhập'}
               </Text>
             </TouchableOpacity>
           </View>
+
         </ScrollView>
       </KeyboardAvoidingView>
 

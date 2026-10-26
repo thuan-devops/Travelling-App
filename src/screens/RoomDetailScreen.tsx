@@ -98,7 +98,7 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
               <Text style={styles.locationText}>{stay.location}</Text>
             </View>
             <TouchableOpacity onPress={onOpenDescription}>
-              <Text style={styles.viewMapText}>View map</Text>
+              <Text style={styles.viewMapText}>Xem bản đồ</Text>
             </TouchableOpacity>
           </View>
 
@@ -109,7 +109,7 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
               <Text style={styles.ratingNumber}> {stay.rating || 4.5}/5</Text>
             </View>
             <View style={styles.reviewsRight}>
-              <Text style={styles.reviewCountText}>{stay.reviewCount || 262} reviews</Text>
+              <Text style={styles.reviewCountText}>{stay.reviewCount || 262} đánh giá</Text>
               <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
             </View>
           </TouchableOpacity>
@@ -118,10 +118,10 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
 
           {/* FACILITIES & SERVICES */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Facilities & services</Text>
+            <Text style={styles.sectionTitle}>Tiện ích & dịch vụ</Text>
 
             <Text style={styles.facilitiesSub}>
-              {stay.maxGuests || 2} Guests   {stay.bedrooms || 1} bedroom   {stay.beds || 1} bed   {stay.bathrooms || 1} bath
+              {stay.maxGuests || 2} Khách   {stay.bedrooms || 1} phòng ngủ   {stay.beds || 1} giường   {stay.bathrooms || 1} phòng tắm
             </Text>
 
             <View style={styles.facilitiesGrid}>
@@ -131,20 +131,20 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
               </View>
               <View style={styles.facilityItem}>
                 <Ionicons name="restaurant-outline" size={20} color="#374151" />
-                <Text style={styles.facilityName}>Kitchen</Text>
+                <Text style={styles.facilityName}>Bếp</Text>
               </View>
               <View style={styles.facilityItem}>
                 <Ionicons name="water-outline" size={20} color="#374151" />
-                <Text style={styles.facilityName}>Pool</Text>
+                <Text style={styles.facilityName}>Hồ bơi</Text>
               </View>
               <View style={styles.facilityItem}>
                 <Ionicons name="leaf-outline" size={20} color="#374151" />
-                <Text style={styles.facilityName}>Garden</Text>
+                <Text style={styles.facilityName}>Sân vườn</Text>
               </View>
             </View>
 
             <TouchableOpacity style={styles.outlineButton} onPress={onOpenFacilities}>
-              <Text style={styles.outlineButtonText}>Show all</Text>
+              <Text style={styles.outlineButtonText}>Xem tất cả</Text>
             </TouchableOpacity>
           </View>
 
@@ -153,9 +153,9 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
           {/* REVIEWS PREVIEW */}
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Reviews</Text>
+              <Text style={styles.sectionTitle}>Đánh giá</Text>
               <TouchableOpacity onPress={onOpenReviews}>
-                <Text style={styles.seeAllText}>See all &gt;</Text>
+                <Text style={styles.seeAllText}>Xem tất cả &gt;</Text>
               </TouchableOpacity>
             </View>
 
@@ -170,7 +170,7 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
                 />
                 <View style={{ flex: 1, marginLeft: 10 }}>
                   <Text style={styles.authorName}>Jinny Oslin</Text>
-                  <Text style={styles.reviewDate}>A day ago</Text>
+                  <Text style={styles.reviewDate}>1 ngày trước</Text>
                 </View>
                 <View style={styles.starsRow}>
                   {[1, 2, 3, 4, 5].map((s) => (
@@ -179,7 +179,7 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
                 </View>
               </View>
               <Text style={styles.reviewComment} numberOfLines={2}>
-                The location was perfect, the house was spacious and clean, and the amenities ....
+                Vị trí tuyệt vời, nhà rộng rãi sạch sẽ, tiện nghi xuất sắc. Chúng tôi rất thích!
               </Text>
             </View>
           </View>
@@ -188,25 +188,25 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
 
           {/* POLICIES */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Policies</Text>
-            <Text style={styles.policySubHeader}>House rules</Text>
+            <Text style={styles.sectionTitle}>Chính sách</Text>
+            <Text style={styles.policySubHeader}>Quy định chỗ ở</Text>
 
             <View style={styles.ruleItem}>
               <Ionicons name="time-outline" size={18} color="#6B7280" />
-              <Text style={styles.ruleText}>Earliest check-in time: 14:00</Text>
+              <Text style={styles.ruleText}>Giờ nhận phòng sớm nhất: 14:00</Text>
             </View>
             <View style={styles.ruleItem}>
               <Ionicons name="time-outline" size={18} color="#6B7280" />
-              <Text style={styles.ruleText}>Lastest check-out time: 12:00</Text>
+              <Text style={styles.ruleText}>Giờ trả phòng muộn nhất: 12:00</Text>
             </View>
 
-            <Text style={[styles.policySubHeader, { marginTop: 14 }]}>Checkin policies</Text>
+            <Text style={[styles.policySubHeader, { marginTop: 14 }]}>Chính sách nhận phòng</Text>
             <Text style={styles.policyDesc} numberOfLines={2}>
-              It's always a good idea to confirm the check-in policy directly with the owner/manager before your arrival so that you can...
+              Nên xác nhận trực tiếp chính sách nhận phòng với chủ nhà/quản lý trước khi đến để sắp xếp di chuyển thuận lợi...
             </Text>
 
             <TouchableOpacity style={styles.outlineButton} onPress={onOpenDescription}>
-              <Text style={styles.outlineButtonText}>View more &gt;</Text>
+              <Text style={styles.outlineButtonText}>Xem thêm &gt;</Text>
             </TouchableOpacity>
           </View>
 
@@ -214,7 +214,7 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
 
           {/* DESCRIPTION PREVIEW */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Description</Text>
+            <Text style={styles.sectionTitle}>Mô tả</Text>
 
             <Image
               source={{ uri: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80' }}
@@ -222,27 +222,28 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
             />
 
             <Text style={styles.descParagraph} numberOfLines={3}>
-              Looking for the perfect place to relax and unwind? This stunning Balinese villa is the ultimate tropical getaway. Located on a quiet street just minutes from the beach, this...
+              Bạn đang tìm kiếm một nơi hoàn hảo để thư giãn và nghỉ ngơi? Biệt thự nghỉ dưỡng Bali tuyệt đẹp này là điểm đến nhiệt đới lý tưởng...
             </Text>
 
             <TouchableOpacity style={styles.outlineButton} onPress={onOpenDescription}>
-              <Text style={styles.outlineButtonText}>View more &gt;</Text>
+              <Text style={styles.outlineButtonText}>Xem thêm &gt;</Text>
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
 
-      {/* FIXED BOTTOM BAR (Page 10) */}
+      {/* FIXED BOTTOM BAR */}
       <View style={styles.bottomBar}>
         <View>
           <Text style={styles.fromPriceLabel}>
-            From: <Text style={styles.bottomPrice}>${stay.pricePerNight}</Text>/night
+            Chỉ từ: <Text style={styles.bottomPrice}>${stay.pricePerNight}</Text>/đêm
           </Text>
         </View>
         <TouchableOpacity style={styles.bookNowButton} activeOpacity={0.8} onPress={onBookNow}>
-          <Text style={styles.bookNowText}>Book now</Text>
+          <Text style={styles.bookNowText}>Đặt phòng ngay</Text>
         </TouchableOpacity>
       </View>
+
     </View>
   );
 };

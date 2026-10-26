@@ -25,12 +25,12 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
         <Ionicons name="search-outline" size={20} color="#374151" style={styles.searchIcon} />
         {onPress ? (
           <Text style={[styles.searchInput, { color: searchQuery ? '#1F2937' : '#9CA3AF' }]}>
-            {searchQuery || 'Where do you want to stay?'}
+            {searchQuery || 'Bạn muốn nghỉ ngơi ở đâu?'}
           </Text>
         ) : (
           <TextInput
             style={styles.searchInput}
-            placeholder="Where do you want to stay?"
+            placeholder="Bạn muốn nghỉ ngơi ở đâu?"
             placeholderTextColor="#9CA3AF"
             value={searchQuery}
             onChangeText={onSearchChange}
@@ -38,6 +38,7 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
             clearButtonMode="never"
           />
         )}
+
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={onClear} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="close-circle" size={18} color="#9CA3AF" />

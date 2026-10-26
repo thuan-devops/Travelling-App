@@ -26,77 +26,78 @@ export const FacilitiesScreen: React.FC<FacilitiesScreenProps> = ({ stay, onBack
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color="#111827" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Facilities & services</Text>
+        <Text style={styles.headerTitle}>Tiện ích & dịch vụ</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* FACILITIES SECTION */}
-        <Text style={styles.sectionTitle}>Facilities</Text>
+        <Text style={styles.sectionTitle}>Tiện ích</Text>
         <Text style={styles.summaryText}>
-          {stay.maxGuests || 2} Guests   {stay.bedrooms || 1} bedroom   {stay.beds || 1} bed   {stay.bathrooms || 1} bath
+          {stay.maxGuests || 2} Khách   {stay.bedrooms || 1} phòng ngủ   {stay.beds || 1} giường   {stay.bathrooms || 1} phòng tắm
         </Text>
 
         <View style={styles.itemsList}>
           <View style={styles.facilityRow}>
             <Ionicons name="wifi-outline" size={22} color="#111827" style={styles.itemIcon} />
-            <Text style={styles.itemText}>Wifi</Text>
+            <Text style={styles.itemText}>Wifi tốc độ cao</Text>
           </View>
           <View style={styles.facilityRow}>
             <Ionicons name="restaurant-outline" size={22} color="#111827" style={styles.itemIcon} />
-            <Text style={styles.itemText}>Kitchen</Text>
+            <Text style={styles.itemText}>Bếp đầy đủ dụng cụ</Text>
           </View>
           <View style={styles.facilityRow}>
             <Ionicons name="barbell-outline" size={22} color="#111827" style={styles.itemIcon} />
-            <Text style={styles.itemText}>Exercise equipment</Text>
+            <Text style={styles.itemText}>Dụng cụ tập thể dục</Text>
           </View>
           <View style={styles.facilityRow}>
             <Ionicons name="water-outline" size={22} color="#111827" style={styles.itemIcon} />
-            <Text style={styles.itemText}>Pool</Text>
+            <Text style={styles.itemText}>Hồ bơi riêng</Text>
           </View>
           <View style={styles.facilityRow}>
             <Ionicons name="leaf-outline" size={22} color="#111827" style={styles.itemIcon} />
-            <Text style={styles.itemText}>Garden</Text>
+            <Text style={styles.itemText}>Sân vườn thoáng mát</Text>
           </View>
         </View>
 
         <View style={styles.divider} />
 
         {/* SERVICES SECTION */}
-        <Text style={styles.sectionTitle}>Services</Text>
-        <Text style={styles.subCategoryHeader}>Cleaning & laundry</Text>
+        <Text style={styles.sectionTitle}>Dịch vụ</Text>
+        <Text style={styles.subCategoryHeader}>Giặt là & dọn dẹp</Text>
 
         <View style={styles.itemsList}>
           <View style={styles.facilityRow}>
             <Ionicons name="apps-outline" size={22} color="#111827" style={styles.itemIcon} />
-            <Text style={styles.itemText}>Washer</Text>
+            <Text style={styles.itemText}>Máy giặt</Text>
           </View>
           <View style={styles.facilityRow}>
             <Ionicons name="cube-outline" size={22} color="#111827" style={styles.itemIcon} />
-            <Text style={styles.itemText}>Free dryer - In unit</Text>
+            <Text style={styles.itemText}>Máy sấy miễn phí - Tại phòng</Text>
           </View>
           <View style={styles.facilityRow}>
             <Ionicons name="shirt-outline" size={22} color="#111827" style={styles.itemIcon} />
-            <Text style={styles.itemText}>Iron</Text>
+            <Text style={styles.itemText}>Bàn ủi</Text>
           </View>
         </View>
 
         <View style={styles.divider} />
 
         {/* BATHROOM SECTION */}
-        <Text style={styles.subCategoryHeader}>Bathroom</Text>
+        <Text style={styles.subCategoryHeader}>Phòng tắm</Text>
 
         <View style={styles.itemsList}>
           <View style={styles.facilityRow}>
             <Ionicons name="bed-outline" size={22} color="#111827" style={styles.itemIcon} />
-            <Text style={styles.itemText}>Bathtub</Text>
+            <Text style={styles.itemText}>Bồn tắm</Text>
           </View>
           <View style={styles.facilityRow}>
             <Ionicons name="flash-outline" size={22} color="#111827" style={styles.itemIcon} />
-            <Text style={styles.itemText}>Hair dryer</Text>
+            <Text style={styles.itemText}>Máy sấy tóc</Text>
           </View>
         </View>
       </ScrollView>
+
     </SafeAreaView>
   );
 };

@@ -110,7 +110,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         {isLoading && !isRefreshing ? (
           <View style={styles.loaderContainer}>
             <ActivityIndicator size="large" color="#00BDD6" />
-            <Text style={styles.loadingText}>Loading stays...</Text>
+            <Text style={styles.loadingText}>Đang tải danh sách nơi lưu trú...</Text>
           </View>
         ) : (
           <FlatList
@@ -136,12 +136,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Ionicons name="compass-outline" size={54} color="#D1D5DB" />
-                <Text style={styles.emptyTitle}>No accommodations found</Text>
-                <Text style={styles.emptySubtitle}>Try changing category or search keyword.</Text>
+                <Text style={styles.emptyTitle}>Không tìm thấy nơi lưu trú phù hợp</Text>
+                <Text style={styles.emptySubtitle}>Hãy thử chọn danh mục khác hoặc nhập từ khóa tìm kiếm mới.</Text>
               </View>
             }
           />
         )}
+
       </View>
 
       {/* BOTTOM TAB BAR (Page 3: Search active) */}

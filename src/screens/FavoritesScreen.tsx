@@ -85,11 +85,11 @@ export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({
         <View style={styles.cardInfoRow}>
           <View style={styles.bedroomInfo}>
             <Ionicons name="bed-outline" size={14} color="#6B7280" style={{ marginRight: 4 }} />
-            <Text style={styles.bedroomText}>{item.bedrooms || 1} bedroom</Text>
+            <Text style={styles.bedroomText}>{item.bedrooms || 1} phòng ngủ</Text>
           </View>
           <Text style={styles.priceText}>
             <Text style={styles.priceBold}>${item.pricePerNight}</Text>
-            /night
+            /đêm
           </Text>
         </View>
       </View>
@@ -105,7 +105,7 @@ export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({
         <TouchableOpacity onPress={onBack} style={styles.headerButton}>
           <Ionicons name="chevron-back" size={24} color="#111827" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Favorites</Text>
+        <Text style={styles.headerTitle}>Yêu thích</Text>
         <TouchableOpacity style={styles.headerButton}>
           <Ionicons name="ellipsis-horizontal" size={22} color="#6B7280" />
         </TouchableOpacity>
@@ -124,17 +124,18 @@ export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={() => (
-            <Text style={styles.sectionTitle}>Places you liked</Text>
+            <Text style={styles.sectionTitle}>Những nơi bạn thích</Text>
           )}
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
               <Ionicons name="heart-dislike-outline" size={48} color="#D1D5DB" />
-              <Text style={styles.emptyTitle}>No favorites yet</Text>
-              <Text style={styles.emptySubtitle}>Tap the heart icon on any stay to save it here.</Text>
+              <Text style={styles.emptyTitle}>Chưa có mục yêu thích nào</Text>
+              <Text style={styles.emptySubtitle}>Bấm biểu tượng trái tim ở bất kỳ nơi lưu trú nào để lưu lại tại đây.</Text>
             </View>
           )}
         />
       )}
+
 
       {/* BOTTOM TAB BAR (Favorites active) */}
       <BottomTabBar

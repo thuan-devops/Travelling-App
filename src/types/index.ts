@@ -71,12 +71,13 @@ export interface CategoryItem {
 }
 
 export const CATEGORIES: CategoryItem[] = [
-  { id: 'Beach', name: 'Beach', iconName: 'umbrella-outline' },
-  { id: 'Mountain', name: 'Mountain', iconName: 'triangle-outline' },
-  { id: 'Camping', name: 'Camping', iconName: 'bonfire-outline' },
-  { id: 'City', name: 'City', iconName: 'business-outline' },
-  { id: 'Villa', name: 'Villa', iconName: 'home-outline' },
+  { id: 'Beach', name: 'Bãi biển', iconName: 'umbrella-outline' },
+  { id: 'Mountain', name: 'Núi non', iconName: 'triangle-outline' },
+  { id: 'Camping', name: 'Cắm trại', iconName: 'bonfire-outline' },
+  { id: 'City', name: 'Thành phố', iconName: 'business-outline' },
+  { id: 'Villa', name: 'Biệt thự', iconName: 'home-outline' },
 ];
+
 
 export type BottomTabType = 'Search' | 'Favorites' | 'Bookings' | 'Inbox' | 'Profile';
 

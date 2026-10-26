@@ -27,7 +27,7 @@ export const DescriptionScreen: React.FC<DescriptionScreenProps> = ({ stay, onBa
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color="#111827" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Description</Text>
+        <Text style={styles.headerTitle}>Mô tả</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -40,7 +40,7 @@ export const DescriptionScreen: React.FC<DescriptionScreenProps> = ({ stay, onBa
 
         {/* Description Text */}
         <Text style={styles.paragraph}>
-          {stay.fullDescription || stay.description || 'Looking for the perfect place to relax and unwind? This stunning Balinese villa is the ultimate tropical getaway. Located on a quiet street just minutes from the beach, this beautiful home offers everything you need for a luxurious and comfortable stay.'}
+          {stay.fullDescription || stay.description || 'Bạn đang tìm kiếm một nơi hoàn hảo để thư giãn và nghỉ dưỡng? Biệt thự nghỉ dưỡng Bali tuyệt đẹp này là điểm đến nhiệt đới lý tưởng. Tọa lạc trên con phố yên tĩnh chỉ cách bãi biển vài phút, ngôi nhà xinh đẹp này có mọi thứ bạn cần cho một kỳ nghỉ sang trọng và thoải mái.'}
         </Text>
 
         {/* Location & Open Map Link */}
@@ -50,7 +50,7 @@ export const DescriptionScreen: React.FC<DescriptionScreenProps> = ({ stay, onBa
             <Text style={styles.locationText}>{stay.location}</Text>
           </View>
           <TouchableOpacity>
-            <Text style={styles.openMapText}>Open map</Text>
+            <Text style={styles.openMapText}>Mở bản đồ</Text>
           </TouchableOpacity>
         </View>
 
@@ -58,18 +58,19 @@ export const DescriptionScreen: React.FC<DescriptionScreenProps> = ({ stay, onBa
         <View style={styles.bulletsList}>
           <View style={styles.bulletItem}>
             <Ionicons name="checkmark" size={18} color="#00BDD6" style={styles.checkIcon} />
-            <Text style={styles.bulletText}>Consectetur magna consectetur</Text>
+            <Text style={styles.bulletText}>Không gian thiết kế nhiệt đới thoáng mát, gần gũi thiên nhiên</Text>
           </View>
           <View style={styles.bulletItem}>
             <Ionicons name="checkmark" size={18} color="#00BDD6" style={styles.checkIcon} />
-            <Text style={styles.bulletText}>Voluptate magna fugiat tempor incididunt</Text>
+            <Text style={styles.bulletText}>Bể bơi riêng thư giãn và khu vực tắm nắng ngoài trời</Text>
           </View>
           <View style={styles.bulletItem}>
             <Ionicons name="checkmark" size={18} color="#00BDD6" style={styles.checkIcon} />
-            <Text style={styles.bulletText}>Aliqua in in mollit laboris tempor in ut incididunt</Text>
+            <Text style={styles.bulletText}>Chỉ mất 5 phút đi bộ đến bãi biển và các nhà hàng địa phương</Text>
           </View>
         </View>
       </ScrollView>
+
     </SafeAreaView>
   );
 };

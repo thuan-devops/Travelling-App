@@ -85,7 +85,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
         {/* Header */}
         <View style={styles.header}>
           <View style={{ width: 24 }} />
-          <Text style={styles.headerTitle}>Filters</Text>
+          <Text style={styles.headerTitle}>Bộ lọc</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
             <Ionicons name="close" size={24} color="#374151" />
           </TouchableOpacity>
@@ -94,7 +94,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* PRICE RANGE */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Price range</Text>
+            <Text style={styles.sectionTitle}>Khoảng giá</Text>
 
             {/* Slider track visual representation */}
             <View style={styles.sliderContainer}>
@@ -110,12 +110,12 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
             <View style={styles.priceBoxesRow}>
               <View style={styles.priceBox}>
-                <Text style={styles.priceLabel}>Minimum</Text>
+                <Text style={styles.priceLabel}>Tối thiểu</Text>
                 <Text style={styles.priceValue}>US${minPrice}</Text>
               </View>
               <Text style={styles.priceDivider}>—</Text>
               <View style={styles.priceBox}>
-                <Text style={styles.priceLabel}>Maximum</Text>
+                <Text style={styles.priceLabel}>Tối đa</Text>
                 <Text style={styles.priceValue}>US${maxPrice}</Text>
               </View>
             </View>
@@ -123,7 +123,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
           {/* TYPE OF PLACE */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Type of place</Text>
+            <Text style={styles.sectionTitle}>Loại chỗ ở</Text>
 
             <TouchableOpacity
               style={styles.checkboxRow}
@@ -131,8 +131,8 @@ export const FilterModal: React.FC<FilterModalProps> = ({
               onPress={() => setEntirePlace(!entirePlace)}
             >
               <View style={styles.checkboxInfo}>
-                <Text style={styles.optionTitle}>Entire place</Text>
-                <Text style={styles.optionSubtitle}>Entire apartments, condos, houses</Text>
+                <Text style={styles.optionTitle}>Toàn bộ nhà</Text>
+                <Text style={styles.optionSubtitle}>Toàn bộ căn hộ, chung cư, nhà riêng</Text>
               </View>
               <View style={[styles.checkbox, entirePlace && styles.checkboxActive]}>
                 {entirePlace && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
@@ -145,9 +145,9 @@ export const FilterModal: React.FC<FilterModalProps> = ({
               onPress={() => setPrivateRoom(!privateRoom)}
             >
               <View style={styles.checkboxInfo}>
-                <Text style={styles.optionTitle}>Private room</Text>
+                <Text style={styles.optionTitle}>Phòng riêng</Text>
                 <Text style={styles.optionSubtitle}>
-                  Typically come with a private bathroom unless otherwise stated
+                  Thường có phòng tắm riêng trừ khi có ghi chú khác
                 </Text>
               </View>
               <View style={[styles.checkbox, privateRoom && styles.checkboxActive]}>
@@ -161,9 +161,9 @@ export const FilterModal: React.FC<FilterModalProps> = ({
               onPress={() => setDormitories(!dormitories)}
             >
               <View style={styles.checkboxInfo}>
-                <Text style={styles.optionTitle}>Dormitories</Text>
+                <Text style={styles.optionTitle}>Phòng tập thể / Ký túc xá</Text>
                 <Text style={styles.optionSubtitle}>
-                  Large rooms with multiple beds that are shared with others
+                  Phòng lớn nhiều giường chia sẻ với người khác
                 </Text>
               </View>
               <View style={[styles.checkbox, dormitories && styles.checkboxActive]}>
@@ -174,10 +174,10 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
           {/* ROOMS AND BEDS */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Rooms and beds</Text>
+            <Text style={styles.sectionTitle}>Phòng ngủ và giường</Text>
 
             <View style={styles.counterItemRow}>
-              <Text style={styles.counterItemLabel}>Bedrooms</Text>
+              <Text style={styles.counterItemLabel}>Phòng ngủ</Text>
               <View style={styles.pillSelectorRow}>
                 {[1, 2, 3, 4].map((num) => (
                   <TouchableOpacity
@@ -194,7 +194,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             </View>
 
             <View style={styles.counterItemRow}>
-              <Text style={styles.counterItemLabel}>Beds</Text>
+              <Text style={styles.counterItemLabel}>Giường</Text>
               <View style={styles.pillSelectorRow}>
                 {[1, 2, 3, 4].map((num) => (
                   <TouchableOpacity
@@ -211,7 +211,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             </View>
 
             <View style={styles.counterItemRow}>
-              <Text style={styles.counterItemLabel}>Bathrooms</Text>
+              <Text style={styles.counterItemLabel}>Phòng tắm</Text>
               <View style={styles.pillSelectorRow}>
                 {[1, 2, 3].map((num) => (
                   <TouchableOpacity
@@ -230,14 +230,14 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
           {/* FACILITIES */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Facilities</Text>
+            <Text style={styles.sectionTitle}>Tiện nghi</Text>
 
             {[
-              { label: 'Kitchen', checked: kitchen, setChecked: setKitchen },
-              { label: 'Pool', checked: pool, setChecked: setPool },
-              { label: 'Gym', checked: gym, setChecked: setGym },
-              { label: 'Outdoor space', checked: outdoorSpace, setChecked: setOutdoorSpace },
-              { label: 'Internet access', checked: internetAccess, setChecked: setInternetAccess },
+              { label: 'Bếp', checked: kitchen, setChecked: setKitchen },
+              { label: 'Hồ bơi', checked: pool, setChecked: setPool },
+              { label: 'Phòng gym', checked: gym, setChecked: setGym },
+              { label: 'Không gian ngoài trời', checked: outdoorSpace, setChecked: setOutdoorSpace },
+              { label: 'Kết nối Internet', checked: internetAccess, setChecked: setInternetAccess },
             ].map((fac) => (
               <TouchableOpacity
                 key={fac.label}
@@ -257,12 +257,13 @@ export const FilterModal: React.FC<FilterModalProps> = ({
         {/* Footer */}
         <View style={styles.footer}>
           <TouchableOpacity onPress={handleClearAll}>
-            <Text style={styles.clearAllText}>Clear all</Text>
+            <Text style={styles.clearAllText}>Xóa tất cả</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
-            <Text style={styles.applyButtonText}>View Results</Text>
+            <Text style={styles.applyButtonText}>Xem kết quả</Text>
           </TouchableOpacity>
         </View>
+
       </SafeAreaView>
     </Modal>
   );

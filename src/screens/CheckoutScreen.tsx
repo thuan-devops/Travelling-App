@@ -24,7 +24,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
   onConfirmPayment,
 }) => {
   const [paymentOption, setPaymentOption] = useState<'full' | 'part'>('full');
-  const [datesText, setDatesText] = useState<string>('May 1 - 6');
+  const [datesText, setDatesText] = useState<string>('1 - 6 Thg 5');
   const [guestsCount, setGuestsCount] = useState<number>(1);
 
   const pricePerNight = stay.pricePerNight || 20;
@@ -45,14 +45,14 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
       paymentType: paymentOption,
       roomTotal: roomSubtotal,
       fees: [
-        { label: 'Kayak fee', amount: kayakFee },
-        { label: 'Street parking fee', amount: parkingFee },
+        { label: 'Phí chèo thuyền Kayak', amount: kayakFee },
+        { label: 'Phí đỗ xe', amount: parkingFee },
       ],
       totalPrice: totalAmount,
       paidAmount: paymentOption === 'full' ? totalAmount : Math.round(totalAmount / 2),
       paymentDate: '09-05-2023',
       paymentTime: '05:40 AM',
-      paymentMethod: 'Credit card',
+      paymentMethod: 'Thẻ tín dụng (Credit card)',
     };
     onConfirmPayment(booking);
   };
@@ -66,7 +66,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color="#111827" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Confirm and pay</Text>
+        <Text style={styles.headerTitle}>Xác nhận và thanh toán</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -75,7 +75,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
         <View style={styles.summaryCard}>
           <View style={styles.summaryInfo}>
             <Text style={styles.summaryPrice}>
-              <Text style={styles.boldPrice}>${pricePerNight}</Text>/night
+              <Text style={styles.boldPrice}>${pricePerNight}</Text>/đêm
             </Text>
             <Text style={styles.summaryTitle} numberOfLines={1}>{stay.title}</Text>
             <View style={styles.ratingRow}>
@@ -92,11 +92,11 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
         <View style={styles.divider} />
 
         {/* YOUR TRIP SECTION */}
-        <Text style={styles.sectionTitle}>Your trip</Text>
+        <Text style={styles.sectionTitle}>Chuyến đi của bạn</Text>
 
         <View style={styles.tripRow}>
           <View>
-            <Text style={styles.tripLabel}>Dates</Text>
+            <Text style={styles.tripLabel}>Thời gian</Text>
             <Text style={styles.tripValue}>{datesText}</Text>
           </View>
           <TouchableOpacity style={styles.editButton}>
@@ -106,8 +106,8 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
 
         <View style={styles.tripRow}>
           <View>
-            <Text style={styles.tripLabel}>Guests</Text>
-            <Text style={styles.tripValue}>{guestsCount} guest</Text>
+            <Text style={styles.tripLabel}>Số khách</Text>
+            <Text style={styles.tripValue}>{guestsCount} khách</Text>
           </View>
           <TouchableOpacity style={styles.editButton} onPress={() => setGuestsCount((p) => (p === 1 ? 2 : 1))}>
             <Ionicons name="pencil-outline" size={18} color="#111827" />
@@ -117,7 +117,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
         <View style={styles.divider} />
 
         {/* PAYMENT OPTIONS */}
-        <Text style={styles.sectionTitle}>Payment options</Text>
+        <Text style={styles.sectionTitle}>Tùy chọn thanh toán</Text>
 
         <TouchableOpacity
           style={styles.paymentOptionRow}
@@ -125,9 +125,9 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
           onPress={() => setPaymentOption('full')}
         >
           <View style={styles.paymentOptionText}>
-            <Text style={styles.paymentOptionTitle}>Pay in full</Text>
+            <Text style={styles.paymentOptionTitle}>Thanh toán toàn bộ</Text>
             <Text style={styles.paymentOptionDesc}>
-              Pay ${totalAmount} now to finalize your booking.
+              Thanh toán ${totalAmount} ngay để hoàn tất đặt chỗ.
             </Text>
           </View>
           <View style={styles.radioOuter}>
@@ -141,9 +141,9 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
           onPress={() => setPaymentOption('part')}
         >
           <View style={styles.paymentOptionText}>
-            <Text style={styles.paymentOptionTitle}>Pay a part now</Text>
+            <Text style={styles.paymentOptionTitle}>Thanh toán một phần</Text>
             <Text style={styles.paymentOptionDesc}>
-              You can make a partial payment now and the remaining amount at a later time.
+              Thanh toán trước một phần, số tiền còn lại thanh toán sau khi nhận phòng.
             </Text>
           </View>
           <View style={styles.radioOuter}>
@@ -154,25 +154,25 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
         <View style={styles.divider} />
 
         {/* PRICE DETAILS */}
-        <Text style={styles.sectionTitle}>Price details</Text>
+        <Text style={styles.sectionTitle}>Chi tiết giá</Text>
 
         <View style={styles.priceRow}>
-          <Text style={styles.priceItemLabel}>${pricePerNight} x {nights} night</Text>
+          <Text style={styles.priceItemLabel}>${pricePerNight} x {nights} đêm</Text>
           <Text style={styles.priceItemValue}>${roomSubtotal}</Text>
         </View>
 
         <View style={styles.priceRow}>
-          <Text style={styles.priceItemLabel}>Kayak fee</Text>
+          <Text style={styles.priceItemLabel}>Phí chèo thuyền Kayak</Text>
           <Text style={styles.priceItemValue}>${kayakFee}</Text>
         </View>
 
         <View style={styles.priceRow}>
-          <Text style={styles.priceItemLabel}>Street parking fee</Text>
+          <Text style={styles.priceItemLabel}>Phí đỗ xe</Text>
           <Text style={styles.priceItemValue}>${parkingFee}</Text>
         </View>
 
         <View style={[styles.priceRow, { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#F3F4F6' }]}>
-          <Text style={styles.totalLabel}>Total (USD)</Text>
+          <Text style={styles.totalLabel}>Tổng cộng (USD)</Text>
           <Text style={styles.totalValue}>${totalAmount}</Text>
         </View>
       </ScrollView>
@@ -180,9 +180,10 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
       {/* FOOTER BUTTON */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.bookNowBtn} activeOpacity={0.8} onPress={handleBookNow}>
-          <Text style={styles.bookNowBtnText}>Book now</Text>
+          <Text style={styles.bookNowBtnText}>Đặt phòng ngay</Text>
         </TouchableOpacity>
       </View>
+
     </SafeAreaView>
   );
 };

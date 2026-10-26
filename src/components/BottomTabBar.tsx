@@ -17,12 +17,13 @@ interface TabItem {
 }
 
 const TABS: TabItem[] = [
-  { key: 'Search', label: 'Search', activeIcon: 'search', inactiveIcon: 'search-outline' },
-  { key: 'Favorites', label: 'Favorites', activeIcon: 'heart', inactiveIcon: 'heart-outline' },
-  { key: 'Bookings', label: 'Bookings', activeIcon: 'grid', inactiveIcon: 'grid-outline' },
-  { key: 'Inbox', label: 'Inbox', activeIcon: 'chatbubble-ellipses', inactiveIcon: 'chatbubble-ellipses-outline' },
-  { key: 'Profile', label: 'Profile', activeIcon: 'person-circle', inactiveIcon: 'person-circle-outline' },
+  { key: 'Search', label: 'Tìm kiếm', activeIcon: 'search', inactiveIcon: 'search-outline' },
+  { key: 'Favorites', label: 'Yêu thích', activeIcon: 'heart', inactiveIcon: 'heart-outline' },
+  { key: 'Bookings', label: 'Chuyến đi', activeIcon: 'grid', inactiveIcon: 'grid-outline' },
+  { key: 'Inbox', label: 'Hộp thư', activeIcon: 'chatbubble-ellipses', inactiveIcon: 'chatbubble-ellipses-outline' },
+  { key: 'Profile', label: 'Hồ sơ', activeIcon: 'person-circle', inactiveIcon: 'person-circle-outline' },
 ];
+
 
 export const BottomTabBar: React.FC<BottomTabBarProps> = ({
   activeTab,
