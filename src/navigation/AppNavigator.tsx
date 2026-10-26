@@ -179,6 +179,7 @@ export const AppNavigator: React.FC = () => {
       {currentScreen === 'CHECKOUT' && (
         <CheckoutScreen
           stay={activeStay}
+          initialFilters={searchFilters}
           onBack={() => setCurrentScreen('ROOM_DETAIL')}
           onConfirmPayment={async (newBooking) => {
             const uniqueBooking: BookingDetails = {
@@ -242,6 +243,7 @@ export const AppNavigator: React.FC = () => {
             setCurrentScreen('PAYMENT_SUCCESS');
           }}
           onTabChange={handleTabChange}
+          onBookingsUpdated={setBookings}
         />
       )}
 

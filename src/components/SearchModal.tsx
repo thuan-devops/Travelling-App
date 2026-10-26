@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SearchFilterState } from '../types';
+import { CalendarPicker, DateRange } from './CalendarPicker';
 
 interface SearchModalProps {
   visible: boolean;
@@ -33,30 +34,44 @@ export const SearchModal: React.FC<SearchModalProps> = ({
   const [destination, setDestination] = useState<string>(initialFilters?.destination || 'Anywhere');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [whenMode, setWhenMode] = useState<'choose' | 'anytime'>('choose');
-  const [selectedMonth, setSelectedMonth] = useState<string>('February 2022');
-  const [selectedDayStart, setSelectedDayStart] = useState<number>(23);
-  const [selectedDayEnd, setSelectedDayEnd] = useState<number>(31);
-  const [daysCount, setDaysCount] = useState<number>(1);
+
+  const defaultStart = new Date(2026, 4, 23);
+  const defaultEnd = new Date(2026, 4, 26);
+  const [dateRange, setDateRange] = useState<DateRange>({
+    startDate: defaultStart,
+    endDate: defaultEnd,
+    nights: 3,
+  });
+
+  const [daysCount, setDaysCount] = useState<number>(initialFilters?.daysCount || 3);
   const [adults, setAdults] = useState<number>(initialFilters?.adults || 2);
   const [children, setChildren] = useState<number>(initialFilters?.children || 0);
 
   const resetFilters = () => {
     setDestination('Anywhere');
     setSearchQuery('');
-    setSelectedDayStart(23);
-    setSelectedDayEnd(31);
-    setDaysCount(1);
-    setAdults(0);
+    setDateRange({
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+      nights: 2,
+    });
+    setDaysCount(2);
+    setAdults(2);
     setChildren(0);
     setCurrentStep(1);
   };
 
   const handleExecuteSearch = () => {
+    const sDate = dateRange.startDate || new Date();
+    const eDate = dateRange.endDate || new Date(sDate.getTime() + 24 * 60 * 60 * 1000);
+    const startStr = `${sDate.getDate()} Thg ${sDate.getMonth() + 1}`;
+    const endStr = `${eDate.getDate()} Thg ${eDate.getMonth() + 1}`;
+
     const finalState: SearchFilterState = {
       destination: destination || 'Anywhere',
-      startDate: `${selectedDayStart} May`,
-      endDate: `${selectedDayEnd} May`,
-      daysCount,
+      startDate: startStr,
+      endDate: endStr,
+      daysCount: dateRange.nights || daysCount || 1,
       adults,
       children,
       minPrice: 10,
@@ -72,44 +87,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
     onClose();
   };
 
-  // Days grid mock for February
-  const days = [
-    { num: 29, isCurrentMonth: false },
-    { num: 30, isCurrentMonth: false },
-    { num: 31, isCurrentMonth: false },
-    { num: 1, isCurrentMonth: true },
-    { num: 2, isCurrentMonth: true },
-    { num: 3, isCurrentMonth: true },
-    { num: 4, isCurrentMonth: true },
-    { num: 5, isCurrentMonth: true },
-    { num: 6, isCurrentMonth: true },
-    { num: 7, isCurrentMonth: true },
-    { num: 8, isCurrentMonth: true },
-    { num: 9, isCurrentMonth: true },
-    { num: 10, isCurrentMonth: true },
-    { num: 11, isCurrentMonth: true },
-    { num: 12, isCurrentMonth: true },
-    { num: 13, isCurrentMonth: true },
-    { num: 14, isCurrentMonth: true },
-    { num: 15, isCurrentMonth: true },
-    { num: 16, isCurrentMonth: true },
-    { num: 17, isCurrentMonth: true },
-    { num: 18, isCurrentMonth: true },
-    { num: 19, isCurrentMonth: true },
-    { num: 20, isCurrentMonth: true },
-    { num: 21, isCurrentMonth: true },
-    { num: 22, isCurrentMonth: true },
-    { num: 23, isCurrentMonth: true },
-    { num: 24, isCurrentMonth: true },
-    { num: 25, isCurrentMonth: true },
-    { num: 26, isCurrentMonth: true },
-    { num: 27, isCurrentMonth: true },
-    { num: 28, isCurrentMonth: true },
-    { num: 1, isCurrentMonth: false },
-    { num: 2, isCurrentMonth: false },
-    { num: 3, isCurrentMonth: false },
-    { num: 4, isCurrentMonth: false },
-  ];
+
 
   return (
     <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
@@ -218,76 +196,26 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                 </TouchableOpacity>
               </View>
 
-              {/* Month Navigation */}
-              <View style={styles.monthHeader}>
-                <Text style={styles.monthTitle}>Tháng 2 năm 2022</Text>
-                <View style={styles.arrowsRow}>
-                  <TouchableOpacity style={styles.arrowButton}>
-                    <Ionicons name="chevron-back" size={18} color="#374151" />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.arrowButton}>
-                    <Ionicons name="chevron-forward" size={18} color="#374151" />
-                  </TouchableOpacity>
+              {whenMode === 'choose' ? (
+                <View style={{ marginVertical: 12 }}>
+                  <CalendarPicker
+                    initialStartDate={dateRange.startDate}
+                    initialEndDate={dateRange.endDate}
+                    onSelectRange={(range) => {
+                      setDateRange(range);
+                      setDaysCount(range.nights);
+                    }}
+                  />
                 </View>
-              </View>
-
-              {/* Weekdays */}
-              <View style={styles.weekdaysRow}>
-                {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((day) => (
-                  <Text key={day} style={styles.weekdayText}>
-                    {day}
+              ) : (
+                <View style={styles.anytimeCard}>
+                  <Ionicons name="infinite-outline" size={32} color="#00BDD6" />
+                  <Text style={styles.anytimeTitle}>Linh hoạt thời gian</Text>
+                  <Text style={styles.anytimeDesc}>
+                    Bạn có thể đi vào bất kỳ ngày nào trong tháng này hoặc tháng sau.
                   </Text>
-                ))}
-              </View>
-
-              {/* Days Grid */}
-              <View style={styles.calendarGrid}>
-                {days.map((item, index) => {
-                  const isSelected = item.isCurrentMonth && item.num >= 23 && item.num <= 28;
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      style={[
-                        styles.calendarDay,
-                        isSelected && styles.calendarDaySelected,
-                      ]}
-                      onPress={() => {
-                        if (item.isCurrentMonth) {
-                          setSelectedDayStart(item.num);
-                          setSelectedDayEnd(Math.min(31, item.num + daysCount));
-                        }
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.calendarDayText,
-                          !item.isCurrentMonth && styles.calendarDayDimmed,
-                          isSelected && styles.calendarDayTextSelected,
-                        ]}
-                      >
-                        {item.num}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              {/* Counter */}
-              <View style={styles.durationRow}>
-                <TouchableOpacity
-                  style={styles.counterBtn}
-                  onPress={() => setDaysCount((prev) => Math.max(1, prev - 1))}
-                >
-                  <Ionicons name="remove" size={18} color="#6B7280" />
-                </TouchableOpacity>
-                <Text style={styles.durationText}>{daysCount} ngày</Text>
-                <TouchableOpacity
-                  style={styles.counterBtn}
-                  onPress={() => setDaysCount((prev) => prev + 1)}
-                >
-                  <Ionicons name="add" size={18} color="#6B7280" />
-                </TouchableOpacity>
-              </View>
+                </View>
+              )}
 
               {/* Skip / Next */}
               <View style={styles.stepActionsRow}>
@@ -675,5 +603,27 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+  },
+  anytimeCard: {
+    padding: 30,
+    backgroundColor: '#F0FDFA',
+    borderRadius: 16,
+    alignItems: 'center',
+    marginVertical: 20,
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+  },
+  anytimeTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F766E',
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  anytimeDesc: {
+    fontSize: 14,
+    color: '#475569',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

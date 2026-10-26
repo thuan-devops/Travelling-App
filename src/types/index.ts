@@ -113,5 +113,6 @@ export interface BookingDetails {
   paymentDate: string;
   paymentTime: string;
   paymentMethod: string;
+  status?: 'confirmed' | 'cancelled';
 }
 

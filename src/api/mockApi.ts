@@ -407,13 +407,45 @@ class MockApiService {
   async saveBooking(newBooking: BookingDetails): Promise<BookingDetails[]> {
     try {
       const current = await this.getBookings();
-      const updated = [newBooking, ...current.filter((b) => b.bookingId !== newBooking.bookingId)];
+      const bookingWithStatus: BookingDetails = {
+        ...newBooking,
+        status: newBooking.status || 'confirmed',
+      };
+      const updated = [bookingWithStatus, ...current.filter((b) => b.bookingId !== newBooking.bookingId)];
       await AsyncStorage.setItem(BOOKINGS_STORAGE_KEY, JSON.stringify(updated));
       return updated;
     } catch (e) {
       console.warn('Lỗi lưu booking:', e);
       return [newBooking];
     }
+  }
+
+  async cancelBooking(bookingId: string): Promise<BookingDetails[]> {
+    try {
+      const current = await this.getBookings();
+      const updated = current.map((b) =>
+        b.bookingId === bookingId ? { ...b, status: 'cancelled' as const } : b
+      );
+      await AsyncStorage.setItem(BOOKINGS_STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    } catch (e) {
+      console.warn('Lỗi hủy booking:', e);
+      return [];
+    }
+  }
+
+  async addReview(stayId: string, review: Omit<ReviewItem, 'id' | 'date'>): Promise<ReviewItem> {
+    const newRev: ReviewItem = {
+      ...review,
+      id: `rev-${Date.now()}`,
+      date: 'Vừa xong',
+    };
+    const target = INITIAL_ACCOMMODATIONS.find((s) => s.id === stayId);
+    if (target) {
+      target.reviewsList = [newRev, ...(target.reviewsList || SAMPLE_REVIEWS)];
+      target.reviewCount = (target.reviewCount || 0) + 1;
+    }
+    return newRev;
   }
 
 
