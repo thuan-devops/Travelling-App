@@ -61,27 +61,21 @@ export const AppNavigator: React.FC = () => {
     presentTotalPrice: true,
   });
 
-  // Active Stay & Booking
+  // Active Stay & Bookings
   const [activeStay, setActiveStay] = useState<Accommodation>(INITIAL_ACCOMMODATIONS[0]);
-  const [lastBooking, setLastBooking] = useState<BookingDetails | null>({
-    bookingId: '00000072697027',
-    accommodation: INITIAL_ACCOMMODATIONS[0],
-    checkIn: '09-05-2023',
-    checkOut: '15-05-2023',
-    nights: 1,
-    guests: 1,
-    paymentType: 'full',
-    roomTotal: 20,
-    fees: [
-      { label: 'Kayak fee', amount: 5 },
-      { label: 'Street parking fee', amount: 5 },
-    ],
-    totalPrice: 30,
-    paidAmount: 30,
-    paymentDate: '09-05-2023',
-    paymentTime: '05:40 AM',
-    paymentMethod: 'Credit card',
-  });
+  const [bookings, setBookings] = useState<BookingDetails[]>([]);
+  const [lastBooking, setLastBooking] = useState<BookingDetails | null>(null);
+
+  // Load persistent bookings on start
+  React.useEffect(() => {
+    mockApi.getBookings().then((data) => {
+      setBookings(data);
+      if (data.length > 0) {
+        setLastBooking(data[0]);
+      }
+    });
+  }, []);
+
 
   // Handle Tab navigation
   const handleTabChange = (tab: BottomTabType) => {
@@ -186,8 +180,16 @@ export const AppNavigator: React.FC = () => {
         <CheckoutScreen
           stay={activeStay}
           onBack={() => setCurrentScreen('ROOM_DETAIL')}
-          onConfirmPayment={(booking) => {
-            setLastBooking(booking);
+          onConfirmPayment={async (newBooking) => {
+            const uniqueBooking: BookingDetails = {
+              ...newBooking,
+              bookingId: `000000${Math.floor(10000000 + Math.random() * 90000000)}`,
+              paymentDate: new Date().toLocaleDateString('vi-VN'),
+              paymentTime: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+            };
+            const updated = await mockApi.saveBooking(uniqueBooking);
+            setBookings(updated);
+            setLastBooking(uniqueBooking);
             setCurrentScreen('PAYMENT_SUCCESS');
           }}
         />
@@ -206,14 +208,14 @@ export const AppNavigator: React.FC = () => {
               paymentType: 'full',
               roomTotal: 20,
               fees: [
-                { label: 'Kayak fee', amount: 5 },
-                { label: 'Street parking fee', amount: 5 },
+                { label: 'Phí chèo thuyền Kayak', amount: 5 },
+                { label: 'Phí đỗ xe', amount: 5 },
               ],
               totalPrice: 30,
               paidAmount: 30,
               paymentDate: '09-05-2023',
               paymentTime: '05:40 AM',
-              paymentMethod: 'Credit card',
+              paymentMethod: 'Thẻ tín dụng (Credit card)',
             }
           }
           onViewBooking={() => setCurrentScreen('BOOKINGS')}
@@ -233,15 +235,16 @@ export const AppNavigator: React.FC = () => {
 
       {currentScreen === 'BOOKINGS' && (
         <BookingsScreen
-          lastBooking={lastBooking}
+          bookings={bookings}
           onExplore={() => setCurrentScreen('HOME')}
           onSelectBookingDetail={(booking) => {
-            setActiveStay(booking.accommodation);
+            setLastBooking(booking);
             setCurrentScreen('PAYMENT_SUCCESS');
           }}
           onTabChange={handleTabChange}
         />
       )}
+
 
       {currentScreen === 'INBOX' && (
         <InboxScreen onTabChange={handleTabChange} />

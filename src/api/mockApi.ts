@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Accommodation, CategoryItem, StayCategory, User, CATEGORIES, ReviewItem, SearchFilterState } from '../types';
+import { Accommodation, CategoryItem, StayCategory, User, CATEGORIES, ReviewItem, SearchFilterState, BookingDetails } from '../types';
+
 
 const MOCK_API_URL = 'https://6adf391c8e42963c8d5d9b65.mockapi.io/travelling';
 const FAVORITES_STORAGE_KEY = '@travelling_app_favorite_ids';
@@ -236,6 +237,8 @@ export const INITIAL_ACCOMMODATIONS: Accommodation[] = [
   },
 ];
 
+const BOOKINGS_STORAGE_KEY = '@travelling_app_bookings';
+
 class MockApiService {
   // Lấy danh mục
   async getCategories(): Promise<CategoryItem[]> {
@@ -259,7 +262,6 @@ class MockApiService {
       if (response.ok) {
         const remoteData: any[] = await response.json();
         if (Array.isArray(remoteData) && remoteData.length > 0) {
-          // Merge hoặc bổ sung các trường thiếu
           list = INITIAL_ACCOMMODATIONS.map((local) => {
             const match = remoteData.find((r) => r.id === local.id || r.title === local.title);
             return match ? { ...local, ...match } : local;
@@ -270,11 +272,11 @@ class MockApiService {
       // Fallback về INITIAL_ACCOMMODATIONS
     }
 
-    // Kết hợp trạng thái Favorites đã lưu cục bộ
+    // Kết hợp trạng thái Favorites ĐÚNG CHUẨN từ AsyncStorage
     const favoriteIds = await this.getStoredFavorites();
     list = list.map((item) => ({
       ...item,
-      isFavorite: favoriteIds.includes(item.id) ? true : item.isFavorite,
+      isFavorite: favoriteIds.includes(item.id),
     }));
 
     // Lọc theo danh mục
@@ -325,7 +327,7 @@ class MockApiService {
     return list;
   }
 
-  // Đổi trạng thái Favorite (Lưu cục bộ và đồng bộ lên MockAPI)
+  // Đổi trạng thái Favorite (Lưu thật vào AsyncStorage)
   async toggleFavorite(id: string): Promise<boolean> {
     try {
       const favoriteIds = await this.getStoredFavorites();
@@ -357,11 +359,63 @@ class MockApiService {
   async getStoredFavorites(): Promise<string[]> {
     try {
       const raw = await AsyncStorage.getItem(FAVORITES_STORAGE_KEY);
-      return raw ? JSON.parse(raw) : ['stay-treehouse', 'stay-omaha', 'stay-milwaukee'];
+      if (raw !== null) {
+        return JSON.parse(raw);
+      }
+      // Lần đầu mở app: khởi tạo và lưu ngay
+      const defaultFavs = ['stay-treehouse', 'stay-omaha', 'stay-milwaukee'];
+      await AsyncStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(defaultFavs));
+      return defaultFavs;
     } catch {
-      return ['stay-treehouse', 'stay-omaha', 'stay-milwaukee'];
+      return [];
     }
   }
+
+  // Quản lý danh sách chuyến đi đã đặt (Bookings)
+  async getBookings(): Promise<BookingDetails[]> {
+    try {
+      const raw = await AsyncStorage.getItem(BOOKINGS_STORAGE_KEY);
+      if (raw !== null) {
+        return JSON.parse(raw);
+      }
+      const initialBooking: BookingDetails = {
+        bookingId: '00000072697027',
+        accommodation: INITIAL_ACCOMMODATIONS[0],
+        checkIn: '09-05-2023',
+        checkOut: '15-05-2023',
+        nights: 1,
+        guests: 1,
+        paymentType: 'full',
+        roomTotal: 20,
+        fees: [
+          { label: 'Phí chèo thuyền Kayak', amount: 5 },
+          { label: 'Phí đỗ xe', amount: 5 },
+        ],
+        totalPrice: 30,
+        paidAmount: 30,
+        paymentDate: '09-05-2023',
+        paymentTime: '05:40 AM',
+        paymentMethod: 'Thẻ tín dụng (Credit card)',
+      };
+      await AsyncStorage.setItem(BOOKINGS_STORAGE_KEY, JSON.stringify([initialBooking]));
+      return [initialBooking];
+    } catch {
+      return [];
+    }
+  }
+
+  async saveBooking(newBooking: BookingDetails): Promise<BookingDetails[]> {
+    try {
+      const current = await this.getBookings();
+      const updated = [newBooking, ...current.filter((b) => b.bookingId !== newBooking.bookingId)];
+      await AsyncStorage.setItem(BOOKINGS_STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    } catch (e) {
+      console.warn('Lỗi lưu booking:', e);
+      return [newBooking];
+    }
+  }
+
 
   // Xác thực đăng nhập qua SĐT
   async loginWithPhone(phone: string, countryCode: string = '+1'): Promise<User> {

@@ -6,7 +6,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Image,
-  ScrollView,
+  FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -14,80 +14,93 @@ import { BookingDetails, BottomTabType } from '../types';
 import { BottomTabBar } from '../components/BottomTabBar';
 
 interface BookingsScreenProps {
-  lastBooking?: BookingDetails | null;
+  bookings: BookingDetails[];
   onExplore: () => void;
   onSelectBookingDetail: (booking: BookingDetails) => void;
   onTabChange: (tab: BottomTabType) => void;
 }
 
 export const BookingsScreen: React.FC<BookingsScreenProps> = ({
-  lastBooking,
+  bookings = [],
   onExplore,
   onSelectBookingDetail,
   onTabChange,
 }) => {
+  const renderBookingCard = ({ item }: { item: BookingDetails }) => (
+    <View style={styles.bookingCard}>
+      <View style={styles.cardTop}>
+        <Image
+          source={{
+            uri:
+              item.accommodation.images?.[0] ||
+              'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=600&q=80',
+          }}
+          style={styles.stayImage}
+        />
+        <View style={styles.badgeConfirmed}>
+          <Ionicons name="checkmark-circle" size={14} color="#10B981" style={{ marginRight: 4 }} />
+          <Text style={styles.badgeConfirmedText}>Đã xác nhận</Text>
+        </View>
+      </View>
+
+      <View style={styles.cardBody}>
+        <Text style={styles.stayTitle}>{item.accommodation.title}</Text>
+        <Text style={styles.stayLocation}>{item.accommodation.location}</Text>
+
+        <View style={styles.detailRow}>
+          <View style={styles.detailCol}>
+            <Text style={styles.detailLabel}>Nhận phòng</Text>
+            <Text style={styles.detailVal}>{item.checkIn}</Text>
+          </View>
+          <View style={styles.detailCol}>
+            <Text style={styles.detailLabel}>Trả phòng</Text>
+            <Text style={styles.detailVal}>{item.checkOut}</Text>
+          </View>
+          <View style={styles.detailCol}>
+            <Text style={styles.detailLabel}>Số khách</Text>
+            <Text style={styles.detailVal}>{item.guests} khách</Text>
+          </View>
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.totalRow}>
+          <View>
+            <Text style={styles.totalLabel}>Mã đặt phòng: #{item.bookingId.slice(-8)}</Text>
+            <Text style={styles.bookingDateText}>Ngày: {item.paymentDate}</Text>
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={styles.totalLabel}>Đã thanh toán</Text>
+            <Text style={styles.totalAmount}>${item.paidAmount}</Text>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={styles.viewDetailBtn}
+          onPress={() => onSelectBookingDetail(item)}
+        >
+          <Text style={styles.viewDetailBtnText}>Xem biên lai & chi tiết</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Chuyến đi của tôi</Text>
+        <Text style={styles.headerTitle}>Chuyến đi của tôi ({bookings.length})</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {lastBooking ? (
-          <View style={styles.bookingCard}>
-            <View style={styles.cardTop}>
-              <Image
-                source={{
-                  uri:
-                    lastBooking.accommodation.images?.[0] ||
-                    'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=600&q=80',
-                }}
-                style={styles.stayImage}
-              />
-              <View style={styles.badgeConfirmed}>
-                <Ionicons name="checkmark-circle" size={14} color="#10B981" style={{ marginRight: 4 }} />
-                <Text style={styles.badgeConfirmedText}>Đã xác nhận</Text>
-              </View>
-            </View>
-
-            <View style={styles.cardBody}>
-              <Text style={styles.stayTitle}>{lastBooking.accommodation.title}</Text>
-              <Text style={styles.stayLocation}>{lastBooking.accommodation.location}</Text>
-
-              <View style={styles.detailRow}>
-                <View style={styles.detailCol}>
-                  <Text style={styles.detailLabel}>Nhận phòng</Text>
-                  <Text style={styles.detailVal}>{lastBooking.checkIn}</Text>
-                </View>
-                <View style={styles.detailCol}>
-                  <Text style={styles.detailLabel}>Trả phòng</Text>
-                  <Text style={styles.detailVal}>{lastBooking.checkOut}</Text>
-                </View>
-                <View style={styles.detailCol}>
-                  <Text style={styles.detailLabel}>Số khách</Text>
-                  <Text style={styles.detailVal}>{lastBooking.guests} khách</Text>
-                </View>
-              </View>
-
-              <View style={styles.divider} />
-
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Tổng tiền đã trả</Text>
-                <Text style={styles.totalAmount}>${lastBooking.paidAmount}</Text>
-              </View>
-
-              <TouchableOpacity
-                style={styles.viewDetailBtn}
-                onPress={() => onSelectBookingDetail(lastBooking)}
-              >
-                <Text style={styles.viewDetailBtnText}>Xem biên lai & chi tiết</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
+      <FlatList
+        data={bookings}
+        keyExtractor={(item) => item.bookingId}
+        renderItem={renderBookingCard}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="calendar-outline" size={54} color="#D1D5DB" />
             <Text style={styles.emptyTitle}>Chưa có chuyến đi nào</Text>
@@ -98,9 +111,8 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
               <Text style={styles.exploreBtnText}>Bắt đầu khám phá</Text>
             </TouchableOpacity>
           </View>
-        )}
-      </ScrollView>
-
+        }
+      />
 
       {/* BOTTOM TAB BAR */}
       <BottomTabBar activeTab="Bookings" onTabChange={onTabChange} />
@@ -140,6 +152,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 3,
+    marginBottom: 20,
   },
   cardTop: {
     height: 180,
@@ -211,8 +224,13 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   totalLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
+  },
+  bookingDateText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 2,
   },
   totalAmount: {
     fontSize: 18,
