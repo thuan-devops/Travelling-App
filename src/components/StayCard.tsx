@@ -128,9 +128,10 @@ export const StayCard: React.FC<StayCardProps> = ({
         <Text style={styles.categoryText}>{stay.category}</Text>
         <Text style={styles.priceContainer}>
           <Text style={styles.priceAmount}>${stay.pricePerNight}</Text>
-          <Text style={styles.priceUnit}>/night</Text>
+          <Text style={styles.priceUnit}>/đêm</Text>
         </Text>
       </View>
+
     </TouchableOpacity>
   );
 };
