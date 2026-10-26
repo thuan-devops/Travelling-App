@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,12 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { BookingDetails } from '../types';
+import { generateAndShareReceiptPdf } from '../utils/pdfGenerator';
 
 interface PaymentSuccessScreenProps {
   booking: BookingDetails;
@@ -20,12 +22,19 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
   booking,
   onViewBooking,
 }) => {
-  const handleDownloadReceipt = () => {
-    Alert.alert(
-      'Đã tải biên lai',
-      `Biên lai mã #${booking.bookingId} với số tiền $${booking.paidAmount} đã được lưu thành công.`
-    );
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+
+  const handleDownloadReceipt = async () => {
+    try {
+      setIsExporting(true);
+      await generateAndShareReceiptPdf(booking);
+    } catch {
+      Alert.alert('Lỗi', 'Không thể xuất file PDF lúc này.');
+    } finally {
+      setIsExporting(false);
+    }
   };
+
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -84,10 +93,18 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
             style={styles.pdfButton}
             activeOpacity={0.8}
             onPress={handleDownloadReceipt}
+            disabled={isExporting}
           >
-            <Ionicons name="download-outline" size={18} color="#6B7280" style={{ marginRight: 8 }} />
-            <Text style={styles.pdfButtonText}>Tải biên lai PDF</Text>
+            {isExporting ? (
+              <ActivityIndicator size="small" color="#00BDD6" />
+            ) : (
+              <>
+                <Ionicons name="download-outline" size={18} color="#6B7280" style={{ marginRight: 8 }} />
+                <Text style={styles.pdfButtonText}>Tải biên lai PDF</Text>
+              </>
+            )}
           </TouchableOpacity>
+
         </View>
 
         {/* BOTTOM VIEW BOOKING BUTTON */}
