@@ -77,6 +77,12 @@ export const AppNavigator: React.FC = () => {
   }, []);
 
 
+  React.useEffect(() => {
+    if (!user) {
+      setCurrentScreen('HOME');
+    }
+  }, [user]);
+
   // Handle Tab navigation
   const handleTabChange = (tab: BottomTabType) => {
     switch (tab) {

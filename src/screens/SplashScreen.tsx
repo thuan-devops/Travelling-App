@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, TouchableOpacity, Text } from 'react-native';
+import { View, StyleSheet, Animated } from 'react-native';
 import { AppLogo } from '../components/AppLogo';
 import { StatusBar } from 'expo-status-bar';
 
@@ -12,31 +12,31 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const scaleAnim = useRef(new Animated.Value(0.85)).current;
 
   useEffect(() => {
-    // Fade and gentle pop-in animation
+    // Quick, smooth pop-in animation (400ms)
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 900,
+        duration: 450,
         useNativeDriver: true,
       }),
       Animated.spring(scaleAnim, {
         toValue: 1,
         friction: 6,
-        tension: 40,
+        tension: 50,
         useNativeDriver: true,
       }),
     ]).start();
 
-    // 3.5s delay then transition to Auth/Onboarding
+    // Total display time 1.5 seconds (1-2s as requested) then transition
     const timer = setTimeout(() => {
       Animated.timing(fadeAnim, {
         toValue: 0,
-        duration: 400,
+        duration: 250,
         useNativeDriver: true,
       }).start(() => {
         onFinish();
       });
-    }, 3500);
+    }, 1500);
 
     return () => clearTimeout(timer);
   }, [onFinish]);
@@ -55,14 +55,6 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
       >
         <AppLogo size={90} />
       </Animated.View>
-
-      <TouchableOpacity
-        activeOpacity={0.7}
-        onPress={onFinish}
-        style={styles.skipButton}
-      >
-        <Text style={styles.skipText}>Bỏ qua (Skip)</Text>
-      </TouchableOpacity>
     </View>
   );
 };
@@ -77,18 +69,5 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  skipButton: {
-    position: 'absolute',
-    bottom: 50,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-  },
-  skipText: {
-    fontSize: 13,
-    color: '#9CA3AF',
-    fontWeight: '500',
   },
 });

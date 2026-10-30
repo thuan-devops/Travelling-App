@@ -3,10 +3,11 @@ export type StayCategory = 'Beach' | 'Mountain' | 'Camping' | 'City' | 'Villa';
 export interface User {
   id: string;
   name: string;
+  username?: string;
   phoneNumber?: string;
   email?: string;
   avatarUrl?: string;
-  authProvider: 'phone' | 'google' | 'facebook' | 'apple';
+  authProvider: 'credentials' | 'phone' | 'google' | 'facebook' | 'apple';
 }
 
 export interface ReviewItem {
@@ -78,7 +79,6 @@ export const CATEGORIES: CategoryItem[] = [
   { id: 'Villa', name: 'Biệt thự', iconName: 'home-outline' },
 ];
 
-
 export type BottomTabType = 'Search' | 'Favorites' | 'Bookings' | 'Inbox' | 'Profile';
 
 export interface SearchFilterState {
@@ -115,4 +115,3 @@ export interface BookingDetails {
   paymentMethod: string;
   status?: 'confirmed' | 'cancelled';
 }
-

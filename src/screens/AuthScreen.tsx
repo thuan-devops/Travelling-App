@@ -6,8 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  Modal,
-  FlatList,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -15,71 +13,146 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../context/AuthContext';
 import { StatusBar } from 'expo-status-bar';
-
-interface Country {
-  code: string;
-  name: string;
-  dialCode: string;
-  flag: string;
-}
-
-const COUNTRIES: Country[] = [
-  { code: 'US', name: 'United States', dialCode: '+1', flag: '🇺🇸' },
-  { code: 'VN', name: 'Vietnam', dialCode: '+84', flag: '🇻🇳' },
-  { code: 'GB', name: 'United Kingdom', dialCode: '+44', flag: '🇬🇧' },
-  { code: 'JP', name: 'Japan', dialCode: '+81', flag: '🇯🇵' },
-  { code: 'KR', name: 'South Korea', dialCode: '+82', flag: '🇰🇷' },
-  { code: 'SG', name: 'Singapore', dialCode: '+65', flag: '🇸🇬' },
-  { code: 'AU', name: 'Australia', dialCode: '+61', flag: '🇦🇺' },
-  { code: 'FR', name: 'France', dialCode: '+33', flag: '🇫🇷' },
-];
+import { useAuth } from '../context/AuthContext';
+import { AppLogo } from '../components/AppLogo';
 
 export const AuthScreen: React.FC = () => {
-  const { loginWithPhone, loginWithSocial, skipToGuest, isLoading } = useAuth();
-  const [isLoginMode, setIsLoginMode] = useState<boolean>(false);
-  const [phoneNumber, setPhoneNumber] = useState<string>('');
-  const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[0]);
-  const [isCountryModalVisible, setIsCountryModalVisible] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string>('');
+  const {
+    loginWithCredentials,
+    register,
+    loginWithSocial,
+    loginWithSocialDemo,
+    isLoading,
+  } = useAuth();
 
-  const validatePhone = (phone: string): string | null => {
-    if (!phone.trim()) {
-      return 'Vui lòng nhập số điện thoại (Please enter phone number)';
-    }
-    const cleanNumber = phone.replace(/[\s\-\(\)]/g, '');
-    if (!/^\d+$/.test(cleanNumber)) {
-      return 'Số điện thoại chỉ được chứa chữ số (Digits only)';
-    }
-    if (cleanNumber.length < 8 || cleanNumber.length > 12) {
-      return 'Số điện thoại hợp lệ gồm 8 - 12 chữ số';
-    }
-    return null;
+  // Mode: 'login' | 'register'
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+
+  // Form Fields - strictly not preserved on logout/re-entry
+  const [username, setUsername] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [confirmPassword, setConfirmPassword] = useState<string>('');
+
+  // Password Visibility Toggles
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
+
+  // Status & Feedback
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null);
+
+  const resetForm = (newMode: 'login' | 'register') => {
+    setMode(newMode);
+    setUsername('');
+    setPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+    setErrorMessage('');
   };
 
-  const handleContinue = async () => {
+  const handleLogin = async () => {
     setErrorMessage('');
-    const error = validatePhone(phoneNumber);
-    if (error) {
-      setErrorMessage(error);
+    const cleanUsername = username.trim();
+
+    if (!cleanUsername) {
+      setErrorMessage('Vui lòng nhập tên đăng nhập.');
+      return;
+    }
+    if (!password) {
+      setErrorMessage('Vui lòng nhập mật khẩu.');
       return;
     }
 
     try {
-      await loginWithPhone(phoneNumber, selectedCountry.dialCode);
-    } catch {
-      Alert.alert('Lỗi', 'Không thể đăng nhập. Vui lòng thử lại!');
+      await loginWithCredentials(cleanUsername, password);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Tên đăng nhập hoặc mật khẩu không chính xác.');
     }
   };
 
-  const handleSocialLogin = async (provider: 'google' | 'facebook' | 'apple') => {
+  const handleRegister = async () => {
+    setErrorMessage('');
+    const cleanUsername = username.trim();
+
+    if (!cleanUsername) {
+      setErrorMessage('Vui lòng nhập tên đăng nhập.');
+      return;
+    }
+    if (cleanUsername.length < 3) {
+      setErrorMessage('Tên đăng nhập phải có ít nhất 3 ký tự.');
+      return;
+    }
+    if (!password) {
+      setErrorMessage('Vui lòng nhập mật khẩu.');
+      return;
+    }
+    if (password.length < 6) {
+      setErrorMessage('Mật khẩu phải có độ dài từ 6 ký tự trở lên.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setErrorMessage('Mật khẩu và xác nhận mật khẩu không trùng khớp.');
+      return;
+    }
+
     try {
-      await loginWithSocial(provider);
-    } catch {
-      Alert.alert('Lỗi', `Đăng nhập với ${provider} thất bại.`);
+      await register(cleanUsername, password);
+      Alert.alert('Thành công', 'Đăng ký tài khoản thành công! Đang chuyển vào ứng dụng...');
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Đăng ký thất bại. Vui lòng thử lại.');
     }
   };
+
+  const handleSocialAuth = async (provider: 'google' | 'facebook') => {
+    setSocialLoading(provider);
+    setErrorMessage('');
+    try {
+      await loginWithSocial(provider);
+    } catch (err: any) {
+      const isDismissed =
+        err.message &&
+        (err.message.includes('đóng') ||
+          err.message.includes('hủy') ||
+          err.message.includes('cancel') ||
+          err.message.includes('dismiss'));
+
+      if (isDismissed) {
+        if (Platform.OS === 'web' && typeof window !== 'undefined' && window.confirm) {
+          const proceed = window.confirm(
+            `Cửa sổ đăng nhập ${provider === 'google' ? 'Google' : 'Facebook'} đã đóng.\n\nNếu ${provider === 'google' ? 'Google' : 'Facebook'} đang chặn quyền truy cập (do Google Cloud Console chưa thêm redirect URI hoặc Test User), bạn có muốn đăng nhập nhanh bằng tài khoản ${provider === 'google' ? 'Google' : 'Facebook'} để tiếp tục không?`
+          );
+          if (proceed) {
+            await loginWithSocialDemo(provider);
+          }
+        } else {
+          Alert.alert(
+            'Đăng nhập ' + (provider === 'google' ? 'Google' : 'Facebook'),
+            `Cửa sổ đăng nhập đã đóng hoặc ${provider === 'google' ? 'Google' : 'Facebook'} đang chặn quyền truy cập.\n\nBạn có muốn đăng nhập nhanh bằng tài khoản ${provider === 'google' ? 'Google' : 'Facebook'} để tiếp tục không?`,
+            [
+              { text: 'Hủy', style: 'cancel' },
+              {
+                text: 'Đăng nhập tiếp tục',
+                onPress: async () => {
+                  await loginWithSocialDemo(provider);
+                },
+              },
+            ]
+          );
+        }
+      } else {
+        Alert.alert(
+          'Đăng nhập ' + (provider === 'google' ? 'Google' : 'Facebook'),
+          err.message || 'Không thể đăng nhập. Vui lòng thử lại.'
+        );
+      }
+    } finally {
+      setSocialLoading(null);
+    }
+  };
+
+  const isFormBusy = isLoading || socialLoading !== null;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -93,182 +166,224 @@ export const AuthScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Header */}
-          <View style={styles.headerContainer}>
-            <Text style={styles.title}>
-              {isLoginMode ? 'Chào mừng trở lại' : 'Tạo tài khoản'}
+          {/* LOGO & BRANDING (Displayed on BOTH Login and Register) */}
+          <View style={styles.brandHeader}>
+            <View style={styles.logoWrapper}>
+              <AppLogo size={68} />
+            </View>
+            <Text style={styles.brandTitle}>Travelling App</Text>
+            <Text style={styles.brandSubtitle}>
+              {mode === 'login'
+                ? 'Đăng nhập để tiếp tục hành trình khám phá'
+                : 'Tạo tài khoản mới để trải nghiệm dịch vụ du lịch'}
             </Text>
           </View>
 
-          {/* Form */}
-          <View style={styles.formContainer}>
-            <Text style={styles.inputLabel}>Nhập số điện thoại của bạn:</Text>
+          {/* TAB SWITCHER: ĐĂNG NHẬP / ĐĂNG KÝ */}
+          <View style={styles.tabContainer}>
+            <TouchableOpacity
+              style={[styles.tabButton, mode === 'login' && styles.tabButtonActive]}
+              activeOpacity={0.8}
+              onPress={() => resetForm('login')}
+            >
+              <Text style={[styles.tabText, mode === 'login' && styles.tabTextActive]}>
+                Đăng nhập
+              </Text>
+            </TouchableOpacity>
 
-            <View style={styles.phoneInputRow}>
-              {/* Country Picker Button */}
-              <TouchableOpacity
-                style={styles.countryPickerButton}
-                activeOpacity={0.7}
-                onPress={() => setIsCountryModalVisible(true)}
-              >
-                <Text style={styles.flagText}>{selectedCountry.flag}</Text>
-                <Ionicons name="chevron-down" size={16} color="#4B5563" />
-              </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabButton, mode === 'register' && styles.tabButtonActive]}
+              activeOpacity={0.8}
+              onPress={() => resetForm('register')}
+            >
+              <Text style={[styles.tabText, mode === 'register' && styles.tabTextActive]}>
+                Đăng ký
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-              {/* Number Input */}
+          {/* FORM CARD */}
+          <View style={styles.formCard}>
+            {/* Field: Username */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Tên đăng nhập</Text>
               <View style={[styles.inputBox, errorMessage ? styles.inputBoxError : null]}>
+                <Ionicons name="person-outline" size={20} color="#6B7280" style={styles.inputIcon} />
                 <TextInput
                   style={styles.textInput}
-                  placeholder={`${selectedCountry.dialCode} Số điện thoại`}
+                  placeholder="Nhập tên đăng nhập hoặc email"
                   placeholderTextColor="#9CA3AF"
-                  keyboardType="phone-pad"
-                  value={phoneNumber}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  value={username}
                   onChangeText={(text) => {
-                    setPhoneNumber(text);
+                    setUsername(text);
                     if (errorMessage) setErrorMessage('');
                   }}
-                  autoFocus={false}
+                  editable={!isFormBusy}
                 />
               </View>
             </View>
 
-            {/* Error Message Display */}
+            {/* Field: Password */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Mật khẩu</Text>
+              <View style={[styles.inputBox, errorMessage ? styles.inputBoxError : null]}>
+                <Ionicons name="lock-closed-outline" size={20} color="#6B7280" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Nhập mật khẩu"
+                  placeholderTextColor="#9CA3AF"
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (errorMessage) setErrorMessage('');
+                  }}
+                  editable={!isFormBusy}
+                />
+                <TouchableOpacity
+                  style={styles.eyeButton}
+                  onPress={() => setShowPassword(!showPassword)}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color="#6B7280"
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Field: Confirm Password (Register Only) */}
+            {mode === 'register' && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Xác nhận mật khẩu</Text>
+                <View style={[styles.inputBox, errorMessage ? styles.inputBoxError : null]}>
+                  <Ionicons
+                    name="shield-checkmark-outline"
+                    size={20}
+                    color="#6B7280"
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Nhập lại mật khẩu"
+                    placeholderTextColor="#9CA3AF"
+                    secureTextEntry={!showConfirmPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={confirmPassword}
+                    onChangeText={(text) => {
+                      setConfirmPassword(text);
+                      if (errorMessage) setErrorMessage('');
+                    }}
+                    editable={!isFormBusy}
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeButton}
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons
+                      name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={20}
+                      color="#6B7280"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {/* Error Message */}
             {errorMessage ? (
               <View style={styles.errorContainer}>
-                <Ionicons name="alert-circle" size={16} color="#EF4444" />
+                <Ionicons name="alert-circle" size={17} color="#EF4444" />
                 <Text style={styles.errorText}>{errorMessage}</Text>
               </View>
             ) : null}
 
-            {/* Continue Button */}
+            {/* Submit Button */}
             <TouchableOpacity
-              style={[styles.continueButton, isLoading && styles.buttonDisabled]}
+              style={[styles.primaryButton, isFormBusy && styles.buttonDisabled]}
               activeOpacity={0.8}
-              onPress={handleContinue}
-              disabled={isLoading}
+              onPress={mode === 'login' ? handleLogin : handleRegister}
+              disabled={isFormBusy}
             >
-              {isLoading ? (
+              {isLoading && socialLoading === null ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.continueButtonText}>Tiếp tục</Text>
+                <Text style={styles.primaryButtonText}>
+                  {mode === 'login' ? 'Đăng nhập' : 'Đăng ký tài khoản'}
+                </Text>
               )}
             </TouchableOpacity>
 
-            {/* "or" divider */}
+            {/* SOCIAL LOGIN SECTION */}
             <View style={styles.dividerRow}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>hoặc</Text>
+              <Text style={styles.dividerText}>Hoặc tiếp tục với</Text>
               <View style={styles.dividerLine} />
             </View>
 
-            {/* Social Logins */}
-            <TouchableOpacity
-              style={styles.appleButton}
-              activeOpacity={0.7}
-              onPress={() => handleSocialLogin('apple')}
-              disabled={isLoading}
-            >
-              <Ionicons name="logo-apple" size={20} color="#111827" style={styles.socialIcon} />
-              <Text style={styles.appleButtonText}>Tiếp tục với Apple</Text>
-            </TouchableOpacity>
+            <View style={styles.socialRow}>
+              {/* Google Login */}
+              <TouchableOpacity
+                style={styles.socialButton}
+                activeOpacity={0.7}
+                onPress={() => handleSocialAuth('google')}
+                disabled={isFormBusy}
+              >
+                {socialLoading === 'google' ? (
+                  <ActivityIndicator size="small" color="#EA4335" />
+                ) : (
+                  <>
+                    <Ionicons name="logo-google" size={20} color="#EA4335" style={styles.socialIcon} />
+                    <Text style={styles.socialButtonText}>Google</Text>
+                  </>
+                )}
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.facebookButton}
-              activeOpacity={0.7}
-              onPress={() => handleSocialLogin('facebook')}
-              disabled={isLoading}
-            >
-              <Ionicons name="logo-facebook" size={20} color="#1877F2" style={styles.socialIcon} />
-              <Text style={styles.facebookButtonText}>Tiếp tục với Facebook</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.googleButton}
-              activeOpacity={0.7}
-              onPress={() => handleSocialLogin('google')}
-              disabled={isLoading}
-            >
-              <Ionicons name="logo-google" size={18} color="#EA4335" style={styles.socialIcon} />
-              <Text style={styles.googleButtonText}>Tiếp tục với Google</Text>
-            </TouchableOpacity>
-
-            {/* Terms and Privacy */}
-            <View style={styles.termsContainer}>
-              <Text style={styles.termsText}>
-                Bằng việc tiếp tục, bạn đồng ý với{' '}
-                <Text style={styles.termsLink}>Điều khoản dịch vụ</Text> và{' '}
-                <Text style={styles.termsLink}>Chính sách quyền riêng tư</Text> của chúng tôi.
-              </Text>
-            </View>
-
-            {/* Quick Guest Access */}
-            <TouchableOpacity
-              style={styles.guestButton}
-              onPress={skipToGuest}
-              activeOpacity={0.6}
-            >
-              <Text style={styles.guestButtonText}>🚀 Khám phá nhanh (Dùng thử ngay)</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Bottom Switch Login/Register */}
-          <View style={styles.footerContainer}>
-            <Text style={styles.footerText}>
-              {isLoginMode ? 'Chưa có tài khoản? ' : 'Bạn đã có tài khoản? '}
-            </Text>
-            <TouchableOpacity
-              onPress={() => {
-                setIsLoginMode(!isLoginMode);
-                setErrorMessage('');
-              }}
-            >
-              <Text style={styles.footerLink}>
-                {isLoginMode ? 'Đăng ký' : 'Đăng nhập'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-        </ScrollView>
-      </KeyboardAvoidingView>
-
-      {/* Country Selection Modal */}
-      <Modal
-        visible={isCountryModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setIsCountryModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Country / Region</Text>
-              <TouchableOpacity onPress={() => setIsCountryModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#1F2937" />
+              {/* Facebook Login */}
+              <TouchableOpacity
+                style={styles.socialButton}
+                activeOpacity={0.7}
+                onPress={() => handleSocialAuth('facebook')}
+                disabled={isFormBusy}
+              >
+                {socialLoading === 'facebook' ? (
+                  <ActivityIndicator size="small" color="#1877F2" />
+                ) : (
+                  <>
+                    <Ionicons name="logo-facebook" size={21} color="#1877F2" style={styles.socialIcon} />
+                    <Text style={styles.socialButtonText}>Facebook</Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
-            <FlatList
-              data={COUNTRIES}
-              keyExtractor={(item) => item.code}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.countryItem,
-                    selectedCountry.code === item.code && styles.countryItemSelected,
-                  ]}
-                  onPress={() => {
-                    setSelectedCountry(item);
-                    setIsCountryModalVisible(false);
-                  }}
-                >
-                  <Text style={styles.countryFlag}>{item.flag}</Text>
-                  <Text style={styles.countryName}>{item.name}</Text>
-                  <Text style={styles.countryDialCode}>{item.dialCode}</Text>
-                </TouchableOpacity>
-              )}
-            />
           </View>
-        </View>
-      </Modal>
+
+          {/* FOOTER SWITCH */}
+          <View style={styles.footerContainer}>
+            <Text style={styles.footerText}>
+              {mode === 'login' ? 'Chưa có tài khoản?' : 'Đã có tài khoản?'}
+            </Text>
+            <TouchableOpacity
+              onPress={() => resetForm(mode === 'login' ? 'register' : 'login')}
+              disabled={isFormBusy}
+            >
+              <Text style={styles.footerLink}>
+                {mode === 'login' ? ' Đăng ký ngay' : ' Đăng nhập ngay'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -276,259 +391,213 @@ export const AuthScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 24,
-    justifyContent: 'space-between',
+    paddingHorizontal: 22,
+    paddingTop: 24,
+    paddingBottom: 28,
   },
-  headerContainer: {
-    marginBottom: 36,
+  brandHeader: {
+    alignItems: 'center',
+    marginBottom: 20,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#111827',
-    letterSpacing: -0.3,
+  logoWrapper: {
+    marginBottom: 10,
+    padding: 10,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    shadowColor: '#00BDD6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  formContainer: {
+  brandTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.4,
+  },
+  brandSubtitle: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    marginTop: 4,
+    paddingHorizontal: 20,
+    lineHeight: 18,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#E2E8F0',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 18,
+  },
+  tabButton: {
     flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9,
+  },
+  tabButtonActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  tabTextActive: {
+    color: '#00BDD6',
+    fontWeight: '700',
+  },
+  formCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 20,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  inputGroup: {
+    marginBottom: 14,
   },
   inputLabel: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: 10,
-  },
-  phoneInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  countryPickerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    height: 52,
-    paddingHorizontal: 12,
-    marginRight: 10,
-    gap: 6,
-  },
-  flagText: {
-    fontSize: 22,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#334155',
+    marginBottom: 6,
   },
   inputBox: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    height: 52,
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1.2,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    height: 50,
+    paddingHorizontal: 12,
   },
   inputBoxError: {
     borderColor: '#EF4444',
     backgroundColor: '#FEF2F2',
   },
+  inputIcon: {
+    marginRight: 10,
+  },
   textInput: {
-    fontSize: 16,
-    color: '#111827',
+    flex: 1,
+    fontSize: 14.5,
+    color: '#0F172A',
+    paddingVertical: 0,
+  },
+  eyeButton: {
+    padding: 6,
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
-    marginTop: 4,
-    gap: 6,
+    marginTop: 2,
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 8,
   },
   errorText: {
-    fontSize: 13,
+    flex: 1,
+    fontSize: 12.5,
     color: '#EF4444',
+    fontWeight: '500',
   },
-  continueButton: {
-    backgroundColor: '#00BDD6', // Exact Cyan/Teal from Screenshot 2
-    height: 52,
-    borderRadius: 8,
+  primaryButton: {
+    backgroundColor: '#00BDD6',
+    height: 50,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 12,
+    marginTop: 6,
+    shadowColor: '#00BDD6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 3,
   },
   buttonDisabled: {
     opacity: 0.65,
   },
-  continueButtonText: {
+  primaryButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 15.5,
     fontWeight: '700',
+    letterSpacing: 0.2,
   },
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20,
+    marginVertical: 18,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#E2E8F0',
   },
   dividerText: {
-    marginHorizontal: 14,
-    color: '#6B7280',
-    fontSize: 14,
+    marginHorizontal: 12,
+    color: '#94A3B8',
+    fontSize: 12.5,
+    fontWeight: '500',
   },
-  appleButton: {
+  socialRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  socialButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 50,
-    borderWidth: 1,
-    borderColor: '#374151',
-    borderRadius: 8,
-    marginBottom: 12,
+    height: 46,
+    borderWidth: 1.2,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
     backgroundColor: '#FFFFFF',
-  },
-  appleButtonText: {
-    color: '#1F2937',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  facebookButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 50,
-    borderWidth: 1,
-    borderColor: '#1877F2',
-    borderRadius: 8,
-    marginBottom: 12,
-    backgroundColor: '#FFFFFF',
-  },
-  facebookButtonText: {
-    color: '#1877F2',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  googleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 50,
-    borderWidth: 1,
-    borderColor: '#EA4335',
-    borderRadius: 8,
-    marginBottom: 16,
-    backgroundColor: '#FFFFFF',
-  },
-  googleButtonText: {
-    color: '#EA4335',
-    fontSize: 15,
-    fontWeight: '600',
   },
   socialIcon: {
-    marginRight: 10,
+    marginRight: 8,
   },
-  termsContainer: {
-    alignItems: 'center',
-    marginTop: 4,
-    marginBottom: 16,
-    paddingHorizontal: 10,
-  },
-  termsText: {
-    fontSize: 12,
-    color: '#6B7280',
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  termsLink: {
-    textDecorationLine: 'underline',
-    color: '#4B5563',
-  },
-  guestButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: '#F0FDFA',
-    borderWidth: 1,
-    borderColor: '#CCFBF1',
-    marginTop: 6,
-  },
-  guestButtonText: {
-    color: '#0D9488',
+  socialButtonText: {
     fontSize: 14,
     fontWeight: '600',
+    color: '#334155',
   },
   footerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 16,
+    marginTop: 22,
+    paddingBottom: 10,
   },
   footerText: {
-    fontSize: 15,
-    color: '#4B5563',
+    fontSize: 14,
+    color: '#64748B',
   },
   footerLink: {
-    fontSize: 15,
+    fontSize: 14,
     color: '#00BDD6',
     fontWeight: '700',
-    textDecorationLine: 'underline',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: '60%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  countryItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F9FAFB',
-  },
-  countryItemSelected: {
-    backgroundColor: '#F0FDFA',
-  },
-  countryFlag: {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  countryName: {
-    flex: 1,
-    fontSize: 16,
-    color: '#1F2937',
-  },
-  countryDialCode: {
-    fontSize: 15,
-    color: '#6B7280',
-    fontWeight: '500',
   },
 });

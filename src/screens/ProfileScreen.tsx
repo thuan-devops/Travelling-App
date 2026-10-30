@@ -11,6 +11,7 @@ import {
   Modal,
   TextInput,
   Switch,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -23,13 +24,14 @@ interface ProfileScreenProps {
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
 
   const [displayName, setDisplayName] = useState<string>(user?.name || 'Nguyễn Văn Du Khách');
   const [phoneNumber, setPhoneNumber] = useState<string>(user?.phoneNumber || '+84 987 654 321');
   const [email, setEmail] = useState<string>(user?.email || 'traveler@gmail.com');
 
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState<boolean>(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
   const [currency, setCurrency] = useState<'USD' | 'VND'>('USD');
 
@@ -38,19 +40,30 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange }) => 
     Alert.alert('Thành công', 'Thông tin cá nhân của bạn đã được cập nhật.');
   };
 
-  const handleLogout = () => {
-    Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất không?', [
-      { text: 'Hủy', style: 'cancel' },
-      { text: 'Đăng xuất', style: 'destructive', onPress: () => logout() },
-    ]);
+  const handleConfirmLogout = async () => {
+    setIsLogoutModalOpen(false);
+    try {
+      await logout();
+    } catch {
+      Alert.alert('Lỗi', 'Không thể đăng xuất. Vui lòng thử lại.');
+    }
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
 
+      {/* Header with Quick Logout */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Hồ sơ cá nhân</Text>
+        <TouchableOpacity
+          style={styles.headerLogoutBtn}
+          onPress={() => setIsLogoutModalOpen(true)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="log-out-outline" size={18} color="#EF4444" style={{ marginRight: 4 }} />
+          <Text style={styles.headerLogoutText}>Đăng xuất</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -66,7 +79,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange }) => 
           />
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{displayName}</Text>
-            <Text style={styles.userSub}>{phoneNumber}</Text>
+            <Text style={styles.userSub}>{user?.email || phoneNumber}</Text>
             <TouchableOpacity
               style={styles.editBadge}
               onPress={() => setIsEditModalOpen(true)}
@@ -126,14 +139,62 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange }) => 
           </TouchableOpacity>
         </View>
 
-        {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        {/* Primary Logout Button */}
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={() => setIsLogoutModalOpen(true)}
+          activeOpacity={0.7}
+        >
           <Ionicons name="log-out-outline" size={20} color="#EF4444" style={{ marginRight: 8 }} />
-          <Text style={styles.logoutText}>Đăng xuất</Text>
+          <Text style={styles.logoutText}>Đăng xuất tài khoản</Text>
         </TouchableOpacity>
 
         <Text style={styles.versionText}>Travelling App v2.0 • Sẵn sàng cho mọi chuyến đi</Text>
       </ScrollView>
+
+      {/* LOGOUT CONFIRMATION MODAL (100% reliable across Web, iOS, Android) */}
+      <Modal
+        visible={isLogoutModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsLogoutModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmModalBox}>
+            <View style={styles.logoutIconCircle}>
+              <Ionicons name="log-out" size={32} color="#EF4444" />
+            </View>
+
+            <Text style={styles.confirmModalTitle}>Đăng xuất tài khoản</Text>
+            <Text style={styles.confirmModalMessage}>
+              Bạn có chắc chắn muốn đăng xuất không? Khi đăng nhập lại, bạn sẽ cần nhập lại tên đăng nhập và mật khẩu.
+            </Text>
+
+            <View style={styles.confirmModalBtnRow}>
+              <TouchableOpacity
+                style={styles.confirmCancelBtn}
+                onPress={() => setIsLogoutModalOpen(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.confirmCancelText}>Hủy</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.confirmLogoutBtn}
+                onPress={handleConfirmLogout}
+                activeOpacity={0.7}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.confirmLogoutText}>Đăng xuất</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Edit Profile Modal */}
       <Modal visible={isEditModalOpen} transparent animationType="slide" onRequestClose={() => setIsEditModalOpen(false)}>
@@ -195,6 +256,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
@@ -204,6 +268,21 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     color: '#111827',
+  },
+  headerLogoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+  },
+  headerLogoutText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#EF4444',
   },
   content: {
     paddingHorizontal: 20,
@@ -319,6 +398,73 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+  },
+  confirmModalBox: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  logoutIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  confirmModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  confirmModalMessage: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 22,
+  },
+  confirmModalBtnRow: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: 12,
+  },
+  confirmCancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmCancelText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4B5563',
+  },
+  confirmLogoutBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmLogoutText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   modalBox: {
     width: '100%',
