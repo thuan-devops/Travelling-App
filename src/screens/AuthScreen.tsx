@@ -40,6 +40,7 @@ export const AuthScreen: React.FC = () => {
 
   // Status & Feedback
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [successMessage, setSuccessMessage] = useState<string>('');
   const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null);
 
   const resetForm = (newMode: 'login' | 'register') => {
@@ -50,10 +51,12 @@ export const AuthScreen: React.FC = () => {
     setShowPassword(false);
     setShowConfirmPassword(false);
     setErrorMessage('');
+    setSuccessMessage('');
   };
 
   const handleLogin = async () => {
     setErrorMessage('');
+    setSuccessMessage('');
     const cleanUsername = username.trim();
 
     if (!cleanUsername) {
@@ -74,6 +77,7 @@ export const AuthScreen: React.FC = () => {
 
   const handleRegister = async () => {
     setErrorMessage('');
+    setSuccessMessage('');
     const cleanUsername = username.trim();
 
     if (!cleanUsername) {
@@ -99,7 +103,22 @@ export const AuthScreen: React.FC = () => {
 
     try {
       await register(cleanUsername, password);
-      Alert.alert('Thành công', 'Đăng ký tài khoản thành công! Đang chuyển vào ứng dụng...');
+
+      // Chuyển lại về màn hình đăng nhập và điền sẵn tài khoản vừa đăng ký
+      setMode('login');
+      setUsername(cleanUsername);
+      setPassword('');
+      setConfirmPassword('');
+      setShowPassword(false);
+      setShowConfirmPassword(false);
+      setErrorMessage('');
+      setSuccessMessage('Đăng ký tài khoản thành công! Vui lòng nhập mật khẩu để đăng nhập.');
+
+      Alert.alert(
+        'Đăng ký thành công',
+        `Tài khoản "${cleanUsername}" đã được đăng ký thành công! Vui lòng nhập mật khẩu để đăng nhập vào hệ thống.`,
+        [{ text: 'Đăng nhập ngay' }]
+      );
     } catch (err: any) {
       setErrorMessage(err.message || 'Đăng ký thất bại. Vui lòng thử lại.');
     }
@@ -108,6 +127,7 @@ export const AuthScreen: React.FC = () => {
   const handleSocialAuth = async (provider: 'google' | 'facebook') => {
     setSocialLoading(provider);
     setErrorMessage('');
+    setSuccessMessage('');
     try {
       await loginWithSocial(provider);
     } catch (err: any) {
@@ -219,6 +239,7 @@ export const AuthScreen: React.FC = () => {
                   onChangeText={(text) => {
                     setUsername(text);
                     if (errorMessage) setErrorMessage('');
+                    if (successMessage) setSuccessMessage('');
                   }}
                   editable={!isFormBusy}
                 />
@@ -241,6 +262,7 @@ export const AuthScreen: React.FC = () => {
                   onChangeText={(text) => {
                     setPassword(text);
                     if (errorMessage) setErrorMessage('');
+                    if (successMessage) setSuccessMessage('');
                   }}
                   editable={!isFormBusy}
                 />
@@ -281,6 +303,7 @@ export const AuthScreen: React.FC = () => {
                     onChangeText={(text) => {
                       setConfirmPassword(text);
                       if (errorMessage) setErrorMessage('');
+                      if (successMessage) setSuccessMessage('');
                     }}
                     editable={!isFormBusy}
                   />
@@ -299,6 +322,14 @@ export const AuthScreen: React.FC = () => {
                 </View>
               </View>
             )}
+
+            {/* Success Message */}
+            {successMessage ? (
+              <View style={styles.successContainer}>
+                <Ionicons name="checkmark-circle" size={17} color="#10B981" />
+                <Text style={styles.successText}>{successMessage}</Text>
+              </View>
+            ) : null}
 
             {/* Error Message */}
             {errorMessage ? (
@@ -505,6 +536,25 @@ const styles = StyleSheet.create({
   },
   eyeButton: {
     padding: 6,
+  },
+  successContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    marginTop: 2,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 8,
+    gap: 8,
+  },
+  successText: {
+    flex: 1,
+    fontSize: 12.5,
+    color: '#065F46',
+    fontWeight: '500',
   },
   errorContainer: {
     flexDirection: 'row',

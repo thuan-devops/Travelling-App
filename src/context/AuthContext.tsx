@@ -57,8 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const newUser = await authService.register(username, password);
-      setUser(newUser);
-      await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newUser));
+      // Không tự động đăng nhập sau khi đăng ký, để người dùng quay lại màn hình đăng nhập
       return newUser;
     } finally {
       setIsLoading(false);
