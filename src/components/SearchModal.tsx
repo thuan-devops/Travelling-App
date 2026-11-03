@@ -90,8 +90,15 @@ export const SearchModal: React.FC<SearchModalProps> = ({
 
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
-      <SafeAreaView style={styles.safeArea}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={Platform.OS === 'web'}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.phoneContainer}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color="#374151" />
@@ -303,15 +310,37 @@ export const SearchModal: React.FC<SearchModalProps> = ({
           </TouchableOpacity>
         </View>
 
-      </SafeAreaView>
+          </View>
+        </SafeAreaView>
+      </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: Platform.OS === 'web' ? '#F3F4F6' : '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   safeArea: {
     flex: 1,
+    width: '100%',
+    maxWidth: 480,
     backgroundColor: '#FFFFFF',
+    alignSelf: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  phoneContainer: {
+    flex: 1,
+    position: 'relative',
+    backgroundColor: '#FFFFFF',
+    width: '100%',
   },
   header: {
     flexDirection: 'row',

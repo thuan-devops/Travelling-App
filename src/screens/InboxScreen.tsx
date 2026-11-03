@@ -197,8 +197,15 @@ export const InboxScreen: React.FC<InboxScreenProps> = ({ onTabChange }) => {
       </ScrollView>
 
       {/* CHAT MODAL */}
-      <Modal visible={!!activeChat} animationType="slide" onRequestClose={() => setActiveChat(null)}>
-        <SafeAreaView style={styles.chatSafeArea}>
+      <Modal
+        visible={!!activeChat}
+        animationType="slide"
+        transparent={Platform.OS === 'web'}
+        onRequestClose={() => setActiveChat(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <SafeAreaView style={styles.chatSafeArea}>
+            <View style={styles.phoneContainer}>
           <KeyboardAvoidingView
             style={{ flex: 1 }}
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -277,7 +284,9 @@ export const InboxScreen: React.FC<InboxScreenProps> = ({ onTabChange }) => {
               </TouchableOpacity>
             </View>
           </KeyboardAvoidingView>
-        </SafeAreaView>
+            </View>
+          </SafeAreaView>
+        </View>
       </Modal>
 
       <BottomTabBar activeTab="Inbox" onTabChange={onTabChange} />
@@ -356,9 +365,29 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   // Chat Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: Platform.OS === 'web' ? '#F3F4F6' : '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   chatSafeArea: {
     flex: 1,
+    width: '100%',
+    maxWidth: 480,
     backgroundColor: '#FFFFFF',
+    alignSelf: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  phoneContainer: {
+    flex: 1,
+    position: 'relative',
+    backgroundColor: '#FFFFFF',
+    width: '100%',
   },
   chatHeader: {
     flexDirection: 'row',
