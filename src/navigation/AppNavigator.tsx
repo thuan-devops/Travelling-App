@@ -19,6 +19,7 @@ import { FavoritesScreen } from '../screens/FavoritesScreen';
 import { BookingsScreen } from '../screens/BookingsScreen';
 import { InboxScreen } from '../screens/InboxScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { AiSupportScreen } from '../screens/AiSupportScreen';
 import { SearchModal } from '../components/SearchModal';
 
 export type ScreenName =
@@ -35,7 +36,8 @@ export type ScreenName =
   | 'FAVORITES'
   | 'BOOKINGS'
   | 'INBOX'
-  | 'PROFILE';
+  | 'PROFILE'
+  | 'AI_SUPPORT';
 
 export const AppNavigator: React.FC = () => {
   const { user } = useAuth();
@@ -65,6 +67,9 @@ export const AppNavigator: React.FC = () => {
   const [activeStay, setActiveStay] = useState<Accommodation>(INITIAL_ACCOMMODATIONS[0]);
   const [bookings, setBookings] = useState<BookingDetails[]>([]);
   const [lastBooking, setLastBooking] = useState<BookingDetails | null>(null);
+
+  // Track previous screen for AI Support back navigation
+  const [previousScreen, setPreviousScreen] = useState<ScreenName>('PROFILE');
 
   // Load persistent bookings on start
   React.useEffect(() => {
@@ -260,7 +265,24 @@ export const AppNavigator: React.FC = () => {
       )}
 
       {currentScreen === 'PROFILE' && (
-        <ProfileScreen onTabChange={handleTabChange} />
+        <ProfileScreen
+          onTabChange={handleTabChange}
+          onOpenAiSupport={() => {
+            setPreviousScreen('PROFILE');
+            setCurrentScreen('AI_SUPPORT');
+          }}
+        />
+      )}
+
+      {currentScreen === 'AI_SUPPORT' && (
+        <AiSupportScreen
+          onBack={() => setCurrentScreen(previousScreen)}
+          onSelectStay={(stay) => {
+            setActiveStay(stay);
+            setCurrentScreen('ROOM_DETAIL');
+          }}
+          onTabChange={handleTabChange}
+        />
       )}
 
       {/* MULTI-STEP SEARCH MODAL (Pages 4, 5, 6) */}

@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   Image,
   FlatList,
-  Alert,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -15,6 +16,13 @@ import { BookingDetails, BottomTabType } from '../types';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { mockApi } from '../api/mockApi';
 import { useCurrency } from '../context/CurrencyContext';
+
+const CANCELLATION_REASONS = [
+  'Thay đổi lịch trình cá nhân',
+  'Có việc bận đột xuất',
+  'Tìm được phòng/khách sạn phù hợp hơn',
+  'Thời tiết hoặc lý do khách quan không thuận lợi',
+];
 
 interface BookingsScreenProps {
   bookings: BookingDetails[];
@@ -35,6 +43,11 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
   const [activeTab, setActiveTab] = useState<'upcoming' | 'cancelled'>('upcoming');
   const [localBookings, setLocalBookings] = useState<BookingDetails[]>(bookings);
 
+  // Cancel modal state
+  const [cancelModalVisible, setCancelModalVisible] = useState<boolean>(false);
+  const [cancellingBooking, setCancellingBooking] = useState<BookingDetails | null>(null);
+  const [selectedReason, setSelectedReason] = useState<string>(CANCELLATION_REASONS[0]);
+
   React.useEffect(() => {
     setLocalBookings(bookings);
   }, [bookings]);
@@ -44,26 +57,22 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
 
   const displayedList = activeTab === 'upcoming' ? upcomingList : cancelledList;
 
-  const handleCancelBooking = (booking: BookingDetails) => {
-    Alert.alert(
-      'Hủy đặt phòng',
-      `Bạn có chắc chắn muốn hủy đặt phòng tại "${booking.accommodation.title}"?\n\nSố tiền ${formatPrice(booking.paidAmount)} sẽ được hoàn trả về thẻ của bạn trong vòng 3-5 ngày làm việc.`,
-      [
-        { text: 'Giữ lại', style: 'cancel' },
-        {
-          text: 'Xác nhận hủy',
-          style: 'destructive',
-          onPress: async () => {
-            const updated = await mockApi.cancelBooking(booking.bookingId);
-            setLocalBookings(updated);
-            if (onBookingsUpdated) {
-              onBookingsUpdated(updated);
-            }
-            Alert.alert('Thành công', 'Đã hủy đặt phòng thành công. Bạn có thể xem lại tại tab Lịch sử & Đã hủy.');
-          },
-        },
-      ]
-    );
+  const handleOpenCancelModal = (booking: BookingDetails) => {
+    setCancellingBooking(booking);
+    setSelectedReason(CANCELLATION_REASONS[0]);
+    setCancelModalVisible(true);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!cancellingBooking) return;
+
+    const updated = await mockApi.cancelBooking(cancellingBooking.bookingId, selectedReason);
+    setLocalBookings(updated);
+    if (onBookingsUpdated) {
+      onBookingsUpdated(updated);
+    }
+    setCancelModalVisible(false);
+    setCancellingBooking(null);
   };
 
   const renderBookingCard = ({ item }: { item: BookingDetails }) => {
@@ -152,15 +161,121 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
             {!isCancelled && (
               <TouchableOpacity
                 style={styles.cancelBtn}
-                onPress={() => handleCancelBooking(item)}
+                onPress={() => handleOpenCancelModal(item)}
               >
-                <Ionicons name="trash-outline" size={16} color="#EF4444" style={{ marginRight: 4 }} />
-                <Text style={styles.cancelBtnText}>Hủy phòng</Text>
+                <Ionicons name="close-circle-outline" size={16} color="#EF4444" style={{ marginRight: 4 }} />
+                <Text style={styles.cancelBtnText}>Hủy chuyến</Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
       </View>
+    );
+  };
+
+  // ============ CANCEL MODAL (like image 3) ============
+  const renderCancelModal = () => {
+    if (!cancellingBooking) return null;
+
+    const refundAmount = cancellingBooking.paidAmount;
+
+    return (
+      <Modal
+        visible={cancelModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCancelModalVisible(false)}
+      >
+        <View style={modalStyles.overlay}>
+          <View style={modalStyles.container}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Header */}
+              <View style={modalStyles.header}>
+                <View style={modalStyles.headerLeft}>
+                  <View style={modalStyles.warningIcon}>
+                    <Ionicons name="warning" size={22} color="#FFFFFF" />
+                  </View>
+                  <Text style={modalStyles.headerTitle}>Xác nhận hủy chuyến</Text>
+                </View>
+                <TouchableOpacity
+                  style={modalStyles.closeBtn}
+                  onPress={() => setCancelModalVisible(false)}
+                >
+                  <Ionicons name="close" size={22} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Booking Info Card */}
+              <View style={modalStyles.bookingInfoCard}>
+                <Text style={modalStyles.bookingTitle}>
+                  {cancellingBooking.accommodation.title}
+                </Text>
+                <Text style={modalStyles.bookingDates}>
+                  {cancellingBooking.checkIn} → {cancellingBooking.checkOut} ({cancellingBooking.nights} đêm)
+                </Text>
+
+                <View style={modalStyles.refundRow}>
+                  <Text style={modalStyles.refundLabel}>Số tiền hoàn trả (100%):</Text>
+                  <Text style={modalStyles.refundAmount}>{formatPrice(refundAmount)}</Text>
+                </View>
+              </View>
+
+              {/* Refund Notice */}
+              <View style={modalStyles.noticeBox}>
+                <Ionicons name="information-circle" size={18} color="#0284C7" style={{ marginRight: 8, marginTop: 2 }} />
+                <Text style={modalStyles.noticeText}>
+                  Số tiền đã thanh toán sẽ được hoàn trả đầy đủ vào phương thức thanh toán ban đầu trong vòng 3-5 ngày làm việc.
+                </Text>
+              </View>
+
+              {/* Cancellation Reasons */}
+              <Text style={modalStyles.reasonsTitle}>Vui lòng chọn lý do hủy:</Text>
+
+              {CANCELLATION_REASONS.map((reason, index) => {
+                const isSelected = selectedReason === reason;
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      modalStyles.reasonOption,
+                      isSelected && modalStyles.reasonOptionSelected,
+                    ]}
+                    onPress={() => setSelectedReason(reason)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[modalStyles.radioOuter, isSelected && modalStyles.radioOuterSelected]}>
+                      {isSelected && <View style={modalStyles.radioInner} />}
+                    </View>
+                    <Text style={[modalStyles.reasonText, isSelected && modalStyles.reasonTextSelected]}>
+                      {reason}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+
+              {/* Action Buttons */}
+              <View style={modalStyles.actionRow}>
+                <TouchableOpacity
+                  style={modalStyles.keepBtn}
+                  onPress={() => setCancelModalVisible(false)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={modalStyles.keepBtnText}>Giữ lại chuyến</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={modalStyles.confirmCancelBtn}
+                  onPress={handleConfirmCancel}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="trash-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                  <Text style={modalStyles.confirmCancelBtnText}>Xác nhận hủy</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     );
   };
 
@@ -180,7 +295,7 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
           onPress={() => setActiveTab('upcoming')}
         >
           <Text style={[styles.tabChipText, activeTab === 'upcoming' && styles.tabChipTextActive]}>
-            Sắp tới ({upcomingList.length})
+            Chuyến sắp tới ({upcomingList.length})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -188,7 +303,7 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
           onPress={() => setActiveTab('cancelled')}
         >
           <Text style={[styles.tabChipText, activeTab === 'cancelled' && styles.tabChipTextActive]}>
-            Lịch sử & Đã hủy ({cancelledList.length})
+            Chuyến đã hủy ({cancelledList.length})
           </Text>
         </TouchableOpacity>
       </View>
@@ -211,7 +326,7 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
             </Text>
             <Text style={styles.emptySub}>
               {activeTab === 'upcoming'
-                ? 'Hãy khám phá những điểm đến tuyệt vời và đặt phòng ngay!'
+                ? 'Hãy khám phá những điểm đến tuyệt vời và lên kế hoạch chuyến đi ngay!'
                 : 'Các chuyến đi bạn hủy sẽ được lưu giữ tại đây.'}
             </Text>
             {activeTab === 'upcoming' && (
@@ -223,11 +338,198 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
         )}
       />
 
+      {/* Cancel Booking Modal */}
+      {renderCancelModal()}
+
       <BottomTabBar activeTab="Bookings" onTabChange={onTabChange} />
     </SafeAreaView>
   );
 };
 
+// ============ MODAL STYLES ============
+const modalStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'flex-end',
+  },
+  container: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 32,
+    maxHeight: '85%',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  warningIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 19,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bookingInfoCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  bookingTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  bookingDates: {
+    fontSize: 13,
+    color: '#64748B',
+    marginBottom: 12,
+  },
+  refundRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  refundLabel: {
+    fontSize: 13,
+    color: '#10B981',
+    fontWeight: '600',
+  },
+  refundAmount: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#10B981',
+  },
+  noticeBox: {
+    flexDirection: 'row',
+    backgroundColor: '#EFF6FF',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    alignItems: 'flex-start',
+  },
+  noticeText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 19,
+    color: '#1E40AF',
+  },
+  reasonsTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  reasonOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+    marginBottom: 10,
+  },
+  reasonOptionSelected: {
+    borderColor: '#00BDD6',
+    backgroundColor: '#F0FDFA',
+  },
+  radioOuter: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  radioOuterSelected: {
+    borderColor: '#00BDD6',
+  },
+  radioInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#00BDD6',
+  },
+  reasonText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#374151',
+  },
+  reasonTextSelected: {
+    color: '#0F766E',
+    fontWeight: '600',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+  },
+  keepBtn: {
+    flex: 1,
+    paddingVertical: 15,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  keepBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#374151',
+  },
+  confirmCancelBtn: {
+    flex: 1.3,
+    flexDirection: 'row',
+    paddingVertical: 15,
+    borderRadius: 12,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmCancelBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+});
+
+// ============ SCREEN STYLES ============
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
