@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SearchFilterState } from '../types';
+import { useCurrency } from '../context/CurrencyContext';
 
 interface FilterModalProps {
   visible: boolean;
@@ -25,6 +26,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   onApply,
   initialFilters,
 }) => {
+  const { formatPrice } = useCurrency();
   const [minPrice, setMinPrice] = useState<number>(initialFilters?.minPrice || 10);
   const [maxPrice, setMaxPrice] = useState<number>(initialFilters?.maxPrice || 250);
 
@@ -124,12 +126,12 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             <View style={styles.priceBoxesRow}>
               <View style={styles.priceBox}>
                 <Text style={styles.priceLabel}>Tối thiểu</Text>
-                <Text style={styles.priceValue}>US${minPrice}</Text>
+                <Text style={styles.priceValue}>{formatPrice(minPrice)}</Text>
               </View>
               <Text style={styles.priceDivider}>—</Text>
               <View style={styles.priceBox}>
                 <Text style={styles.priceLabel}>Tối đa</Text>
-                <Text style={styles.priceValue}>US${maxPrice}</Text>
+                <Text style={styles.priceValue}>{formatPrice(maxPrice)}</Text>
               </View>
             </View>
           </View>

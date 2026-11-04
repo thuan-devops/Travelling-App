@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { BookingDetails } from '../types';
 import { generateAndShareReceiptPdf } from '../utils/pdfGenerator';
+import { useCurrency } from '../context/CurrencyContext';
 
 interface PaymentSuccessScreenProps {
   booking: BookingDetails;
@@ -22,6 +23,7 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
   booking,
   onViewBooking,
 }) => {
+  const { formatPrice } = useCurrency();
   const [isExporting, setIsExporting] = useState<boolean>(false);
 
   const handleDownloadReceipt = async () => {
@@ -85,7 +87,7 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
 
           <View style={styles.receiptRow}>
             <Text style={styles.receiptLabel}>Số tiền</Text>
-            <Text style={styles.receiptAmount}>${booking.paidAmount}</Text>
+            <Text style={styles.receiptAmount}>{formatPrice(booking.paidAmount)}</Text>
           </View>
 
           {/* GET PDF RECEIPT BUTTON */}

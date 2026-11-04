@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
+import { CurrencyProvider } from './src/context/CurrencyContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 
 export default function App() {
@@ -11,7 +12,9 @@ export default function App() {
       <View style={styles.container}>
         <StatusBar style="auto" />
         <AuthProvider>
-          <AppNavigator />
+          <CurrencyProvider>
+            <AppNavigator />
+          </CurrencyProvider>
         </AuthProvider>
       </View>
     </SafeAreaProvider>

@@ -18,6 +18,7 @@ import { StatusBar } from 'expo-status-bar';
 import { BottomTabType } from '../types';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 
 interface ProfileScreenProps {
   onTabChange: (tab: BottomTabType) => void;
@@ -25,6 +26,7 @@ interface ProfileScreenProps {
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange }) => {
   const { user, logout, isLoading } = useAuth();
+  const { currency, toggleCurrency } = useCurrency();
 
   const [displayName, setDisplayName] = useState<string>(user?.name || 'Nguyễn Văn Du Khách');
   const [phoneNumber, setPhoneNumber] = useState<string>(user?.phoneNumber || '+84 987 654 321');
@@ -33,7 +35,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange }) => 
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState<boolean>(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
-  const [currency, setCurrency] = useState<'USD' | 'VND'>('USD');
 
   const handleSaveProfile = () => {
     setIsEditModalOpen(false);
@@ -103,9 +104,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange }) => 
             <Text style={styles.menuText}>Đơn vị tiền tệ hiển thị</Text>
             <TouchableOpacity
               style={styles.currencyToggle}
-              onPress={() => setCurrency((c) => (c === 'USD' ? 'VND' : 'USD'))}
+              onPress={toggleCurrency}
+              activeOpacity={0.7}
             >
-              <Text style={styles.currencyText}>{currency} ($)</Text>
+              <Text style={styles.currencyText}>
+                {currency === 'USD' ? 'USD ($)' : 'VND (₫)'}
+              </Text>
             </TouchableOpacity>
           </View>
 

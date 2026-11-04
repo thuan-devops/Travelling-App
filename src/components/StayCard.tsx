@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Accommodation } from '../types';
+import { useCurrency } from '../context/CurrencyContext';
 
 interface StayCardProps {
   stay: Accommodation;
@@ -27,6 +28,7 @@ export const StayCard: React.FC<StayCardProps> = ({
   onToggleFavorite,
   onPress,
 }) => {
+  const { formatPrice } = useCurrency();
   const { width: windowWidth } = useWindowDimensions();
   // Clamped to 440px inside the 480px mobile frame (480 - 40 margin)
   const initialWidth = Math.max(windowWidth > 480 ? 440 : windowWidth - 40, 200);
@@ -276,7 +278,7 @@ export const StayCard: React.FC<StayCardProps> = ({
         <View style={styles.detailsRow2}>
           <Text style={styles.categoryText}>{stay.category}</Text>
           <Text style={styles.priceContainer}>
-            <Text style={styles.priceAmount}>${stay.pricePerNight}</Text>
+            <Text style={styles.priceAmount}>{formatPrice(stay.pricePerNight)}</Text>
             <Text style={styles.priceUnit}>/đêm</Text>
           </Text>
         </View>

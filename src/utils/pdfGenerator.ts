@@ -1,16 +1,31 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Platform, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BookingDetails } from '../types';
+import { USD_TO_VND_RATE } from '../context/CurrencyContext';
 
 export const generateAndShareReceiptPdf = async (booking: BookingDetails): Promise<void> => {
+  let isVnd = false;
+  try {
+    const cur = await AsyncStorage.getItem('@travelling_app_currency');
+    isVnd = cur === 'VND';
+  } catch {}
+
+  const formatMoney = (usd: number) => {
+    if (isVnd) {
+      return `${Math.round(usd * USD_TO_VND_RATE).toLocaleString('vi-VN')} ₫`;
+    }
+    return `$${usd}`;
+  };
+
   const feesHtml = booking.fees && booking.fees.length > 0
     ? booking.fees
         .map(
           (fee) => `
           <div class="row">
             <span>${fee.label}</span>
-            <span>$${fee.amount}</span>
+            <span>${formatMoney(fee.amount)}</span>
           </div>`
         )
         .join('')
@@ -174,13 +189,13 @@ export const generateAndShareReceiptPdf = async (booking: BookingDetails): Promi
       <div class="section-title">Chi tiết thanh toán</div>
       <div class="pricing-table">
         <div class="row">
-          <span>Tiền phòng ($${booking.accommodation.pricePerNight} x ${booking.nights} đêm)</span>
-          <span>$${booking.roomTotal}</span>
+          <span>Tiền phòng (${formatMoney(booking.accommodation.pricePerNight)} x ${booking.nights} đêm)</span>
+          <span>${formatMoney(booking.roomTotal)}</span>
         </div>
         ${feesHtml}
         <div class="total-row">
           <span>Tổng số tiền đã thanh toán</span>
-          <span>$${booking.paidAmount} USD</span>
+          <span>${formatMoney(booking.paidAmount)}</span>
         </div>
       </div>
 

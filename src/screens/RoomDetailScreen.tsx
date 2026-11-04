@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { Accommodation, ReviewItem } from '../types';
 import { getAmenityIcon, mockApi } from '../api/mockApi';
+import { useCurrency } from '../context/CurrencyContext';
 
 interface RoomDetailScreenProps {
   stay: Accommodation;
@@ -39,6 +40,7 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
   onOpenDescription,
   onBookNow,
 }) => {
+  const { formatPrice } = useCurrency();
   const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
   const scrollViewRef = useRef<any>(null);
   const heroWidth = Math.min(Dimensions.get('window').width, 480);
@@ -495,7 +497,7 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
         <View>
           <Text style={styles.fromPriceLabel}>Giá từ</Text>
           <Text style={styles.bottomPrice}>
-            ${stay.pricePerNight}
+            {formatPrice(stay.pricePerNight)}
             <Text style={styles.fromPriceLabel}> /đêm</Text>
           </Text>
         </View>

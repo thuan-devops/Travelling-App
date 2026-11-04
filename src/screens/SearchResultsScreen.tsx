@@ -16,6 +16,7 @@ import { Accommodation, BottomTabType, SearchFilterState } from '../types';
 import { mockApi } from '../api/mockApi';
 import { FilterModal } from '../components/FilterModal';
 import { BottomTabBar } from '../components/BottomTabBar';
+import { useCurrency } from '../context/CurrencyContext';
 
 interface SearchResultsScreenProps {
   filters: SearchFilterState;
@@ -32,6 +33,7 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
   onTabChange,
   onBackToHome,
 }) => {
+  const { formatPrice } = useCurrency();
   const [stays, setStays] = useState<Accommodation[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [presentTotalPrice, setPresentTotalPrice] = useState<boolean>(true);
@@ -115,7 +117,7 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
               <Text style={styles.bedroomText}>{item.bedrooms || 1} phòng ngủ</Text>
             </View>
             <Text style={styles.priceText}>
-              <Text style={styles.priceBold}>${displayPrice}</Text>
+              <Text style={styles.priceBold}>{formatPrice(displayPrice)}</Text>
               /đêm
             </Text>
           </View>

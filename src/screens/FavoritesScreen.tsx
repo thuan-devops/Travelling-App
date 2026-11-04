@@ -14,6 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Accommodation, BottomTabType } from '../types';
 import { mockApi } from '../api/mockApi';
 import { BottomTabBar } from '../components/BottomTabBar';
+import { useCurrency } from '../context/CurrencyContext';
 
 interface FavoritesScreenProps {
   onBack: () => void;
@@ -26,6 +27,7 @@ export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({
   onSelectStay,
   onTabChange,
 }) => {
+  const { formatPrice } = useCurrency();
   const [favoriteStays, setFavoriteStays] = useState<Accommodation[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -88,7 +90,7 @@ export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({
             <Text style={styles.bedroomText}>{item.bedrooms || 1} phòng ngủ</Text>
           </View>
           <Text style={styles.priceText}>
-            <Text style={styles.priceBold}>${item.pricePerNight}</Text>
+            <Text style={styles.priceBold}>{formatPrice(item.pricePerNight)}</Text>
             /đêm
           </Text>
         </View>

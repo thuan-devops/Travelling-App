@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { Accommodation, BookingDetails, SearchFilterState } from '../types';
 import { CalendarPicker, DateRange } from '../components/CalendarPicker';
+import { useCurrency } from '../context/CurrencyContext';
 
 interface CheckoutScreenProps {
   stay: Accommodation;
@@ -27,6 +28,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
   onBack,
   onConfirmPayment,
 }) => {
+  const { formatPrice, currency } = useCurrency();
   const [paymentOption, setPaymentOption] = useState<'full' | 'part'>('full');
 
   // Dates state
@@ -103,7 +105,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
         <View style={styles.summaryCard}>
           <View style={styles.summaryInfo}>
             <Text style={styles.summaryPrice}>
-              <Text style={styles.boldPrice}>${pricePerNight}</Text>/đêm
+              <Text style={styles.boldPrice}>{formatPrice(pricePerNight)}</Text>/đêm
             </Text>
             <Text style={styles.summaryTitle} numberOfLines={1}>{stay.title}</Text>
             <View style={styles.ratingRow}>
@@ -167,7 +169,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
           <View style={styles.paymentOptionText}>
             <Text style={styles.paymentOptionTitle}>Thanh toán toàn bộ</Text>
             <Text style={styles.paymentOptionDesc}>
-              Thanh toán ${totalAmount} ngay để hoàn tất đặt chỗ.
+              Thanh toán {formatPrice(totalAmount)} ngay để hoàn tất đặt chỗ.
             </Text>
           </View>
           <View style={styles.radioOuter}>
@@ -183,7 +185,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
           <View style={styles.paymentOptionText}>
             <Text style={styles.paymentOptionTitle}>Thanh toán một phần</Text>
             <Text style={styles.paymentOptionDesc}>
-              Thanh toán trước ${Math.round(totalAmount / 2)}, phần còn lại thanh toán sau khi nhận phòng.
+              Thanh toán trước {formatPrice(Math.round(totalAmount / 2))}, phần còn lại thanh toán sau khi nhận phòng.
             </Text>
           </View>
           <View style={styles.radioOuter}>
@@ -197,30 +199,30 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
         <Text style={styles.sectionTitle}>Chi tiết giá</Text>
 
         <View style={styles.priceRow}>
-          <Text style={styles.priceItemLabel}>${pricePerNight} x {nights} đêm</Text>
-          <Text style={styles.priceItemValue}>${roomSubtotal}</Text>
+          <Text style={styles.priceItemLabel}>{formatPrice(pricePerNight)} x {nights} đêm</Text>
+          <Text style={styles.priceItemValue}>{formatPrice(roomSubtotal)}</Text>
         </View>
 
         <View style={styles.priceRow}>
           <Text style={styles.priceItemLabel}>Phí chèo thuyền Kayak</Text>
-          <Text style={styles.priceItemValue}>${kayakFee}</Text>
+          <Text style={styles.priceItemValue}>{formatPrice(kayakFee)}</Text>
         </View>
 
         <View style={styles.priceRow}>
           <Text style={styles.priceItemLabel}>Phí đỗ xe</Text>
-          <Text style={styles.priceItemValue}>${parkingFee}</Text>
+          <Text style={styles.priceItemValue}>{formatPrice(parkingFee)}</Text>
         </View>
 
         <View style={[styles.priceRow, { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#F3F4F6' }]}>
-          <Text style={styles.totalLabel}>Tổng cộng (USD)</Text>
-          <Text style={styles.totalValue}>${totalAmount}</Text>
+          <Text style={styles.totalLabel}>Tổng cộng ({currency})</Text>
+          <Text style={styles.totalValue}>{formatPrice(totalAmount)}</Text>
         </View>
       </ScrollView>
 
       {/* FOOTER BUTTON */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.bookNowBtn} activeOpacity={0.8} onPress={handleBookNow}>
-          <Text style={styles.bookNowBtnText}>Đặt phòng ngay • ${totalAmount}</Text>
+          <Text style={styles.bookNowBtnText}>Đặt phòng ngay • {formatPrice(totalAmount)}</Text>
         </TouchableOpacity>
       </View>
 

@@ -14,6 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import { BookingDetails, BottomTabType } from '../types';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { mockApi } from '../api/mockApi';
+import { useCurrency } from '../context/CurrencyContext';
 
 interface BookingsScreenProps {
   bookings: BookingDetails[];
@@ -30,6 +31,7 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
   onTabChange,
   onBookingsUpdated,
 }) => {
+  const { formatPrice } = useCurrency();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'cancelled'>('upcoming');
   const [localBookings, setLocalBookings] = useState<BookingDetails[]>(bookings);
 
@@ -45,7 +47,7 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
   const handleCancelBooking = (booking: BookingDetails) => {
     Alert.alert(
       'Hủy đặt phòng',
-      `Bạn có chắc chắn muốn hủy đặt phòng tại "${booking.accommodation.title}"?\n\nSố tiền $${booking.paidAmount} sẽ được hoàn trả về thẻ của bạn trong vòng 3-5 ngày làm việc.`,
+      `Bạn có chắc chắn muốn hủy đặt phòng tại "${booking.accommodation.title}"?\n\nSố tiền ${formatPrice(booking.paidAmount)} sẽ được hoàn trả về thẻ của bạn trong vòng 3-5 ngày làm việc.`,
       [
         { text: 'Giữ lại', style: 'cancel' },
         {
@@ -122,7 +124,7 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={styles.totalLabel}>{isCancelled ? 'Đã hoàn tiền' : 'Đã thanh toán'}</Text>
               <Text style={[styles.totalAmount, isCancelled && { color: '#9CA3AF', textDecorationLine: 'line-through' }]}>
-                ${item.paidAmount}
+                {formatPrice(item.paidAmount)}
               </Text>
             </View>
           </View>
