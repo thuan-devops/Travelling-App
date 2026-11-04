@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { BookingDetails, BottomTabType } from '../types';
+import { Accommodation, BookingDetails, BottomTabType } from '../types';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { mockApi } from '../api/mockApi';
 import { useCurrency } from '../context/CurrencyContext';
@@ -28,6 +28,7 @@ interface BookingsScreenProps {
   bookings: BookingDetails[];
   onExplore: () => void;
   onSelectBookingDetail: (booking: BookingDetails) => void;
+  onRebook?: (stay: Accommodation) => void;
   onTabChange: (tab: BottomTabType) => void;
   onBookingsUpdated?: (updated: BookingDetails[]) => void;
 }
@@ -36,6 +37,7 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
   bookings = [],
   onExplore,
   onSelectBookingDetail,
+  onRebook,
   onTabChange,
   onBookingsUpdated,
 }) => {
@@ -73,6 +75,7 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
     }
     setCancelModalVisible(false);
     setCancellingBooking(null);
+    setActiveTab('cancelled');
   };
 
   const renderBookingCard = ({ item }: { item: BookingDetails }) => {
@@ -123,6 +126,26 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
             </View>
           </View>
 
+          {/* Cancellation Info box if trip is cancelled */}
+          {isCancelled && (
+            <View style={styles.cancelledInfoBox}>
+              <View style={styles.cancelledInfoRow}>
+                <Ionicons name="information-circle" size={15} color="#DC2626" style={{ marginRight: 6 }} />
+                <Text style={styles.cancelledReasonText}>
+                  Lý do hủy:{' '}
+                  <Text style={styles.cancelledReasonBold}>
+                    {item.cancellationReason || 'Thay đổi lịch trình cá nhân'}
+                  </Text>
+                </Text>
+              </View>
+              {item.cancelledAt && (
+                <Text style={styles.cancelledDateText}>
+                  Thời gian hủy: {item.cancelledAt}
+                </Text>
+              )}
+            </View>
+          )}
+
           <View style={styles.divider} />
 
           <View style={styles.totalRow}>
@@ -158,7 +181,16 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
               <Text style={styles.viewDetailBtnText}>Biên lai & Xuất PDF</Text>
             </TouchableOpacity>
 
-            {!isCancelled && (
+            {isCancelled ? (
+              <TouchableOpacity
+                style={styles.rebookBtn}
+                onPress={() => (onRebook ? onRebook(item.accommodation) : onExplore())}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="refresh-outline" size={16} color="#00BDD6" style={{ marginRight: 4 }} />
+                <Text style={styles.rebookBtnText}>Đặt lại chuyến này</Text>
+              </TouchableOpacity>
+            ) : (
               <TouchableOpacity
                 style={styles.cancelBtn}
                 onPress={() => handleOpenCancelModal(item)}
@@ -666,6 +698,32 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#0F172A',
   },
+  cancelledInfoBox: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+  },
+  cancelledInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cancelledReasonText: {
+    fontSize: 12.5,
+    color: '#991B1B',
+  },
+  cancelledReasonBold: {
+    fontWeight: '700',
+    color: '#B91C1C',
+  },
+  cancelledDateText: {
+    fontSize: 11,
+    color: '#6B7280',
+    marginTop: 4,
+    marginLeft: 21,
+  },
   divider: {
     height: 1,
     backgroundColor: '#F1F5F9',
@@ -707,7 +765,23 @@ const styles = StyleSheet.create({
   },
   viewDetailBtnText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 13.5,
+    fontWeight: '700',
+  },
+  rebookBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#00BDD6',
+    backgroundColor: '#F0FDFA',
+  },
+  rebookBtnText: {
+    color: '#00BDD6',
+    fontSize: 13,
     fontWeight: '700',
   },
   cancelBtn: {

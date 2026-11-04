@@ -81,7 +81,6 @@ export const AppNavigator: React.FC = () => {
     });
   }, []);
 
-
   React.useEffect(() => {
     if (!user) {
       setCurrentScreen('HOME');
@@ -254,11 +253,14 @@ export const AppNavigator: React.FC = () => {
             setLastBooking(booking);
             setCurrentScreen('PAYMENT_SUCCESS');
           }}
+          onRebook={(stay) => {
+            setActiveStay(stay);
+            setCurrentScreen('ROOM_DETAIL');
+          }}
           onTabChange={handleTabChange}
           onBookingsUpdated={setBookings}
         />
       )}
-
 
       {currentScreen === 'INBOX' && (
         <InboxScreen onTabChange={handleTabChange} />
@@ -280,6 +282,16 @@ export const AppNavigator: React.FC = () => {
           onSelectStay={(stay) => {
             setActiveStay(stay);
             setCurrentScreen('ROOM_DETAIL');
+          }}
+          onApplyFiltersToSearch={(filters) => {
+            setSearchFilters((prev) => ({
+              ...prev,
+              destination: filters.destination || prev.destination,
+              maxPrice: filters.maxPrice || prev.maxPrice,
+              minPrice: filters.minPrice || prev.minPrice,
+              facilities: filters.amenities && filters.amenities.length > 0 ? filters.amenities : prev.facilities,
+            }));
+            setCurrentScreen('SEARCH_RESULTS');
           }}
           onTabChange={handleTabChange}
         />

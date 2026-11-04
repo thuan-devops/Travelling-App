@@ -1,5 +1,14 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Accommodation } from '../types';
 import { mockApi, INITIAL_ACCOMMODATIONS } from '../api/mockApi';
+
+export interface AiFilterCriteria {
+  destination?: string;
+  maxPrice?: number;
+  minPrice?: number;
+  amenities?: string[];
+  category?: 'Beach' | 'Mountain' | 'Camping' | 'City' | 'Villa';
+}
 
 export interface AiChatMessage {
   id: string;
@@ -8,20 +17,18 @@ export interface AiChatMessage {
   time: string;
   recommendedStays?: Accommodation[];
   intent?: 'search_stays' | 'support_faq' | 'general_chat';
+  criteria?: AiFilterCriteria;
+  followUps?: string[];
 }
 
 interface GeminiExtractionResult {
   reply: string;
   intent: 'search_stays' | 'support_faq' | 'general_chat';
-  criteria?: {
-    destination?: string;
-    maxPrice?: number;
-    minPrice?: number;
-    amenities?: string[];
-    category?: 'Beach' | 'Mountain' | 'Camping' | 'City' | 'Villa';
-  };
+  criteria?: AiFilterCriteria;
   suggestedStayIds?: string[];
 }
+
+const AI_CHAT_STORAGE_KEY = '@travelling_app_ai_chat_history';
 
 const GEMINI_API_KEY =
   process.env.EXPO_PUBLIC_GEMINI_API_KEY ||
@@ -39,7 +46,7 @@ const GEMINI_MODELS = [
 class AiService {
   /**
    * Send user message to Gemini and return structured assistant response
-   * with matched real accommodation recommendations.
+   * with matched real accommodation recommendations and search criteria.
    */
   async sendMessage(
     userText: string,
@@ -48,6 +55,8 @@ class AiService {
     reply: string;
     recommendedStays: Accommodation[];
     intent: 'search_stays' | 'support_faq' | 'general_chat';
+    criteria?: AiFilterCriteria;
+    followUps?: string[];
   }> {
     // 1. Fetch available accommodations for context
     let allStays: Accommodation[] = [];
@@ -74,7 +83,7 @@ class AiService {
 Bạn là "Trợ lý Du lịch AI" (AI Travel Assistant) thông minh của ứng dụng Travelling App.
 Nhiệm vụ của bạn là hỗ trợ khách hàng bằng tiếng Việt một cách thân thiện, chu đáo và nhiệt tình:
 1. Tư vấn lịch trình, gợi ý chỗ nghỉ theo ngôn ngữ tự nhiên (ví dụ: "Tìm chỗ nghỉ ở Bali có hồ bơi dưới $50", "Phòng view đẹp ở Đà Lạt cho 2 người").
-2. Giải đáp thắc mắc về chính sách đặt phòng, hủy chuyến và hoàn tiền:
+2. Giải đáp thắc mắc về chính sách đặt chỗ, hủy chuyến và hoàn tiền:
    - Chính sách hủy chuyến: Khách có thể hủy chuyến trực tiếp tại tab "Chuyến đi của tôi" bất cứ lúc nào trước giờ nhận phòng.
    - Tiền thanh toán sẽ được hoàn trả 100% về phương thức thanh toán ban đầu trong vòng 3-5 ngày làm việc.
 3. Khi khách có nhu cầu tìm hoặc hỏi về chỗ nghỉ:
@@ -119,10 +128,14 @@ QUAN TRỌNG: Bạn PHẢI trả về duy nhất một chuỗi JSON hợp lệ (
         matchedStays = this.heuristicSearch(allStays, userText);
       }
 
+      const followUps = this.generateFollowUps(parsedData.intent, userText, parsedData.criteria);
+
       return {
         reply: parsedData.reply || 'Dưới đây là một số gợi ý chỗ nghỉ phù hợp với yêu cầu của bạn:',
         recommendedStays: matchedStays.slice(0, 4),
         intent: parsedData.intent || 'general_chat',
+        criteria: parsedData.criteria,
+        followUps,
       };
     } catch (err) {
       console.warn('Gemini API call failed, using intelligent fallback parser:', err);
@@ -138,6 +151,10 @@ QUAN TRỌNG: Bạn PHẢI trả về duy nhất một chuỗi JSON hợp lệ (
     history: { role: 'user' | 'model'; text: string }[],
     systemPrompt: string
   ): Promise<GeminiExtractionResult> {
+    if (!GEMINI_API_KEY) {
+      throw new Error('No GEMINI_API_KEY provided');
+    }
+
     let lastError: any = null;
 
     for (const model of GEMINI_MODELS) {
@@ -294,6 +311,35 @@ QUAN TRỌNG: Bạn PHẢI trả về duy nhất một chuỗi JSON hợp lệ (
     });
   }
 
+  private generateFollowUps(
+    intent?: string,
+    userText?: string,
+    criteria?: AiFilterCriteria
+  ): string[] {
+    if (intent === 'search_stays') {
+      const dest = criteria?.destination || '';
+      return [
+        dest ? `Xem thêm các chỗ nghỉ khác tại ${dest}` : 'Xem thêm chỗ nghỉ có giá tốt nhất',
+        'Chỗ nào có hồ bơi và bữa sáng miễn phí?',
+        'Chính sách hủy chuyến và hoàn tiền của app',
+      ];
+    }
+
+    if (intent === 'support_faq') {
+      return [
+        'Làm cách nào để hủy chuyến trên app?',
+        'Thời gian nhận lại tiền hoàn trả là bao lâu?',
+        'Gợi ý cho mình các chỗ nghỉ hot ở Đà Lạt',
+      ];
+    }
+
+    return [
+      'Tìm chỗ nghỉ ở Bali có hồ bơi dưới 60 USD',
+      'Gợi ý phòng view núi lãng mạn ở Đà Lạt',
+      'Chính sách hủy chuyến & hoàn tiền ra sao?',
+    ];
+  }
+
   /**
    * Fallback handler providing intelligent responses if offline
    */
@@ -304,6 +350,8 @@ QUAN TRỌNG: Bạn PHẢI trả về duy nhất một chuỗi JSON hợp lệ (
     reply: string;
     recommendedStays: Accommodation[];
     intent: 'search_stays' | 'support_faq' | 'general_chat';
+    criteria?: AiFilterCriteria;
+    followUps?: string[];
   } {
     const q = userText.toLowerCase();
 
@@ -313,10 +361,15 @@ QUAN TRỌNG: Bạn PHẢI trả về duy nhất một chuỗi JSON hợp lệ (
         reply:
           'Chính sách hủy chuyến của Travelling App rất linh hoạt:\n\n' +
           '• Bạn có thể hủy chuyến trực tiếp trong mục "Chuyến đi của tôi" bất cứ lúc nào trước giờ nhận phòng.\n' +
-          '• Số tiền đã thanh toán sẽ được hoàn trả đầy đủ 100% vào tài khoản/thẻ ban đầu của bạn trong vòng 3-5 ngày làm việc.\n' +
+          '• Số tiền đã thanh toán sẽ được hoàn trả đầy đủ 100% vào phương thức ban đầu trong vòng 3-5 ngày làm việc.\n' +
           '• Bạn chỉ cần chọn lý do hủy (ví dụ: thay đổi lịch trình, việc bận...) và bấm Xác nhận hủy chuyến.',
         recommendedStays: [],
         intent: 'support_faq',
+        followUps: [
+          'Làm sao để xem chuyến đi đã hủy?',
+          'Gợi ý chỗ nghỉ lãng mạn ở Đà Lạt',
+          'Tìm phòng có hồ bơi dưới 50 USD',
+        ],
       };
     }
 
@@ -329,16 +382,28 @@ QUAN TRỌNG: Bạn PHẢI trả về duy nhất một chuỗi JSON hợp lệ (
           '• Sau khi thanh toán, hóa đơn và biên lai PDF điện tử sẽ được gửi ngay về mục Chuyến đi.',
         recommendedStays: [],
         intent: 'support_faq',
+        followUps: [
+          'Chính sách hủy chuyến & hoàn tiền',
+          'Tìm villa nghỉ dưỡng view biển',
+        ],
       };
     }
 
     // 2. Search query matches
     const matched = this.heuristicSearch(allStays, userText);
+    const dest = q.includes('bali') ? 'Bali' : q.includes('đà lạt') ? 'Đà Lạt' : q.includes('phú quốc') ? 'Phú Quốc' : undefined;
+    const criteria: AiFilterCriteria = {
+      destination: dest,
+      amenities: q.includes('hồ bơi') ? ['Hồ bơi'] : undefined,
+    };
+
     if (matched.length > 0) {
       return {
-        reply: `Dựa trên yêu cầu "${userText}", mình đã tìm thấy ${matched.length} chỗ nghỉ tuyệt vời phù hợp với bạn. Hãy bấm xem chi tiết để đặt phòng nhé:`,
+        reply: `Dựa trên yêu cầu "${userText}", mình đã tìm thấy ${matched.length} chỗ nghỉ tuyệt vời phù hợp với bạn. Hãy bấm xem chi tiết hoặc chuyển sang bộ lọc tìm kiếm nhé:`,
         recommendedStays: matched.slice(0, 4),
         intent: 'search_stays',
+        criteria,
+        followUps: this.generateFollowUps('search_stays', userText, criteria),
       };
     }
 
@@ -352,9 +417,40 @@ QUAN TRỌNG: Bạn PHẢI trả về duy nhất một chuỗi JSON hợp lệ (
         'Mình có thể giúp bạn tìm phòng và giải đáp thắc mắc ngay!',
       recommendedStays: allStays.slice(0, 3),
       intent: 'general_chat',
+      followUps: this.generateFollowUps('general_chat'),
     };
+  }
+
+  // --- PERSISTENCE (AsyncStorage) ---
+  async getStoredChatHistory(): Promise<AiChatMessage[]> {
+    try {
+      const raw = await AsyncStorage.getItem(AI_CHAT_STORAGE_KEY);
+      if (raw) {
+        return JSON.parse(raw);
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  }
+
+  async saveChatHistory(messages: AiChatMessage[]): Promise<void> {
+    try {
+      // Keep up to 50 latest messages to maintain optimal performance
+      const trimmed = messages.slice(-50);
+      await AsyncStorage.setItem(AI_CHAT_STORAGE_KEY, JSON.stringify(trimmed));
+    } catch (e) {
+      console.warn('Lỗi lưu lịch sử chat AI:', e);
+    }
+  }
+
+  async clearChatHistory(): Promise<void> {
+    try {
+      await AsyncStorage.removeItem(AI_CHAT_STORAGE_KEY);
+    } catch (e) {
+      console.warn('Lỗi xóa lịch sử chat AI:', e);
+    }
   }
 }
 
 export const aiService = new AiService();
-

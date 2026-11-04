@@ -12,19 +12,31 @@ import {
   Platform,
   ActivityIndicator,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { Accommodation, BottomTabType } from '../types';
 import { BottomTabBar } from '../components/BottomTabBar';
-import { aiService, AiChatMessage } from '../services/aiService';
+import { aiService, AiChatMessage, AiFilterCriteria } from '../services/aiService';
 import { useCurrency } from '../context/CurrencyContext';
 
 interface AiSupportScreenProps {
   onBack: () => void;
   onSelectStay: (stay: Accommodation) => void;
+  onApplyFiltersToSearch?: (filters: AiFilterCriteria) => void;
   onTabChange?: (tab: BottomTabType) => void;
 }
+
+const DEFAULT_WELCOME_MSG: AiChatMessage = {
+  id: 'welcome-msg',
+  sender: 'ai',
+  text:
+    'Xin chào! 👋 Mình là Trợ lý Du lịch AI của Travelling App (được hỗ trợ bởi Google Gemini).\n\n' +
+    'Mình có thể tư vấn lịch trình, tìm kiếm chỗ nghỉ thông minh bằng ngôn ngữ tự nhiên, hoặc giải đáp mọi câu hỏi về đặt chỗ & hủy chuyến hoàn tiền.\n\n' +
+    'Bạn đang muốn đi đâu hoặc cần hỗ trợ điều gì hôm nay?',
+  time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+};
 
 const QUICK_PROMPTS = [
   { label: '🌴 Chỗ nghỉ Bali có hồ bơi dưới $60', query: 'Tìm chỗ nghỉ ở Bali có hồ bơi dưới 60 USD' },
@@ -36,6 +48,7 @@ const QUICK_PROMPTS = [
 export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
   onBack,
   onSelectStay,
+  onApplyFiltersToSearch,
   onTabChange,
 }) => {
   const { formatPrice } = useCurrency();
@@ -43,17 +56,27 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
 
   const [inputMessage, setInputMessage] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [messages, setMessages] = useState<AiChatMessage[]>([
-    {
-      id: 'welcome-msg',
-      sender: 'ai',
-      text:
-        'Xin chào! 👋 Mình là Trợ lý Du lịch AI của Travelling App (được hỗ trợ bởi Google Gemini).\n\n' +
-        'Mình có thể tư vấn lịch trình, tìm kiếm chỗ nghỉ thông minh bằng ngôn ngữ tự nhiên, hoặc giải đáp mọi câu hỏi về đặt chỗ & hủy chuyến hoàn tiền.\n\n' +
-        'Bạn đang muốn đi đâu hoặc cần hỗ trợ điều gì hôm nay?',
-      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-    },
-  ]);
+  const [messages, setMessages] = useState<AiChatMessage[]>([DEFAULT_WELCOME_MSG]);
+
+  // Load chat history from AsyncStorage on startup
+  useEffect(() => {
+    aiService.getStoredChatHistory().then((history) => {
+      if (history && history.length > 0) {
+        setMessages(history);
+      }
+    });
+  }, []);
+
+  // Save chat history whenever messages change
+  const saveHistoryTimeout = useRef<any>(null);
+  useEffect(() => {
+    if (messages.length > 1) {
+      if (saveHistoryTimeout.current) clearTimeout(saveHistoryTimeout.current);
+      saveHistoryTimeout.current = setTimeout(() => {
+        aiService.saveChatHistory(messages);
+      }, 500);
+    }
+  }, [messages]);
 
   useEffect(() => {
     // Scroll to bottom when message arrives
@@ -95,6 +118,8 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
         time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         recommendedStays: response.recommendedStays,
         intent: response.intent,
+        criteria: response.criteria,
+        followUps: response.followUps,
       };
 
       setMessages((prev) => [...prev, aiMsg]);
@@ -112,14 +137,28 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
   };
 
   const handleClearChat = () => {
-    setMessages([
-      {
-        id: 'welcome-msg-reset',
-        sender: 'ai',
-        text: 'Cuộc trò chuyện đã được làm mới. Hãy cho mình biết bạn muốn tìm chỗ nghỉ như thế nào nhé!',
-        time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      },
-    ]);
+    Alert.alert(
+      'Xóa lịch sử trò chuyện',
+      'Bạn có chắc chắn muốn làm mới và xóa toàn bộ lịch sử tư vấn AI?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Làm mới',
+          style: 'destructive',
+          onPress: async () => {
+            await aiService.clearChatHistory();
+            setMessages([
+              {
+                id: `welcome-reset-${Date.now()}`,
+                sender: 'ai',
+                text: 'Cuộc trò chuyện đã được làm mới. Hãy cho mình biết bạn muốn tìm chỗ nghỉ hoặc cần hỗ trợ gì nhé!',
+                time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+              },
+            ]);
+          },
+        },
+      ]
+    );
   };
 
   const renderRecommendedStayCard = (stay: Accommodation) => {
@@ -175,8 +214,9 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
     );
   };
 
-  const renderMessageItem = ({ item }: { item: AiChatMessage }) => {
+  const renderMessageItem = ({ item, index }: { item: AiChatMessage; index: number }) => {
     const isUser = item.sender === 'user';
+    const isLatest = index === messages.length - 1;
 
     return (
       <View style={[styles.messageRow, isUser ? styles.userMessageRow : styles.aiMessageRow]}>
@@ -212,9 +252,44 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
             </View>
           )}
 
+          {/* Action button to apply criteria to Search Results Screen */}
+          {!isUser && item.criteria && onApplyFiltersToSearch && (
+            <TouchableOpacity
+              style={styles.applyFilterButton}
+              onPress={() => onApplyFiltersToSearch(item.criteria!)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="search" size={14} color="#FFFFFF" style={{ marginRight: 6 }} />
+              <Text style={styles.applyFilterButtonText}>
+                Xem tất cả trên trang Tìm kiếm ({item.criteria.destination || 'Bộ lọc AI'})
+              </Text>
+              <Ionicons name="chevron-forward" size={14} color="#FFFFFF" />
+            </TouchableOpacity>
+          )}
+
           <Text style={[styles.timeText, isUser ? styles.userTimeText : styles.aiTimeText]}>
             {item.time}
           </Text>
+
+          {/* Follow-up question chips on the latest AI message */}
+          {!isUser && isLatest && item.followUps && item.followUps.length > 0 && !isLoading && (
+            <View style={styles.followUpsContainer}>
+              <Text style={styles.followUpsTitle}>Gợi ý câu hỏi tiếp theo:</Text>
+              <View style={styles.followUpsWrap}>
+                {item.followUps.map((prompt, pIdx) => (
+                  <TouchableOpacity
+                    key={pIdx}
+                    style={styles.followUpChip}
+                    onPress={() => handleSend(prompt)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="chatbubble-ellipses-outline" size={12} color="#00BDD6" style={{ marginRight: 4 }} />
+                    <Text style={styles.followUpText}>{prompt}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
         </View>
       </View>
     );
@@ -267,6 +342,7 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
       {/* Chat Messages */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
         style={styles.keyboardContainer}
       >
         <FlatList
@@ -426,7 +502,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   bubbleContainer: {
-    maxWidth: '82%',
+    maxWidth: '85%',
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -591,6 +667,53 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#00BDD6',
   },
+  applyFilterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#00BDD6',
+    borderRadius: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    marginTop: 10,
+  },
+  applyFilterButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12.5,
+    fontWeight: '700',
+    flex: 1,
+  },
+  followUpsContainer: {
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  followUpsTitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
+    marginBottom: 6,
+  },
+  followUpsWrap: {
+    gap: 6,
+  },
+  followUpChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignSelf: 'flex-start',
+  },
+  followUpText: {
+    fontSize: 12,
+    color: '#0F766E',
+    fontWeight: '500',
+  },
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -645,4 +768,3 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
   },
 });
-
