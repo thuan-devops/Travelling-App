@@ -122,10 +122,21 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
               <Text style={styles.bookingDateText}>Ngày: {item.paymentDate}</Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={styles.totalLabel}>{isCancelled ? 'Đã hoàn tiền' : 'Đã thanh toán'}</Text>
+              <Text style={styles.totalLabel}>
+                {isCancelled
+                  ? 'Đã hoàn tiền'
+                  : item.paymentType === 'part'
+                  ? 'Đã trả trước (50%)'
+                  : 'Đã thanh toán'}
+              </Text>
               <Text style={[styles.totalAmount, isCancelled && { color: '#9CA3AF', textDecorationLine: 'line-through' }]}>
                 {formatPrice(item.paidAmount)}
               </Text>
+              {!isCancelled && item.paymentType === 'part' && (
+                <Text style={{ fontSize: 11, color: '#E11D48', marginTop: 2, fontWeight: '500' }}>
+                  Còn lại: {formatPrice(item.dueAmount || item.totalPrice - item.paidAmount)}
+                </Text>
+              )}
             </View>
           </View>
 

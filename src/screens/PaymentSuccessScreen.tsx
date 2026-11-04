@@ -86,9 +86,26 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
           </View>
 
           <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>Số tiền</Text>
+            <Text style={styles.receiptLabel}>
+              {booking.paymentType === 'part' ? 'Đã thanh toán trước (50%)' : 'Số tiền đã thanh toán'}
+            </Text>
             <Text style={styles.receiptAmount}>{formatPrice(booking.paidAmount)}</Text>
           </View>
+
+          {booking.paymentType === 'part' && (
+            <>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Còn lại khi nhận phòng</Text>
+                <Text style={[styles.receiptValueBold, { color: '#E11D48' }]}>
+                  {formatPrice(booking.dueAmount || booking.totalPrice - booking.paidAmount)}
+                </Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Tổng giá trị đơn đặt</Text>
+                <Text style={styles.receiptValueBold}>{formatPrice(booking.totalPrice)}</Text>
+              </View>
+            </>
+          )}
 
           {/* GET PDF RECEIPT BUTTON */}
           <TouchableOpacity

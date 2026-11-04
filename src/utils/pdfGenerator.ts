@@ -12,11 +12,14 @@ export const generateAndShareReceiptPdf = async (booking: BookingDetails): Promi
     isVnd = cur === 'VND';
   } catch {}
 
-  const formatMoney = (usd: number) => {
+  const formatMoney = (val: number) => {
+    const num = Number(val) || 0;
     if (isVnd) {
-      return `${Math.round(usd * USD_TO_VND_RATE).toLocaleString('vi-VN')} ₫`;
+      const vndAmount = num >= 1000 ? num : Math.round(num * USD_TO_VND_RATE);
+      return `${vndAmount.toLocaleString('vi-VN')} ₫`;
     }
-    return `$${usd}`;
+    const finalUsd = num >= 1000 ? Math.round(num / USD_TO_VND_RATE) : num;
+    return `$${finalUsd}`;
   };
 
   const feesHtml = booking.fees && booking.fees.length > 0
@@ -194,9 +197,24 @@ export const generateAndShareReceiptPdf = async (booking: BookingDetails): Promi
         </div>
         ${feesHtml}
         <div class="total-row">
-          <span>Tổng số tiền đã thanh toán</span>
+          <span>Tổng giá trị đơn</span>
+          <span>${formatMoney(booking.totalPrice)}</span>
+        </div>
+        ${booking.paymentType === 'part' ? `
+        <div class="row" style="color: #0F766E; font-weight: bold; margin-top: 6px;">
+          <span>Đã thanh toán trước (50%)</span>
           <span>${formatMoney(booking.paidAmount)}</span>
         </div>
+        <div class="row" style="color: #E11D48; font-weight: bold;">
+          <span>Còn lại thanh toán khi nhận phòng</span>
+          <span>${formatMoney(booking.dueAmount || booking.totalPrice - booking.paidAmount)}</span>
+        </div>
+        ` : `
+        <div class="row" style="color: #0F766E; font-weight: bold; margin-top: 6px;">
+          <span>Đã thanh toán 100%</span>
+          <span>${formatMoney(booking.paidAmount)}</span>
+        </div>
+        `}
       </div>
 
       <div class="footer">

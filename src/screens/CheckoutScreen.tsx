@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { Accommodation, BookingDetails, SearchFilterState } from '../types';
 import { CalendarPicker, DateRange } from '../components/CalendarPicker';
-import { useCurrency } from '../context/CurrencyContext';
+import { useCurrency, USD_TO_VND_RATE } from '../context/CurrencyContext';
 
 interface CheckoutScreenProps {
   stay: Accommodation;
@@ -49,11 +49,24 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
   const [isGuestsModalVisible, setIsGuestsModalVisible] = useState<boolean>(false);
 
   const totalGuests = adults + children;
-  const pricePerNight = stay.pricePerNight || 20;
+  const isVnd = currency === 'VND';
+  const basePricePerNight = stay.pricePerNight || 20;
+  const pricePerNight = isVnd ? Math.round(basePricePerNight * USD_TO_VND_RATE) : basePricePerNight;
   const roomSubtotal = pricePerNight * nights;
-  const kayakFee = 120000;
-  const parkingFee = 120000;
+  const kayakFee = isVnd ? 120000 : 5;
+  const parkingFee = isVnd ? 120000 : 5;
   const totalAmount = roomSubtotal + kayakFee + parkingFee;
+
+  const isPartPayment = paymentOption === 'part';
+  const dueNow = isPartPayment ? Math.round(totalAmount / 2) : totalAmount;
+  const dueLater = isPartPayment ? totalAmount - dueNow : 0;
+
+  const formatDisplay = (amount: number) => {
+    if (isVnd) {
+      return `${Math.round(amount).toLocaleString('vi-VN')} ₫`;
+    }
+    return `$${amount}`;
+  };
 
   const checkInText = `${startDate.getDate()} Thg ${startDate.getMonth() + 1}`;
   const checkOutText = `${endDate.getDate()} Thg ${endDate.getMonth() + 1}`;
@@ -81,10 +94,11 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
         { label: 'Phí đỗ xe', amount: parkingFee },
       ],
       totalPrice: totalAmount,
-      paidAmount: paymentOption === 'full' ? totalAmount : Math.round(totalAmount / 2),
+      paidAmount: dueNow,
+      dueAmount: dueLater,
       paymentDate: new Date().toLocaleDateString('vi-VN'),
       paymentTime: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      paymentMethod: 'Thẻ tín dụng (Credit card)',
+      paymentMethod: isPartPayment ? 'Thanh toán trước 50% (Thẻ tín dụng)' : 'Thanh toán toàn bộ (Thẻ tín dụng)',
     };
     onConfirmPayment(booking);
   };
@@ -107,7 +121,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
         <View style={styles.summaryCard}>
           <View style={styles.summaryInfo}>
             <Text style={styles.summaryPrice}>
-              <Text style={styles.boldPrice}>{formatPrice(pricePerNight)}</Text>/đêm
+              <Text style={styles.boldPrice}>{formatDisplay(pricePerNight)}</Text>/đêm
             </Text>
             <Text style={styles.summaryTitle} numberOfLines={1}>{stay.title}</Text>
             <View style={styles.ratingRow}>
@@ -171,7 +185,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
           <View style={styles.paymentOptionText}>
             <Text style={styles.paymentOptionTitle}>Thanh toán toàn bộ</Text>
             <Text style={styles.paymentOptionDesc}>
-              Thanh toán {formatPrice(totalAmount)} ngay để hoàn tất đặt chỗ.
+              Thanh toán {formatDisplay(totalAmount)} ngay để hoàn tất đặt chỗ.
             </Text>
           </View>
           <View style={styles.radioOuter}>
@@ -187,7 +201,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
           <View style={styles.paymentOptionText}>
             <Text style={styles.paymentOptionTitle}>Thanh toán một phần</Text>
             <Text style={styles.paymentOptionDesc}>
-              Thanh toán trước {formatPrice(Math.round(totalAmount / 2))}, phần còn lại thanh toán sau khi nhận phòng.
+              Thanh toán trước {formatDisplay(Math.round(totalAmount / 2))}, phần còn lại thanh toán sau khi nhận phòng.
             </Text>
           </View>
           <View style={styles.radioOuter}>
@@ -201,30 +215,53 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
         <Text style={styles.sectionTitle}>Chi tiết giá</Text>
 
         <View style={styles.priceRow}>
-          <Text style={styles.priceItemLabel}>{formatPrice(pricePerNight)} x {nights} đêm</Text>
-          <Text style={styles.priceItemValue}>{formatPrice(roomSubtotal)}</Text>
+          <Text style={styles.priceItemLabel}>{formatDisplay(pricePerNight)} x {nights} đêm</Text>
+          <Text style={styles.priceItemValue}>{formatDisplay(roomSubtotal)}</Text>
         </View>
 
         <View style={styles.priceRow}>
           <Text style={styles.priceItemLabel}>Phí chèo thuyền Kayak</Text>
-          <Text style={styles.priceItemValue}>{formatPrice(kayakFee)}</Text>
+          <Text style={styles.priceItemValue}>{formatDisplay(kayakFee)}</Text>
         </View>
 
         <View style={styles.priceRow}>
           <Text style={styles.priceItemLabel}>Phí đỗ xe</Text>
-          <Text style={styles.priceItemValue}>{formatPrice(parkingFee)}</Text>
+          <Text style={styles.priceItemValue}>{formatDisplay(parkingFee)}</Text>
         </View>
 
         <View style={[styles.priceRow, { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#F3F4F6' }]}>
           <Text style={styles.totalLabel}>Tổng cộng ({currency})</Text>
-          <Text style={styles.totalValue}>{formatPrice(totalAmount)}</Text>
+          <Text style={styles.totalValue}>{formatDisplay(totalAmount)}</Text>
         </View>
+
+        {isPartPayment && (
+          <View style={styles.partPaymentBox}>
+            <View style={styles.priceRow}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name="card-outline" size={16} color="#00BDD6" style={{ marginRight: 6 }} />
+                <Text style={styles.dueNowLabel}>Thanh toán ngay hôm nay (50%)</Text>
+              </View>
+              <Text style={styles.dueNowValue}>{formatDisplay(dueNow)}</Text>
+            </View>
+            <View style={[styles.priceRow, { marginTop: 4 }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name="time-outline" size={16} color="#6B7280" style={{ marginRight: 6 }} />
+                <Text style={styles.dueLaterLabel}>Thanh toán khi nhận phòng</Text>
+              </View>
+              <Text style={styles.dueLaterValue}>{formatDisplay(dueLater)}</Text>
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       {/* FOOTER BUTTON */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.bookNowBtn} activeOpacity={0.8} onPress={handleBookNow}>
-          <Text style={styles.bookNowBtnText}>Đặt phòng ngay • {formatPrice(totalAmount)}</Text>
+          <Text style={styles.bookNowBtnText}>
+            {isPartPayment
+              ? `Thanh toán trước • ${formatDisplay(dueNow)}`
+              : `Đặt phòng ngay • ${formatDisplay(totalAmount)}`}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -513,6 +550,33 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     color: '#111827',
+  },
+  partPaymentBox: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#F0FDFA',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+  },
+  dueNowLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0F766E',
+  },
+  dueNowValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F766E',
+  },
+  dueLaterLabel: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  dueLaterValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4B5563',
   },
   footer: {
     position: 'absolute',

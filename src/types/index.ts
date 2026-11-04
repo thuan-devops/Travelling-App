@@ -111,6 +111,7 @@ export interface BookingDetails {
   fees: { label: string; amount: number }[];
   totalPrice: number;
   paidAmount: number;
+  dueAmount?: number;
   paymentDate: string;
   paymentTime: string;
   paymentMethod: string;
