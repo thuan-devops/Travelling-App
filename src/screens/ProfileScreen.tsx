@@ -22,9 +22,10 @@ import { useCurrency } from '../context/CurrencyContext';
 
 interface ProfileScreenProps {
   onTabChange: (tab: BottomTabType) => void;
+  onOpenAiSupport?: () => void;
 }
 
-export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange }) => {
+export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange, onOpenAiSupport }) => {
   const { user, logout, isLoading } = useAuth();
   const { currency, toggleCurrency } = useCurrency();
 
@@ -126,11 +127,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange }) => 
 
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={() => Alert.alert('Hỗ trợ 24/7', 'Đội ngũ chăm sóc khách hàng Travelling App sẵn sàng hỗ trợ bạn qua hotline 1900 8888 hoặc mục Hộp thư.')}
+            onPress={() => { if (onOpenAiSupport) { onOpenAiSupport(); } else { Alert.alert('Hỗ trợ 24/7', 'Đội ngũ chăm sóc khách hàng Travelling App sẵn sàng hỗ trợ bạn qua hotline 1900 8888 hoặc mục Hộp thư.'); } }}
           >
-            <Ionicons name="help-circle-outline" size={20} color="#1F2937" style={styles.menuIcon} />
-            <Text style={styles.menuText}>Trợ giúp & Hỗ trợ</Text>
-            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+            <Ionicons name="sparkles-outline" size={20} color="#00BDD6" style={styles.menuIcon} />
+            <Text style={[styles.menuText, { color: '#00BDD6', fontWeight: '700' }]}>Trợ giúp & Hỗ trợ</Text>
+            <View style={{ backgroundColor: '#E0F2FE', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, marginRight: 6 }}><Text style={{ fontSize: 10, fontWeight: '700', color: '#0284C7' }}>AI</Text></View>
+            <Ionicons name="chevron-forward" size={18} color="#00BDD6" />
           </TouchableOpacity>
 
           <TouchableOpacity

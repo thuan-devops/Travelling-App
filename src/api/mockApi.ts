@@ -502,11 +502,11 @@ class MockApiService {
     }
   }
 
-  async cancelBooking(bookingId: string): Promise<BookingDetails[]> {
+  async cancelBooking(bookingId: string, reason?: string): Promise<BookingDetails[]> {
     try {
       const existing = await this.getBookings();
       const updated = existing.map((b) =>
-        b.bookingId === bookingId ? { ...b, status: 'cancelled' as const } : b
+        b.bookingId === bookingId ? { ...b, status: 'cancelled' as const, cancellationReason: reason || 'Thay đổi lịch trình cá nhân', cancelledAt: new Date().toLocaleDateString('vi-VN') } : b
       );
       await AsyncStorage.setItem(BOOKINGS_STORAGE_KEY, JSON.stringify(updated));
       return updated;
