@@ -7,6 +7,8 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  Linking,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -18,6 +20,24 @@ interface DescriptionScreenProps {
 }
 
 export const DescriptionScreen: React.FC<DescriptionScreenProps> = ({ stay, onBack }) => {
+  const heroImage = stay.images?.[1] || stay.images?.[0];
+  const descriptionText = stay.fullDescription || stay.description;
+
+  const handleOpenGoogleMaps = () => {
+    const query = encodeURIComponent(`${stay.title}, ${stay.location}`);
+    const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
+    Linking.openURL(googleMapsUrl).catch(() => {
+      Alert.alert('Thông báo', 'Không thể mở liên kết Google Maps.');
+    });
+  };
+
+  const highlights = [
+    'Không gian riêng tư, phong cảnh thiên nhiên thoáng đãng và trong lành',
+    'Được trang bị đầy đủ các tiện nghi hiện đại cho kỳ nghỉ trọn vẹn',
+    'Vị trí thuận lợi để khám phá các địa điểm du lịch và ẩm thực nổi tiếng',
+    'Chủ nhà thân thiện, hỗ trợ tận tình suốt thời gian lưu trú',
+  ];
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
@@ -27,50 +47,43 @@ export const DescriptionScreen: React.FC<DescriptionScreenProps> = ({ stay, onBa
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color="#111827" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Mô tả</Text>
+        <Text style={styles.headerTitle}>Mô tả chi tiết</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Full Image */}
-        <Image
-          source={{ uri: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1000&q=80' }}
-          style={styles.heroImage}
-        />
+        <Image source={{ uri: heroImage }} style={styles.heroImage} />
+
+        {/* Title */}
+        <Text style={styles.stayTitle}>{stay.title}</Text>
 
         {/* Description Text */}
-        <Text style={styles.paragraph}>
-          {stay.fullDescription || stay.description || 'Bạn đang tìm kiếm một nơi hoàn hảo để thư giãn và nghỉ dưỡng? Biệt thự nghỉ dưỡng Bali tuyệt đẹp này là điểm đến nhiệt đới lý tưởng. Tọa lạc trên con phố yên tĩnh chỉ cách bãi biển vài phút, ngôi nhà xinh đẹp này có mọi thứ bạn cần cho một kỳ nghỉ sang trọng và thoải mái.'}
-        </Text>
+        <Text style={styles.paragraph}>{descriptionText}</Text>
 
         {/* Location & Open Map Link */}
         <View style={styles.locationRow}>
           <View style={styles.locationLeft}>
-            <Ionicons name="location-sharp" size={18} color="#00BDD6" style={{ marginRight: 6 }} />
+            <Ionicons name="location-sharp" size={20} color="#00BDD6" style={{ marginRight: 6 }} />
             <Text style={styles.locationText}>{stay.location}</Text>
           </View>
-          <TouchableOpacity>
-            <Text style={styles.openMapText}>Mở bản đồ</Text>
+          <TouchableOpacity onPress={handleOpenGoogleMaps} style={styles.openMapButton}>
+            <Ionicons name="map-outline" size={16} color="#00838F" style={{ marginRight: 4 }} />
+            <Text style={styles.openMapText}>Mở Google Maps</Text>
           </TouchableOpacity>
         </View>
 
         {/* Feature Bullets with Checkmarks */}
+        <Text style={styles.highlightsHeader}>Điểm nổi bật của chỗ ở</Text>
         <View style={styles.bulletsList}>
-          <View style={styles.bulletItem}>
-            <Ionicons name="checkmark" size={18} color="#00BDD6" style={styles.checkIcon} />
-            <Text style={styles.bulletText}>Không gian thiết kế nhiệt đới thoáng mát, gần gũi thiên nhiên</Text>
-          </View>
-          <View style={styles.bulletItem}>
-            <Ionicons name="checkmark" size={18} color="#00BDD6" style={styles.checkIcon} />
-            <Text style={styles.bulletText}>Bể bơi riêng thư giãn và khu vực tắm nắng ngoài trời</Text>
-          </View>
-          <View style={styles.bulletItem}>
-            <Ionicons name="checkmark" size={18} color="#00BDD6" style={styles.checkIcon} />
-            <Text style={styles.bulletText}>Chỉ mất 5 phút đi bộ đến bãi biển và các nhà hàng địa phương</Text>
-          </View>
+          {highlights.map((bullet, idx) => (
+            <View key={idx} style={styles.bulletItem}>
+              <Ionicons name="checkmark-circle" size={22} color="#00BDD6" style={styles.checkIcon} />
+              <Text style={styles.bulletText}>{bullet}</Text>
+            </View>
+          ))}
         </View>
       </ScrollView>
-
     </SafeAreaView>
   );
 };
@@ -79,6 +92,9 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -93,25 +109,33 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   headerTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: '#111827',
   },
   content: {
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: 18,
     paddingBottom: 40,
   },
   heroImage: {
     width: '100%',
-    height: 220,
+    height: 230,
     borderRadius: 14,
-    marginBottom: 20,
+    marginBottom: 18,
+    backgroundColor: '#F3F4F6',
+  },
+  stayTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 12,
+    lineHeight: 32,
   },
   paragraph: {
-    fontSize: 15,
-    color: '#4B5563',
-    lineHeight: 24,
+    fontSize: 16,
+    color: '#374151',
+    lineHeight: 26,
     marginBottom: 20,
   },
   locationRow: {
@@ -122,36 +146,56 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: '#F3F4F6',
-    marginBottom: 20,
+    marginBottom: 22,
   },
   locationLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    marginRight: 10,
   },
   locationText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#374151',
+    flex: 1,
+  },
+  openMapButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E0F7FA',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   openMapText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#00BDD6',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#00838F',
+  },
+  highlightsHeader: {
+    fontSize: 19,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 14,
   },
   bulletsList: {
     marginTop: 4,
   },
   bulletItem: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
+    alignItems: 'flex-start',
+    marginBottom: 14,
   },
   checkIcon: {
     marginRight: 10,
+    marginTop: 2,
   },
   bulletText: {
-    fontSize: 14,
-    color: '#4B5563',
+    fontSize: 15,
+    color: '#374151',
     fontWeight: '500',
+    flex: 1,
+    lineHeight: 22,
   },
 });

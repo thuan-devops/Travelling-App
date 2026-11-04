@@ -6,10 +6,12 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { Accommodation } from '../types';
+import { getAmenityIcon } from '../api/mockApi';
 
 interface FacilitiesScreenProps {
   stay: Accommodation;
@@ -17,6 +19,21 @@ interface FacilitiesScreenProps {
 }
 
 export const FacilitiesScreen: React.FC<FacilitiesScreenProps> = ({ stay, onBack }) => {
+  const facilities =
+    stay.facilitiesBreakdown?.facilities && stay.facilitiesBreakdown.facilities.length > 0
+      ? stay.facilitiesBreakdown.facilities
+      : stay.amenities || [];
+
+  const services =
+    stay.facilitiesBreakdown?.services && stay.facilitiesBreakdown.services.length > 0
+      ? stay.facilitiesBreakdown.services
+      : ['Dọn phòng định kỳ', 'Hỗ trợ khách hàng 24/7'];
+
+  const bathroom =
+    stay.facilitiesBreakdown?.bathroom && stay.facilitiesBreakdown.bathroom.length > 0
+      ? stay.facilitiesBreakdown.bathroom
+      : ['Phòng tắm riêng biệt', 'Khăn tắm cao cấp', 'Máy sấy tóc'];
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
@@ -38,63 +55,41 @@ export const FacilitiesScreen: React.FC<FacilitiesScreenProps> = ({ stay, onBack
         </Text>
 
         <View style={styles.itemsList}>
-          <View style={styles.facilityRow}>
-            <Ionicons name="wifi-outline" size={22} color="#111827" style={styles.itemIcon} />
-            <Text style={styles.itemText}>Wifi tốc độ cao</Text>
-          </View>
-          <View style={styles.facilityRow}>
-            <Ionicons name="restaurant-outline" size={22} color="#111827" style={styles.itemIcon} />
-            <Text style={styles.itemText}>Bếp đầy đủ dụng cụ</Text>
-          </View>
-          <View style={styles.facilityRow}>
-            <Ionicons name="barbell-outline" size={22} color="#111827" style={styles.itemIcon} />
-            <Text style={styles.itemText}>Dụng cụ tập thể dục</Text>
-          </View>
-          <View style={styles.facilityRow}>
-            <Ionicons name="water-outline" size={22} color="#111827" style={styles.itemIcon} />
-            <Text style={styles.itemText}>Hồ bơi riêng</Text>
-          </View>
-          <View style={styles.facilityRow}>
-            <Ionicons name="leaf-outline" size={22} color="#111827" style={styles.itemIcon} />
-            <Text style={styles.itemText}>Sân vườn thoáng mát</Text>
-          </View>
+          {facilities.map((fac, idx) => (
+            <View key={`fac-${idx}`} style={styles.facilityRow}>
+              <Ionicons name={getAmenityIcon(fac)} size={22} color="#00BDD6" style={styles.itemIcon} />
+              <Text style={styles.itemText}>{fac}</Text>
+            </View>
+          ))}
         </View>
 
         <View style={styles.divider} />
 
         {/* SERVICES SECTION */}
         <Text style={styles.sectionTitle}>Dịch vụ</Text>
-        <Text style={styles.subCategoryHeader}>Giặt là & dọn dẹp</Text>
+        <Text style={styles.subCategoryHeader}>Dịch vụ & tiện nghi bổ sung</Text>
 
         <View style={styles.itemsList}>
-          <View style={styles.facilityRow}>
-            <Ionicons name="apps-outline" size={22} color="#111827" style={styles.itemIcon} />
-            <Text style={styles.itemText}>Máy giặt</Text>
-          </View>
-          <View style={styles.facilityRow}>
-            <Ionicons name="cube-outline" size={22} color="#111827" style={styles.itemIcon} />
-            <Text style={styles.itemText}>Máy sấy miễn phí - Tại phòng</Text>
-          </View>
-          <View style={styles.facilityRow}>
-            <Ionicons name="shirt-outline" size={22} color="#111827" style={styles.itemIcon} />
-            <Text style={styles.itemText}>Bàn ủi</Text>
-          </View>
+          {services.map((srv, idx) => (
+            <View key={`srv-${idx}`} style={styles.facilityRow}>
+              <Ionicons name={getAmenityIcon(srv)} size={22} color="#00BDD6" style={styles.itemIcon} />
+              <Text style={styles.itemText}>{srv}</Text>
+            </View>
+          ))}
         </View>
 
         <View style={styles.divider} />
 
         {/* BATHROOM SECTION */}
-        <Text style={styles.subCategoryHeader}>Phòng tắm</Text>
+        <Text style={styles.subCategoryHeader}>Phòng tắm & vệ sinh cá nhân</Text>
 
         <View style={styles.itemsList}>
-          <View style={styles.facilityRow}>
-            <Ionicons name="bed-outline" size={22} color="#111827" style={styles.itemIcon} />
-            <Text style={styles.itemText}>Bồn tắm</Text>
-          </View>
-          <View style={styles.facilityRow}>
-            <Ionicons name="flash-outline" size={22} color="#111827" style={styles.itemIcon} />
-            <Text style={styles.itemText}>Máy sấy tóc</Text>
-          </View>
+          {bathroom.map((bath, idx) => (
+            <View key={`bath-${idx}`} style={styles.facilityRow}>
+              <Ionicons name={getAmenityIcon(bath)} size={22} color="#00BDD6" style={styles.itemIcon} />
+              <Text style={styles.itemText}>{bath}</Text>
+            </View>
+          ))}
         </View>
       </ScrollView>
 
@@ -106,6 +101,9 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -120,35 +118,36 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   headerTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: '#111827',
   },
   content: {
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 18,
     paddingBottom: 40,
   },
   sectionTitle: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#111827',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   summaryText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#4B5563',
-    marginBottom: 20,
+    marginBottom: 18,
+    lineHeight: 22,
   },
   subCategoryHeader: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: '#111827',
-    marginTop: 6,
-    marginBottom: 16,
+    marginBottom: 14,
+    marginTop: 8,
   },
   itemsList: {
-    marginBottom: 10,
+    marginBottom: 8,
   },
   facilityRow: {
     flexDirection: 'row',
@@ -158,13 +157,14 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F9FAFB',
   },
   itemIcon: {
-    marginRight: 16,
-    width: 24,
+    marginRight: 14,
+    width: 26,
   },
   itemText: {
     fontSize: 16,
     color: '#1F2937',
-    fontWeight: '500',
+    fontWeight: '600',
+    flex: 1,
   },
   divider: {
     height: 1,

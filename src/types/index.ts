@@ -96,6 +96,7 @@ export interface SearchFilterState {
   bathrooms: number;
   facilities: string[];
   presentTotalPrice: boolean;
+  minRating?: number;
 }
 
 export interface BookingDetails {

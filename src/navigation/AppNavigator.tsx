@@ -172,6 +172,7 @@ export const AppNavigator: React.FC = () => {
         <ReviewsScreen
           stay={activeStay}
           onBack={() => setCurrentScreen('ROOM_DETAIL')}
+          onReviewAdded={(updatedStay) => setActiveStay(updatedStay)}
         />
       )}
 

@@ -45,6 +45,9 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   const [outdoorSpace, setOutdoorSpace] = useState<boolean>(true);
   const [internetAccess, setInternetAccess] = useState<boolean>(true);
 
+  // Star Rating
+  const [minRating, setMinRating] = useState<number>(initialFilters?.minRating || 0);
+
   const handleClearAll = () => {
     setMinPrice(10);
     setMaxPrice(250);
@@ -59,6 +62,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     setGym(false);
     setOutdoorSpace(false);
     setInternetAccess(false);
+    setMinRating(0);
   };
 
   const handleApply = () => {
@@ -75,6 +79,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
       bedrooms,
       beds,
       bathrooms,
+      minRating: minRating > 0 ? minRating : undefined,
       facilities: selectedFacilities,
     });
     onClose();
@@ -233,6 +238,46 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   </TouchableOpacity>
                 ))}
               </View>
+            </View>
+          </View>
+
+          {/* STAR RATING FILTER */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Đánh giá sao</Text>
+            <View style={styles.ratingChipsRow}>
+              {[
+                { value: 0, label: 'Tất cả' },
+                { value: 5, label: '5★' },
+                { value: 4, label: '4★ trở lên' },
+                { value: 3, label: '3★ trở lên' },
+                { value: 2, label: '2★ trở lên' },
+                { value: 1, label: '1★ trở lên' },
+              ].map((rate) => (
+                <TouchableOpacity
+                  key={rate.value}
+                  style={[
+                    styles.ratingChip,
+                    minRating === rate.value && styles.ratingChipActive,
+                  ]}
+                  onPress={() => setMinRating(rate.value)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="star"
+                    size={14}
+                    color={minRating === rate.value ? '#FFFFFF' : '#F59E0B'}
+                    style={{ marginRight: 4 }}
+                  />
+                  <Text
+                    style={[
+                      styles.ratingChipText,
+                      minRating === rate.value && styles.ratingChipTextActive,
+                    ]}
+                  >
+                    {rate.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
 
@@ -481,6 +526,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1F2937',
     fontWeight: '500',
+  },
+  ratingChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  ratingChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F9FAFB',
+    marginBottom: 6,
+  },
+  ratingChipActive: {
+    backgroundColor: '#00BDD6',
+    borderColor: '#00BDD6',
+  },
+  ratingChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  ratingChipTextActive: {
+    color: '#FFFFFF',
   },
   footer: {
     position: 'absolute',
