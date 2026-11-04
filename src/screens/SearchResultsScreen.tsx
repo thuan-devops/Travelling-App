@@ -69,12 +69,28 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
     await mockApi.toggleFavorite(id);
   };
 
-  const headerSummaryText = `${currentFilters.destination === 'Anywhere' ? 'Bất kỳ đâu' : currentFilters.destination}, ${currentFilters.startDate} - ${currentFilters.endDate}, ${currentFilters.adults + currentFilters.children || 2} khách`;
+  const dateSummary =
+    currentFilters.startDate && currentFilters.endDate
+      ? `${currentFilters.startDate} - ${currentFilters.endDate}`
+      : 'Bất kỳ lúc nào';
+  const destSummary =
+    !currentFilters.destination || currentFilters.destination === 'Anywhere'
+      ? 'Bất kỳ đâu'
+      : currentFilters.destination;
+  const guestCount = (currentFilters.adults || 0) + (currentFilters.children || 0) || 2;
+  const headerSummaryText = `${destSummary}, ${dateSummary}, ${guestCount} khách`;
 
   const renderStayCard = ({ item }: { item: Accommodation }) => {
-    const displayPrice = presentTotalPrice
-      ? item.pricePerNight * (currentFilters.daysCount || 1)
-      : item.pricePerNight;
+    const hasSpecificNights = !!(
+      currentFilters.startDate &&
+      currentFilters.endDate &&
+      currentFilters.daysCount &&
+      currentFilters.daysCount > 1
+    );
+    const displayPrice =
+      presentTotalPrice && hasSpecificNights
+        ? item.pricePerNight * currentFilters.daysCount
+        : item.pricePerNight;
 
     return (
       <TouchableOpacity
@@ -118,7 +134,7 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
             </View>
             <Text style={styles.priceText}>
               <Text style={styles.priceBold}>{formatPrice(displayPrice)}</Text>
-              /đêm
+              {presentTotalPrice && hasSpecificNights ? '/' + currentFilters.daysCount + ' đêm' : '/đêm'}
             </Text>
           </View>
         </View>
@@ -173,6 +189,15 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
           renderItem={renderStayCard}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="search-outline" size={56} color="#D1D5DB" />
+              <Text style={styles.emptyTitle}>Không tìm thấy chuyến đi</Text>
+              <Text style={styles.emptySubtitle}>
+                Không có chỗ ở nào phù hợp với tìm kiếm của bạn.{'\n'}Hãy thử điều chỉnh điểm đến hoặc ngày khác nhé!
+              </Text>
+            </View>
+          }
         />
       )}
 
@@ -355,5 +380,25 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 80,
+    paddingHorizontal: 24,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#374151',
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });

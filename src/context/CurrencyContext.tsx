@@ -19,13 +19,15 @@ interface CurrencyContextType {
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
 export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [currency, setCurrencyState] = useState<CurrencyType>('USD');
+  const [currency, setCurrencyState] = useState<CurrencyType>('VND');
 
   useEffect(() => {
     AsyncStorage.getItem(CURRENCY_STORAGE_KEY)
       .then((stored) => {
         if (stored === 'USD' || stored === 'VND') {
           setCurrencyState(stored as CurrencyType);
+        } else {
+          setCurrencyState('VND');
         }
       })
       .catch(() => {});
@@ -46,20 +48,21 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
   const formatPrice = (usdAmount: number | undefined | null): string => {
     const amount = Number(usdAmount) || 0;
     if (currency === 'VND') {
-      const vndAmount = Math.round(amount * USD_TO_VND_RATE);
-      // Format tiếng Việt 875.000 ₫
+      const vndAmount = amount >= 1000 ? amount : Math.round(amount * USD_TO_VND_RATE);
       return `${vndAmount.toLocaleString('vi-VN')} ₫`;
     }
-    return `$${amount}`;
+    const finalUsd = amount >= 1000 ? Math.round(amount / USD_TO_VND_RATE) : amount;
+    return `$${finalUsd}`;
   };
 
   const formatNumberOnly = (usdAmount: number | undefined | null): string => {
     const amount = Number(usdAmount) || 0;
     if (currency === 'VND') {
-      const vndAmount = Math.round(amount * USD_TO_VND_RATE);
+      const vndAmount = amount >= 1000 ? amount : Math.round(amount * USD_TO_VND_RATE);
       return vndAmount.toLocaleString('vi-VN');
     }
-    return `${amount}`;
+    const finalUsd = amount >= 1000 ? Math.round(amount / USD_TO_VND_RATE) : amount;
+    return `${finalUsd}`;
   };
 
   const currencySymbol = currency === 'USD' ? '$' : '₫';
@@ -87,4 +90,3 @@ export const useCurrency = (): CurrencyContextType => {
   }
   return context;
 };
-
