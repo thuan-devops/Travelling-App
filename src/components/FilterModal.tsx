@@ -51,8 +51,8 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   const [minRating, setMinRating] = useState<number>(initialFilters?.minRating || 0);
 
   const handleClearAll = () => {
-    setMinPrice(10);
-    setMaxPrice(250);
+    setMinPrice(100000);
+    setMaxPrice(5000000);
     setEntirePlace(true);
     setPrivateRoom(false);
     setDormitories(false);

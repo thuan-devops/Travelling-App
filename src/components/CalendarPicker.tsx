@@ -55,10 +55,10 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
   );
 
   const [startDate, setStartDate] = useState<Date | null>(
-    initialStartDate || new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)
+    initialStartDate || null
   );
   const [endDate, setEndDate] = useState<Date | null>(
-    initialEndDate || new Date(today.getFullYear(), today.getMonth(), today.getDate() + 4)
+    initialEndDate || null
   );
 
   const calculateNights = (start: Date | null, end: Date | null): number => {

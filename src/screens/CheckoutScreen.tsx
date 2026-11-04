@@ -33,8 +33,10 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
 
   // Dates state
   const initialNights = initialFilters?.daysCount || 2;
-  const initialStart = new Date(2026, 4, 23);
-  const initialEnd = new Date(2026, 4, 23 + initialNights);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const initialStart = new Date(today);
+  const initialEnd = new Date(today.getTime() + initialNights * 24 * 60 * 60 * 1000);
 
   const [startDate, setStartDate] = useState<Date>(initialStart);
   const [endDate, setEndDate] = useState<Date>(initialEnd);
@@ -49,8 +51,8 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
   const totalGuests = adults + children;
   const pricePerNight = stay.pricePerNight || 20;
   const roomSubtotal = pricePerNight * nights;
-  const kayakFee = 5;
-  const parkingFee = 5;
+  const kayakFee = 120000;
+  const parkingFee = 120000;
   const totalAmount = roomSubtotal + kayakFee + parkingFee;
 
   const checkInText = `${startDate.getDate()} Thg ${startDate.getMonth() + 1}`;
