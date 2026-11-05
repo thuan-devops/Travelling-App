@@ -17,6 +17,7 @@ import { Accommodation, BookingDetails, SearchFilterState } from '../types';
 import { CalendarPicker } from '../components/CalendarPicker';
 import { useCurrency, USD_TO_VND_RATE } from '../context/CurrencyContext';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { SelectedStayDates } from './RoomDetailScreen';
 
 interface CheckoutScreenProps {
@@ -83,6 +84,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
 }) => {
   const { user } = useAuth();
   const { formatPrice, currency } = useCurrency();
+  const { isDarkMode, colors } = useTheme();
   const isVnd = currency === 'VND';
 
   // Navigation between Step 1 (form & services) and Step 2 (payment)
@@ -314,12 +316,12 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <StatusBar style={isDarkMode ? "light" : "dark"} />
 
       {/* HEADER */}
-      <View style={{ width: '100%', backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}>
-        <View style={[styles.header, { maxWidth: 840, alignSelf: 'center', width: '100%' }]}>
+      <View style={{ width: '100%', backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+        <View style={[styles.header, { maxWidth: 840, alignSelf: 'center', width: '100%', backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           <TouchableOpacity
             onPress={() => {
               if (currentStep === 'payment') {
@@ -330,10 +332,10 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
             }}
             style={styles.backButton}
           >
-            <Ionicons name="chevron-back" size={24} color="#111827" />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <View style={{ alignItems: 'center' }}>
-            <Text style={styles.headerTitle}>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>
               {currentStep === 'form' ? 'Thông tin đặt phòng' : 'Xác nhận & Thanh toán'}
             </Text>
             {currentStep === 'payment' && (
@@ -354,26 +356,26 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
         <>
           <ScrollView contentContainerStyle={[styles.content, { maxWidth: 840, alignSelf: 'center', width: '100%' }]} showsVerticalScrollIndicator={false}>
             {/* PROPERTY SUMMARY BANNER */}
-            <View style={styles.hotelBannerCard}>
+            <View style={[styles.hotelBannerCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Image
                 source={{ uri: stay.images?.[0] || 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=400&q=80' }}
                 style={styles.hotelBannerImg}
               />
               <View style={styles.hotelBannerInfo}>
-                <Text style={styles.hotelBannerTitle} numberOfLines={1}>{stay.title}</Text>
-                <Text style={styles.hotelBannerLoc} numberOfLines={1}>📍 {stay.location}</Text>
+                <Text style={[styles.hotelBannerTitle, { color: colors.text }]} numberOfLines={1}>{stay.title}</Text>
+                <Text style={[styles.hotelBannerLoc, { color: colors.textSecondary }]} numberOfLines={1}>📍 {stay.location}</Text>
                 <View style={styles.ratingBadge}>
                   <Ionicons name="star" size={13} color="#F59E0B" />
-                  <Text style={styles.ratingText}> {stay.rating || 5.0} ({stay.reviewCount || 260})</Text>
+                  <Text style={[styles.ratingText, { color: colors.textSecondary }]}> {stay.rating || 5.0} ({stay.reviewCount || 260})</Text>
                 </View>
               </View>
             </View>
 
             {/* TRIP DETAILS & EDIT PILLS */}
-            <View style={styles.cardSection}>
+            <View style={[styles.cardSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionTitle}>Thời gian & Khách</Text>
-                <View style={styles.datesTextRow}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Thời gian & Khách</Text>
+                <View style={[styles.datesTextRow, { backgroundColor: isDarkMode ? '#064E3B' : '#F0FDFA' }]}>
                   <Text style={styles.datesHighlightText}>{checkInStr} ➔ {checkOutStr}</Text>
                 </View>
               </View>
@@ -411,13 +413,13 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
             </View>
 
             {/* SERVICE PACKAGE SELECTION (GÓI DỊCH VỤ VIP / THƯỜNG) */}
-            <View style={styles.cardSection}>
-              <Text style={styles.sectionTitle}>Chọn gói dịch vụ lưu trú</Text>
-              <Text style={styles.sectionSub}>Nâng tầm trải nghiệm kỳ nghỉ của bạn:</Text>
+            <View style={[styles.cardSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Chọn gói dịch vụ lưu trú</Text>
+              <Text style={[styles.sectionSub, { color: colors.textSecondary }]}>Nâng tầm trải nghiệm kỳ nghỉ của bạn:</Text>
 
               {/* Package 1: Standard */}
               <TouchableOpacity
-                style={[styles.packageCard, selectedPackage === 'standard' && styles.packageCardActive]}
+                style={[styles.packageCard, { backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF', borderColor: colors.border }, selectedPackage === 'standard' && (isDarkMode ? { borderColor: '#00BDD6', backgroundColor: '#083344' } : styles.packageCardActive)]}
                 onPress={() => setSelectedPackage('standard')}
                 activeOpacity={0.8}
               >
@@ -426,20 +428,20 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
                     <View style={[styles.packageRadio, selectedPackage === 'standard' && styles.packageRadioActive]}>
                       {selectedPackage === 'standard' && <View style={styles.packageRadioInner} />}
                     </View>
-                    <Text style={styles.packageNameText}>Gói Standard (Tiêu chuẩn)</Text>
+                    <Text style={[styles.packageNameText, { color: colors.text }]}>Gói Standard (Tiêu chuẩn)</Text>
                   </View>
                   <Text style={styles.packagePriceText}>Giá gốc</Text>
                 </View>
                 <View style={{ marginLeft: 26, gap: 3 }}>
-                  <Text style={styles.packageDescText}>• Phòng nghỉ tiện nghi cao cấp, Wifi tốc độ cao</Text>
-                  <Text style={styles.packageDescText}>• Nước khoáng, trà & cà phê hòa tan miễn phí tại phòng</Text>
-                  <Text style={styles.packageDescText}>• Sử dụng hồ bơi vô cực & phòng gym</Text>
+                  <Text style={[styles.packageDescText, { color: colors.textSecondary }]}>• Phòng nghỉ tiện nghi cao cấp, Wifi tốc độ cao</Text>
+                  <Text style={[styles.packageDescText, { color: colors.textSecondary }]}>• Nước khoáng, trà & cà phê hòa tan miễn phí tại phòng</Text>
+                  <Text style={[styles.packageDescText, { color: colors.textSecondary }]}>• Sử dụng hồ bơi vô cực & phòng gym</Text>
                 </View>
               </TouchableOpacity>
 
               {/* Package 2: VIP */}
               <TouchableOpacity
-                style={[styles.packageCard, selectedPackage === 'vip' && styles.packageCardActiveVIP]}
+                style={[styles.packageCard, { backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF', borderColor: colors.border }, selectedPackage === 'vip' && (isDarkMode ? { borderColor: '#F59E0B', backgroundColor: '#451A03' } : styles.packageCardActiveVIP)]}
                 onPress={() => setSelectedPackage('vip')}
                 activeOpacity={0.8}
               >
@@ -457,16 +459,16 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
                   <Text style={[styles.packagePriceText, { color: '#D97706' }]}>+20% (+{formatDisplay(Math.round(roomBaseSubtotal * 0.2))})</Text>
                 </View>
                 <View style={{ marginLeft: 26, gap: 3 }}>
-                  <Text style={styles.packageDescText}>• Bao gồm toàn bộ quyền lợi Standard</Text>
-                  <Text style={styles.packageDescText}>• <Text style={{ fontWeight: '700', color: '#111827' }}>Miễn phí Bữa sáng Buffet quốc tế</Text> mỗi ngày</Text>
-                  <Text style={styles.packageDescText}>• Phòng view đẹp tầng cao thoáng mát</Text>
-                  <Text style={styles.packageDescText}>• Nhận phòng sớm linh hoạt từ 12:00</Text>
+                  <Text style={[styles.packageDescText, { color: colors.textSecondary }]}>• Bao gồm toàn bộ quyền lợi Standard</Text>
+                  <Text style={[styles.packageDescText, { color: colors.textSecondary }]}>• <Text style={{ fontWeight: '700', color: '#111827' }}>Miễn phí Bữa sáng Buffet quốc tế</Text> mỗi ngày</Text>
+                  <Text style={[styles.packageDescText, { color: colors.textSecondary }]}>• Phòng view đẹp tầng cao thoáng mát</Text>
+                  <Text style={[styles.packageDescText, { color: colors.textSecondary }]}>• Nhận phòng sớm linh hoạt từ 12:00</Text>
                 </View>
               </TouchableOpacity>
 
               {/* Package 3: Luxury */}
               <TouchableOpacity
-                style={[styles.packageCard, selectedPackage === 'luxury' && styles.packageCardActiveLuxury]}
+                style={[styles.packageCard, { backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF', borderColor: colors.border }, selectedPackage === 'luxury' && (isDarkMode ? { borderColor: '#7C3AED', backgroundColor: '#2E1065' } : styles.packageCardActiveLuxury)]}
                 onPress={() => setSelectedPackage('luxury')}
                 activeOpacity={0.8}
               >
@@ -484,18 +486,18 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
                   <Text style={[styles.packagePriceText, { color: '#7C3AED' }]}>+45% (+{formatDisplay(Math.round(roomBaseSubtotal * 0.45))})</Text>
                 </View>
                 <View style={{ marginLeft: 26, gap: 3 }}>
-                  <Text style={styles.packageDescText}>• Toàn bộ quyền lợi VIP cao cấp</Text>
-                  <Text style={styles.packageDescText}>• <Text style={{ fontWeight: '700', color: '#111827' }}>Xe riêng đưa đón sân bay 2 chiều</Text></Text>
-                  <Text style={styles.packageDescText}>• Tặng 1 suất Spa / Massage body 60 phút thư giãn</Text>
-                  <Text style={styles.packageDescText}>• Rượu vang chào đón & Quản gia hỗ trợ 24/7</Text>
+                  <Text style={[styles.packageDescText, { color: colors.textSecondary }]}>• Toàn bộ quyền lợi VIP cao cấp</Text>
+                  <Text style={[styles.packageDescText, { color: colors.textSecondary }]}>• <Text style={{ fontWeight: '700', color: '#111827' }}>Xe riêng đưa đón sân bay 2 chiều</Text></Text>
+                  <Text style={[styles.packageDescText, { color: colors.textSecondary }]}>• Tặng 1 suất Spa / Massage body 60 phút thư giãn</Text>
+                  <Text style={[styles.packageDescText, { color: colors.textSecondary }]}>• Rượu vang chào đón & Quản gia hỗ trợ 24/7</Text>
                 </View>
               </TouchableOpacity>
             </View>
 
             {/* ADD-ON SERVICES SELECTION */}
-            <View style={styles.cardSection}>
-              <Text style={styles.sectionTitle}>Dịch vụ tiện ích cộng thêm</Text>
-              <Text style={styles.sectionSub}>Tùy chọn dịch vụ thuận tiện cho chuyến đi:</Text>
+            <View style={[styles.cardSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Dịch vụ tiện ích cộng thêm</Text>
+              <Text style={[styles.sectionSub, { color: colors.textSecondary }]}>Tùy chọn dịch vụ thuận tiện cho chuyến đi:</Text>
 
               {AVAILABLE_ADDONS.map((addon) => {
                 const isChecked = selectedAddonIds.includes(addon.id);
@@ -503,16 +505,16 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
                 return (
                   <TouchableOpacity
                     key={addon.id}
-                    style={[styles.addonRow, isChecked && styles.addonRowChecked]}
+                    style={[styles.addonRow, { backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF', borderColor: colors.border }, isChecked && (isDarkMode ? { borderColor: '#0284C7', backgroundColor: '#082F49' } : styles.addonRowChecked)]}
                     onPress={() => toggleAddon(addon.id)}
                     activeOpacity={0.8}
                   >
-                    <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
+                    <View style={[styles.checkbox, { backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF', borderColor: colors.border }, isChecked && styles.checkboxChecked]}>
                       {isChecked && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
                     </View>
                     <View style={{ flex: 1, paddingHorizontal: 12 }}>
-                      <Text style={styles.addonName}>{addon.name}</Text>
-                      <Text style={styles.addonDesc}>{addon.desc}</Text>
+                      <Text style={[styles.addonName, { color: colors.text }]}>{addon.name}</Text>
+                      <Text style={[styles.addonDesc, { color: colors.textSecondary }]}>{addon.desc}</Text>
                     </View>
                     <Text style={styles.addonPrice}>+{priceFormatted}</Text>
                   </TouchableOpacity>
@@ -521,87 +523,87 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
             </View>
 
             {/* CONTACT & GUEST INFORMATION FORM */}
-            <View style={styles.cardSection}>
-              <Text style={styles.sectionTitle}>Thông tin người nhận phòng</Text>
-              <Text style={styles.sectionSub}>Thông tin chính xác để chủ nhà đón tiếp & gửi vé:</Text>
+            <View style={[styles.cardSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Thông tin người nhận phòng</Text>
+              <Text style={[styles.sectionSub, { color: colors.textSecondary }]}>Thông tin chính xác để chủ nhà đón tiếp & gửi vé:</Text>
 
-              <Text style={styles.inputLabel}>Họ và tên người đại diện *</Text>
-              <View style={styles.inputWrap}>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>Họ và tên người đại diện *</Text>
+              <View style={[styles.inputWrap, { backgroundColor: isDarkMode ? '#0F172A' : '#F9FAFB', borderColor: colors.border }]}>
                 <Ionicons name="person-outline" size={18} color="#6B7280" style={{ marginRight: 10 }} />
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { color: colors.text }]}
                   value={contactName}
                   onChangeText={setContactName}
                   placeholder="Ví dụ: Nguyễn Văn Du Khách"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
                 />
               </View>
 
-              <Text style={styles.inputLabel}>Số điện thoại liên hệ *</Text>
-              <View style={styles.inputWrap}>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>Số điện thoại liên hệ *</Text>
+              <View style={[styles.inputWrap, { backgroundColor: isDarkMode ? '#0F172A' : '#F9FAFB', borderColor: colors.border }]}>
                 <Ionicons name="call-outline" size={18} color="#6B7280" style={{ marginRight: 10 }} />
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { color: colors.text }]}
                   value={contactPhone}
                   onChangeText={setContactPhone}
                   placeholder="Ví dụ: 0987 654 321"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
                   keyboardType="phone-pad"
                 />
               </View>
 
-              <Text style={styles.inputLabel}>Địa chỉ Email (Nhận biên lai PDF & mã vé)</Text>
-              <View style={styles.inputWrap}>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>Địa chỉ Email (Nhận biên lai PDF & mã vé)</Text>
+              <View style={[styles.inputWrap, { backgroundColor: isDarkMode ? '#0F172A' : '#F9FAFB', borderColor: colors.border }]}>
                 <Ionicons name="mail-outline" size={18} color="#6B7280" style={{ marginRight: 10 }} />
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { color: colors.text }]}
                   value={contactEmail}
                   onChangeText={setContactEmail}
                   placeholder="Ví dụ: traveler@gmail.com"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
                   keyboardType="email-address"
                 />
               </View>
 
-              <Text style={styles.inputLabel}>Yêu cầu đặc biệt cho chỗ nghỉ (Tùy chọn)</Text>
-              <View style={[styles.inputWrap, { height: 80, alignItems: 'flex-start', paddingTop: 10 }]}>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>Yêu cầu đặc biệt cho chỗ nghỉ (Tùy chọn)</Text>
+              <View style={[styles.inputWrap, { height: 80, alignItems: 'flex-start', paddingTop: 10, backgroundColor: isDarkMode ? '#0F172A' : '#F9FAFB', borderColor: colors.border }]}>
                 <TextInput
-                  style={[styles.textInput, { height: '100%', textAlignVertical: 'top' }]}
+                  style={[styles.textInput, { height: '100%', textAlignVertical: 'top', color: colors.text }]}
                   value={specialRequest}
                   onChangeText={setSpecialRequest}
                   placeholder="Ví dụ: Tôi muốn phòng tầng cao, giường đôi, hoặc chuẩn bị hoa tươi kỷ niệm..."
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
                   multiline
                 />
               </View>
             </View>
 
             {/* PRICE BREAKDOWN */}
-            <View style={styles.cardSection}>
-              <Text style={styles.sectionTitle}>Bảng tính chi phí</Text>
+            <View style={[styles.cardSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Bảng tính chi phí</Text>
 
               <View style={styles.priceRow}>
-                <Text style={styles.priceRowLabel}>Tiền phòng ({nights} đêm):</Text>
-                <Text style={styles.priceRowVal}>{formatDisplay(roomBaseSubtotal)}</Text>
+                <Text style={[styles.priceRowLabel, { color: colors.textSecondary }]}>Tiền phòng ({nights} đêm):</Text>
+                <Text style={[styles.priceRowVal, { color: colors.text }]}>{formatDisplay(roomBaseSubtotal)}</Text>
               </View>
 
               {extraAdults > 0 && (
                 <View style={styles.priceRow}>
-                  <Text style={styles.priceRowLabel}>Phụ thu {extraAdults} người lớn (+30%/đêm):</Text>
+                  <Text style={[styles.priceRowLabel, { color: colors.textSecondary }]}>Phụ thu {extraAdults} người lớn (+30%/đêm):</Text>
                   <Text style={[styles.priceRowVal, { color: '#0D9488' }]}>+{formatDisplay(extraAdultsFeePerNight * nights)}</Text>
                 </View>
               )}
 
               {extraChildren > 0 && (
                 <View style={styles.priceRow}>
-                  <Text style={styles.priceRowLabel}>Phụ thu {extraChildren} trẻ em (+15%/đêm):</Text>
+                  <Text style={[styles.priceRowLabel, { color: colors.textSecondary }]}>Phụ thu {extraChildren} trẻ em (+15%/đêm):</Text>
                   <Text style={[styles.priceRowVal, { color: '#0D9488' }]}>+{formatDisplay(extraChildrenFeePerNight * nights)}</Text>
                 </View>
               )}
 
               {packageSurchargeTotal > 0 && (
                 <View style={styles.priceRow}>
-                  <Text style={styles.priceRowLabel}>Nâng cấp {getPackageName(selectedPackage)}:</Text>
+                  <Text style={[styles.priceRowLabel, { color: colors.textSecondary }]}>Nâng cấp {getPackageName(selectedPackage)}:</Text>
                   <Text style={[styles.priceRowVal, { color: selectedPackage === 'vip' ? '#D97706' : '#7C3AED' }]}>
                     +{formatDisplay(packageSurchargeTotal)}
                   </Text>
@@ -610,15 +612,15 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
 
               {addonsTotal > 0 && (
                 <View style={styles.priceRow}>
-                  <Text style={styles.priceRowLabel}>Dịch vụ tiện ích cộng thêm ({selectedAddonIds.length}):</Text>
+                  <Text style={[styles.priceRowLabel, { color: colors.textSecondary }]}>Dịch vụ tiện ích cộng thêm ({selectedAddonIds.length}):</Text>
                   <Text style={[styles.priceRowVal, { color: '#0284C7' }]}>+{formatDisplay(addonsTotal)}</Text>
                 </View>
               )}
 
-              <View style={styles.cardDivider} />
+              <View style={[styles.cardDivider, { backgroundColor: colors.border }]} />
 
               <View style={styles.priceRow}>
-                <Text style={styles.grandTotalLabel}>Tổng giá trị kỳ nghỉ:</Text>
+                <Text style={[styles.grandTotalLabel, { color: colors.text }]}>Tổng giá trị kỳ nghỉ:</Text>
                 <Text style={styles.grandTotalVal}>{formatDisplay(totalAmount)}</Text>
               </View>
             </View>
@@ -627,10 +629,10 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
           </ScrollView>
 
           {/* STEP 1 FOOTER: PROCEED TO PAYMENT */}
-          <View style={styles.footerContainer}>
+          <View style={[styles.footerContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
             <View style={{ maxWidth: 840, alignSelf: 'center', width: '100%' }}>
             <View style={{ marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ fontSize: 13, color: '#6B7280' }}>Tổng thanh toán ({nights} đêm):</Text>
+              <Text style={{ fontSize: 13, color: colors.textSecondary }}>Tổng thanh toán ({nights} đêm):</Text>
               <Text style={{ fontSize: 18, fontWeight: '800', color: '#00BDD6' }}>{formatDisplay(totalAmount)}</Text>
             </View>
 
@@ -653,16 +655,16 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
         <>
           <ScrollView contentContainerStyle={[styles.content, { maxWidth: 840, alignSelf: 'center', width: '100%' }]} showsVerticalScrollIndicator={false}>
             {/* COMPONENT 1: TRAVEL BOARDING PASS TICKET CARD */}
-            <View style={styles.ticketCard}>
+            <View style={[styles.ticketCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               {/* Ticket Header */}
-              <View style={styles.ticketHeader}>
+              <View style={[styles.ticketHeader, { backgroundColor: isDarkMode ? '#0F172A' : '#F8FAFC', borderBottomColor: colors.border }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <View style={styles.appIconPill}>
                     <Ionicons name="airplane" size={14} color="#FFFFFF" />
                   </View>
-                  <Text style={styles.appBrandText}>TRAVELLING PASS</Text>
+                  <Text style={[styles.appBrandText, { color: colors.text }]}>TRAVELLING PASS</Text>
                 </View>
-                <Text style={styles.ticketCodeText}>{ticketCode}</Text>
+                <Text style={[styles.ticketCodeText, { backgroundColor: isDarkMode ? '#082F49' : '#E0F2FE' }]}>{ticketCode}</Text>
               </View>
 
               {/* Hotel Main Info */}
@@ -672,9 +674,9 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
                   style={styles.ticketThumbnail}
                 />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.ticketHotelTitle} numberOfLines={1}>{stay.title}</Text>
-                  <Text style={styles.ticketHotelLoc} numberOfLines={1}>📍 {stay.location}</Text>
-                  <View style={styles.packagePillSmall}>
+                  <Text style={[styles.ticketHotelTitle, { color: colors.text }]} numberOfLines={1}>{stay.title}</Text>
+                  <Text style={[styles.ticketHotelLoc, { color: colors.textSecondary }]} numberOfLines={1}>📍 {stay.location}</Text>
+                  <View style={[styles.packagePillSmall, { backgroundColor: isDarkMode ? '#064E3B' : '#F0FDFA', borderColor: isDarkMode ? '#065F46' : '#CCFBF1' }]}>
                     <Ionicons name="shield-checkmark" size={11} color="#0D9488" style={{ marginRight: 4 }} />
                     <Text style={styles.packagePillText}>{getPackageName(selectedPackage)}</Text>
                   </View>
@@ -682,22 +684,22 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
               </View>
 
               {/* 3-Column Itinerary Flight-style Info */}
-              <View style={styles.itineraryBox}>
+              <View style={[styles.itineraryBox, { backgroundColor: isDarkMode ? '#0F172A' : '#F8FAFC', borderColor: colors.border }]}>
                 <View style={styles.itinCol}>
                   <Text style={styles.itinLabel}>NHẬN PHÒNG</Text>
-                  <Text style={styles.itinDate}>{checkInStr}</Text>
+                  <Text style={[styles.itinDate, { color: colors.text }]}>{checkInStr}</Text>
                   <Text style={styles.itinHour}>{estimatedCheckInTime.split(' ')[0]}</Text>
                 </View>
 
                 <View style={styles.itinCenterCol}>
                   <Ionicons name="bed-outline" size={18} color="#00BDD6" />
-                  <View style={styles.itinFlightLine} />
+                  <View style={[styles.itinFlightLine, { backgroundColor: colors.border }]} />
                   <Text style={styles.itinNightsBadge}>{nights} ĐÊM</Text>
                 </View>
 
                 <View style={[styles.itinCol, { alignItems: 'flex-end' }]}>
                   <Text style={styles.itinLabel}>TRẢ PHÒNG</Text>
-                  <Text style={styles.itinDate}>{checkOutStr}</Text>
+                  <Text style={[styles.itinDate, { color: colors.text }]}>{checkOutStr}</Text>
                   <Text style={styles.itinHour}>Trước 12:00</Text>
                 </View>
               </View>
@@ -706,34 +708,34 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
               <View style={styles.ticketGuestRow}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Ionicons name="person-circle-outline" size={16} color="#6B7280" style={{ marginRight: 6 }} />
-                  <Text style={styles.ticketGuestText}>{contactName}</Text>
+                  <Text style={[styles.ticketGuestText, { color: colors.text }]}>{contactName}</Text>
                 </View>
-                <Text style={styles.ticketGuestCount}>
+                <Text style={[styles.ticketGuestCount, { color: colors.textSecondary }]}>
                   {totalGuests} khách {totalExtraGuests > 0 ? `(${totalExtraGuests} phụ thu)` : ''}
                 </Text>
               </View>
 
               {/* Dashed Separator Line with Left & Right Cutout Circles */}
               <View style={styles.cutoutContainer}>
-                <View style={styles.cutoutLeft} />
-                <View style={styles.dashedLine} />
-                <View style={styles.cutoutRight} />
+                <View style={[styles.cutoutLeft, { backgroundColor: colors.background }]} />
+                <View style={[styles.dashedLine, { borderColor: colors.border }]} />
+                <View style={[styles.cutoutRight, { backgroundColor: colors.background }]} />
               </View>
 
               {/* Bottom Stub of Ticket: Total price */}
-              <View style={styles.ticketStub}>
+              <View style={[styles.ticketStub, { backgroundColor: colors.card }]}>
                 <View>
-                  <Text style={styles.stubTotalLabel}>TỔNG TIỀN PHÒNG</Text>
-                  <Text style={styles.stubTotalDesc}>Bao gồm thuế, phí & gói dịch vụ</Text>
+                  <Text style={[styles.stubTotalLabel, { color: colors.textSecondary }]}>TỔNG TIỀN PHÒNG</Text>
+                  <Text style={[styles.stubTotalDesc, { color: colors.textSecondary }]}>Bao gồm thuế, phí & gói dịch vụ</Text>
                 </View>
                 <Text style={styles.stubTotalAmount}>{formatDisplay(totalAmount)}</Text>
               </View>
             </View>
 
             {/* COMPONENT 2: MODERN FINTECH PAYMENT HUB */}
-            <View style={styles.fintechCard}>
+            <View style={[styles.fintechCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               {/* Top Countdown Pill */}
-              <View style={styles.countdownBadge}>
+              <View style={[styles.countdownBadge, { backgroundColor: isDarkMode ? '#064E3B' : '#F0FDFA', borderColor: isDarkMode ? '#065F46' : '#CCFBF1' }]}>
                 <Ionicons name="hourglass-outline" size={15} color="#0D9488" style={{ marginRight: 6 }} />
                 <Text style={styles.countdownBadgeText}>
                   Giữ giá ưu đãi trong <Text style={{ fontWeight: '800' }}>{formatCountdown(secondsLeft)}</Text>
@@ -741,9 +743,9 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
               </View>
 
               {/* Payment Type Selection (100% vs 50%) */}
-              <View style={styles.modernToggleBox}>
+              <View style={[styles.modernToggleBox, { backgroundColor: isDarkMode ? '#0F172A' : '#F8FAFC', borderColor: colors.border }]}>
                 <TouchableOpacity
-                  style={[styles.modernTab, paymentOption === 'full' && styles.modernTabActive]}
+                  style={[styles.modernTab, paymentOption === 'full' && (isDarkMode ? { backgroundColor: '#1E293B' } : styles.modernTabActive)]}
                   onPress={() => setPaymentOption('full')}
                   activeOpacity={0.8}
                 >
@@ -754,7 +756,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
                     style={{ marginRight: 6 }}
                   />
                   <View>
-                    <Text style={[styles.modernTabText, paymentOption === 'full' && styles.modernTabTextActive]}>
+                    <Text style={[styles.modernTabText, { color: colors.textSecondary }, paymentOption === 'full' && { color: colors.text, fontWeight: "700" }]}>
                       Thanh toán 100%
                     </Text>
                     <Text style={styles.modernTabSub}>{formatDisplay(totalAmount)}</Text>
@@ -762,7 +764,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.modernTab, paymentOption === 'part' && styles.modernTabActive]}
+                  style={[styles.modernTab, paymentOption === 'part' && (isDarkMode ? { backgroundColor: '#1E293B' } : styles.modernTabActive)]}
                   onPress={() => setPaymentOption('part')}
                   activeOpacity={0.8}
                 >
@@ -773,7 +775,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
                     style={{ marginRight: 6 }}
                   />
                   <View>
-                    <Text style={[styles.modernTabText, paymentOption === 'part' && styles.modernTabTextActive]}>
+                    <Text style={[styles.modernTabText, { color: colors.textSecondary }, paymentOption === 'part' && { color: colors.text, fontWeight: "700" }]}>
                       Đặt cọc 50%
                     </Text>
                     <Text style={styles.modernTabSub}>{formatDisplay(Math.round(totalAmount / 2))}</Text>
@@ -782,52 +784,52 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
               </View>
 
               {/* Payment Method 3-Card Online Row */}
-              <Text style={styles.paymentMethodHeading}>Chọn cổng thanh toán trực tuyến:</Text>
+              <Text style={[styles.paymentMethodHeading, { color: colors.text }]}>Chọn cổng thanh toán trực tuyến:</Text>
               <View style={styles.methodsRow3}>
                 {/* Method 1: VietQR */}
                 <TouchableOpacity
-                  style={[styles.methodCardCol3, selectedMethod === 'vietqr' && styles.methodCardCol3Active]}
+                  style={[styles.methodCardCol3, { backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF', borderColor: colors.border }, selectedMethod === 'vietqr' && (isDarkMode ? { borderColor: '#00BDD6', backgroundColor: '#083344' } : styles.methodCardCol3Active)]}
                   onPress={() => setSelectedMethod('vietqr')}
                   activeOpacity={0.8}
                 >
                   <View style={[styles.methodIconBadge, { backgroundColor: '#E0F2FE' }]}>
                     <Ionicons name="qr-code" size={20} color="#0284C7" />
                   </View>
-                  <Text style={styles.gridMethodTitle}>VietQR 24/7</Text>
-                  <Text style={styles.gridMethodSub}>Liên ngân hàng</Text>
+                  <Text style={[styles.gridMethodTitle, { color: colors.text }]}>VietQR 24/7</Text>
+                  <Text style={[styles.gridMethodSub, { color: colors.textSecondary }]}>Liên ngân hàng</Text>
                 </TouchableOpacity>
 
                 {/* Method 2: MoMo */}
                 <TouchableOpacity
-                  style={[styles.methodCardCol3, selectedMethod === 'momo' && styles.methodCardCol3Active]}
+                  style={[styles.methodCardCol3, { backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF', borderColor: colors.border }, selectedMethod === 'momo' && (isDarkMode ? { borderColor: '#DB2777', backgroundColor: '#500724' } : styles.methodCardCol3Active)]}
                   onPress={() => setSelectedMethod('momo')}
                   activeOpacity={0.8}
                 >
                   <View style={[styles.methodIconBadge, { backgroundColor: '#FDF2F8' }]}>
                     <Ionicons name="wallet" size={20} color="#DB2777" />
                   </View>
-                  <Text style={styles.gridMethodTitle}>Ví MoMo</Text>
-                  <Text style={styles.gridMethodSub}>ZaloPay / VNPay</Text>
+                  <Text style={[styles.gridMethodTitle, { color: colors.text }]}>Ví MoMo</Text>
+                  <Text style={[styles.gridMethodSub, { color: colors.textSecondary }]}>ZaloPay / VNPay</Text>
                 </TouchableOpacity>
 
                 {/* Method 3: Credit Card */}
                 <TouchableOpacity
-                  style={[styles.methodCardCol3, selectedMethod === 'card' && styles.methodCardCol3Active]}
+                  style={[styles.methodCardCol3, { backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF', borderColor: colors.border }, selectedMethod === 'card' && (isDarkMode ? { borderColor: '#059669', backgroundColor: '#064E3B' } : styles.methodCardCol3Active)]}
                   onPress={() => setSelectedMethod('card')}
                   activeOpacity={0.8}
                 >
                   <View style={[styles.methodIconBadge, { backgroundColor: '#ECFDF5' }]}>
                     <Ionicons name="card" size={20} color="#059669" />
                   </View>
-                  <Text style={styles.gridMethodTitle}>Thẻ Quốc tế</Text>
-                  <Text style={styles.gridMethodSub}>Visa / Mastercard</Text>
+                  <Text style={[styles.gridMethodTitle, { color: colors.text }]}>Thẻ Quốc tế</Text>
+                  <Text style={[styles.gridMethodSub, { color: colors.textSecondary }]}>Visa / Mastercard</Text>
                 </TouchableOpacity>
               </View>
 
               {/* DYNAMIC PAYMENT DETAILS VIEW */}
               {/* Option A: VietQR 24/7 */}
               {selectedMethod === 'vietqr' && (
-                <View style={styles.paymentDetailBox}>
+                <View style={[styles.paymentDetailBox, { backgroundColor: isDarkMode ? '#0F172A' : '#F8FAFC', borderColor: colors.border }]}>
                   <View style={styles.qrHeaderRow}>
                     <View style={styles.bankLogoBadge}>
                       <Text style={styles.bankLogoText}>MBBANK / VCB</Text>
@@ -848,17 +850,17 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
                     </View>
                   </View>
 
-                  <View style={styles.bankInfoTable}>
+                  <View style={[styles.bankInfoTable, { borderTopColor: colors.border }]}>
                     <View style={styles.bankInfoRow}>
-                      <Text style={styles.bankInfoLabel}>Số tài khoản:</Text>
-                      <Text style={styles.bankInfoVal}>9988 2345 6789</Text>
+                      <Text style={[styles.bankInfoLabel, { color: colors.textSecondary }]}>Số tài khoản:</Text>
+                      <Text style={[styles.bankInfoVal, { color: colors.text }]}>9988 2345 6789</Text>
                     </View>
                     <View style={styles.bankInfoRow}>
-                      <Text style={styles.bankInfoLabel}>Người thụ hưởng:</Text>
-                      <Text style={styles.bankInfoVal}>TRAVELLING APP VIETNAM</Text>
+                      <Text style={[styles.bankInfoLabel, { color: colors.textSecondary }]}>Người thụ hưởng:</Text>
+                      <Text style={[styles.bankInfoVal, { color: colors.text }]}>TRAVELLING APP VIETNAM</Text>
                     </View>
                     <View style={styles.bankInfoRow}>
-                      <Text style={styles.bankInfoLabel}>Nội dung chuyển:</Text>
+                      <Text style={[styles.bankInfoLabel, { color: colors.textSecondary }]}>Nội dung chuyển:</Text>
                       <TouchableOpacity onPress={handleCopyTransferCode} style={styles.copyBtn}>
                         <Text style={styles.transferContentText}>{ticketCode}</Text>
                         <Ionicons name={copiedCode ? "checkmark" : "copy-outline"} size={13} color="#00BDD6" style={{ marginLeft: 4 }} />
@@ -870,7 +872,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
 
               {/* Option B: MoMo / E-Wallet */}
               {selectedMethod === 'momo' && (
-                <View style={styles.paymentDetailBox}>
+                <View style={[styles.paymentDetailBox, { backgroundColor: isDarkMode ? '#0F172A' : '#F8FAFC', borderColor: colors.border }]}>
                   <View style={styles.momoHeaderRow}>
                     <View style={styles.momoBadge}>
                       <Text style={styles.momoBadgeText}>MOMO / ZALOPAY</Text>
@@ -886,7 +888,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
                       <Ionicons name="wallet" size={20} color="#DB2777" style={{ position: 'absolute', top: 35, left: 35 }} />
                     </View>
                   </View>
-                  <Text style={styles.methodInstructionText}>
+                  <Text style={[styles.methodInstructionText, { color: colors.textSecondary }]}>
                     Mở ứng dụng MoMo hoặc ZaloPay để quét mã QR thanh toán tức thì
                   </Text>
                 </View>
@@ -924,12 +926,12 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
             <View style={{ maxWidth: 840, alignSelf: 'center', width: '100%' }}>
             <View style={styles.footerSummaryRow}>
               <View>
-                <Text style={styles.footerDueLabel}>Số tiền thanh toán trực tuyến:</Text>
+                <Text style={[styles.footerDueLabel, { color: colors.textSecondary }]}>Số tiền thanh toán trực tuyến:</Text>
                 <Text style={styles.footerDueSub}>
                   {paymentOption === 'part' ? 'Đặt cọc 50% giữ chỗ' : 'Thanh toán toàn bộ 100%'}
                 </Text>
               </View>
-              <Text style={styles.footerDueAmount}>{formatDisplay(dueNow)}</Text>
+              <Text style={[styles.footerDueAmount, { color: colors.text }]}>{formatDisplay(dueNow)}</Text>
             </View>
 
             <TouchableOpacity
@@ -955,16 +957,16 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
         onRequestClose={() => setIsDatesModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Chọn thời gian lưu trú</Text>
+          <View style={[styles.modalBox, { backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Chọn thời gian lưu trú</Text>
               <TouchableOpacity onPress={() => setIsDatesModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#374151" />
+                <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={{ maxHeight: 520 }} contentContainerStyle={styles.modalContent} showsVerticalScrollIndicator={false}>
-              <Text style={styles.modalSub}>Chọn ngày nhận phòng và trả phòng:</Text>
+              <Text style={[styles.modalSub, { color: colors.textSecondary }]}>Chọn ngày nhận phòng và trả phòng:</Text>
 
               <CalendarPicker
                 initialStartDate={startDate}
@@ -995,16 +997,16 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
         onRequestClose={() => setIsTimeSlotModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Giờ nhận phòng dự kiến</Text>
+          <View style={[styles.modalBox, { backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Giờ nhận phòng dự kiến</Text>
               <TouchableOpacity onPress={() => setIsTimeSlotModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#374151" />
+                <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalContent}>
-              <Text style={styles.modalSub}>
+              <Text style={[styles.modalSub, { color: colors.textSecondary }]}>
                 Chọn khung giờ bạn sẽ tới nơi để chủ nhà hoặc khách sạn chuẩn bị chu đáo nhất:
               </Text>
 
@@ -1013,14 +1015,18 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
                 return (
                   <TouchableOpacity
                     key={slot}
-                    style={[styles.timeSlotOption, isSelected && styles.timeSlotOptionActive]}
+                    style={[
+                    styles.timeSlotOption,
+                    { backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF', borderColor: colors.border },
+                    isSelected && (isDarkMode ? { borderColor: '#00BDD6', backgroundColor: '#083344' } : styles.timeSlotOptionActive),
+                  ]}
                     onPress={() => setEstimatedCheckInTime(slot)}
                     activeOpacity={0.7}
                   >
                     <View style={[styles.timeSlotRadio, isSelected && styles.timeSlotRadioActive]}>
                       {isSelected && <View style={styles.timeSlotRadioDot} />}
                     </View>
-                    <Text style={[styles.timeSlotText, isSelected && styles.timeSlotTextActive]}>
+                    <Text style={[styles.timeSlotText, { color: colors.text }, isSelected && styles.timeSlotTextActive]}>
                       {slot}
                     </Text>
                   </TouchableOpacity>
@@ -1046,60 +1052,68 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
         onRequestClose={() => setIsGuestsModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Số lượng khách</Text>
+          <View style={[styles.modalBox, { backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Số lượng khách</Text>
               <TouchableOpacity onPress={() => setIsGuestsModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#374151" />
+                <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalContent}>
-              <Text style={styles.modalSub}>
+              <Text style={[styles.modalSub, { color: colors.textSecondary }]}>
                 Tiêu chuẩn 2 khách. Người lớn phát sinh phụ thu +30%/đêm, trẻ em phát sinh phụ thu +15%/đêm:
               </Text>
 
               {/* Adults */}
               <View style={styles.counterSection}>
                 <View>
-                  <Text style={styles.counterLabel}>Người lớn</Text>
-                  <Text style={styles.counterDesc}>Từ 13 tuổi trở lên</Text>
+                  <Text style={[styles.counterLabel, { color: colors.text }]}>Người lớn</Text>
+                  <Text style={[styles.counterDesc, { color: colors.textSecondary }]}>Từ 13 tuổi trở lên</Text>
                 </View>
                 <View style={styles.counterControls}>
                   <TouchableOpacity
-                    style={[styles.counterBtn, adults <= 1 && styles.counterBtnDisabled]}
+                    style={[
+                    styles.counterBtn,
+                    { backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF', borderColor: colors.border },
+                    adults <= 1 && (isDarkMode ? { backgroundColor: '#1E293B' } : styles.counterBtnDisabled),
+                  ]}
                     onPress={() => setAdults((prev) => Math.max(1, prev - 1))}
                     disabled={adults <= 1}
                   >
-                    <Ionicons name="remove" size={18} color={adults <= 1 ? '#9CA3AF' : '#111827'} />
+                    <Ionicons name="remove" size={18} color={adults <= 1 ? (isDarkMode ? '#475569' : '#9CA3AF') : colors.text} />
                   </TouchableOpacity>
-                  <Text style={styles.counterValue}>{adults}</Text>
+                  <Text style={[styles.counterValue, { color: colors.text }]}>{adults}</Text>
                   <TouchableOpacity
                     style={styles.counterBtn}
                     onPress={() => setAdults((prev) => Math.min(10, prev + 1))}
                   >
-                    <Ionicons name="add" size={18} color="#111827" />
+                    <Ionicons name="add" size={18} color={colors.text} />
                   </TouchableOpacity>
                 </View>
               </View>
 
-              <View style={styles.modalDivider} />
+              <View style={[styles.modalDivider, { backgroundColor: colors.border }]} />
 
               {/* Children */}
               <View style={styles.counterSection}>
                 <View>
-                  <Text style={styles.counterLabel}>Trẻ em</Text>
-                  <Text style={styles.counterDesc}>Dưới 13 tuổi</Text>
+                  <Text style={[styles.counterLabel, { color: colors.text }]}>Trẻ em</Text>
+                  <Text style={[styles.counterDesc, { color: colors.textSecondary }]}>Dưới 13 tuổi</Text>
                 </View>
                 <View style={styles.counterControls}>
                   <TouchableOpacity
-                    style={[styles.counterBtn, children <= 0 && styles.counterBtnDisabled]}
+                    style={[
+                    styles.counterBtn,
+                    { backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF', borderColor: colors.border },
+                    children <= 0 && (isDarkMode ? { backgroundColor: '#1E293B' } : styles.counterBtnDisabled),
+                  ]}
                     onPress={() => setChildren((prev) => Math.max(0, prev - 1))}
                     disabled={children <= 0}
                   >
-                    <Ionicons name="remove" size={18} color={children <= 0 ? '#9CA3AF' : '#111827'} />
+                    <Ionicons name="remove" size={18} color={children <= 0 ? (isDarkMode ? '#475569' : '#9CA3AF') : colors.text} />
                   </TouchableOpacity>
-                  <Text style={styles.counterValue}>{children}</Text>
+                  <Text style={[styles.counterValue, { color: colors.text }]}>{children}</Text>
                   <TouchableOpacity
                     style={styles.counterBtn}
                     onPress={() => setChildren((prev) => Math.min(6, prev + 1))}

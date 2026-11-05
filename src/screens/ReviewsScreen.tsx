@@ -17,6 +17,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Accommodation, ReviewItem } from '../types';
 import { mockApi } from '../api/mockApi';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 interface ReviewsScreenProps {
   stay: Accommodation;
@@ -30,6 +31,7 @@ export const ReviewsScreen: React.FC<ReviewsScreenProps> = ({
   onReviewAdded,
 }) => {
   const { user } = useAuth();
+  const { isDarkMode, colors } = useTheme();
   const [reviews, setReviews] = useState<ReviewItem[]>(stay.reviewsList || []);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [newRating, setNewRating] = useState<number>(5);
@@ -152,12 +154,12 @@ export const ReviewsScreen: React.FC<ReviewsScreenProps> = ({
   };
 
   const renderReviewItem = ({ item }: { item: ReviewItem }) => (
-    <View style={styles.reviewCard}>
+    <View style={[styles.reviewCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={styles.authorRow}>
         <Image source={{ uri: item.avatar }} style={styles.avatar} />
         <View style={styles.authorInfo}>
           <Text style={styles.authorName}>{item.author}</Text>
-          <Text style={styles.reviewDate}>{item.date}</Text>
+          <Text style={[styles.reviewDate, { color: colors.textSecondary }]}>{item.date}</Text>
         </View>
 
         {/* Cột hiển thị số sao + ICON SỬA ĐÁNH GIÁ */}
@@ -174,7 +176,7 @@ export const ReviewsScreen: React.FC<ReviewsScreenProps> = ({
           </View>
 
           <TouchableOpacity
-            style={styles.editReviewActionBtn}
+            style={[styles.editReviewActionBtn, { backgroundColor: isDarkMode ? '#083344' : '#E0F7FA' }]}
             onPress={() => handleOpenEditModal(item)}
             activeOpacity={0.7}
           >
@@ -183,21 +185,21 @@ export const ReviewsScreen: React.FC<ReviewsScreenProps> = ({
           </TouchableOpacity>
         </View>
       </View>
-      <Text style={styles.commentText}>{item.comment}</Text>
+      <Text style={[styles.commentText, { color: colors.text }]}>{item.comment}</Text>
     </View>
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <StatusBar style={isDarkMode ? "light" : "dark"} />
 
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={24} color="#111827" />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
             Đánh giá ({selectedStarFilter !== null ? filteredReviews.length : totalCount})
           </Text>
           <TouchableOpacity onPress={() => setIsModalOpen(true)} style={styles.writeButton}>
@@ -212,11 +214,11 @@ export const ReviewsScreen: React.FC<ReviewsScreenProps> = ({
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={() => (
-            <View style={styles.summaryContainer}>
+            <View style={[styles.summaryContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               {totalCount > 0 ? (
                 <>
                   <View style={styles.statsHeaderRow}>
-                    <Text style={styles.totalReviewsHeader}>{totalCount} đánh giá từ du khách</Text>
+                    <Text style={[styles.totalReviewsHeader, { color: colors.text }]}>{totalCount} đánh giá từ du khách</Text>
                     <TouchableOpacity
                       style={styles.addReviewBtn}
                       onPress={() => setIsModalOpen(true)}
@@ -229,9 +231,9 @@ export const ReviewsScreen: React.FC<ReviewsScreenProps> = ({
                   <View style={styles.ratingStatsRow}>
                     {/* Left Score */}
                     <View style={styles.scoreBlock}>
-                      <Text style={styles.mainScore}>
+                      <Text style={[styles.mainScore, { color: colors.text }]}>
                         {avgScore}
-                        <Text style={styles.scoreOutOf}>/5</Text>
+                        <Text style={[styles.scoreOutOf, { color: colors.textSecondary }]}>/5</Text>
                       </Text>
                       <View style={styles.starsRow}>
                         {[1, 2, 3, 4, 5].map((s) => (
@@ -263,7 +265,7 @@ export const ReviewsScreen: React.FC<ReviewsScreenProps> = ({
                             }
                             activeOpacity={0.7}
                           >
-                            <View style={styles.barTrack}>
+                            <View style={[styles.barTrack, { backgroundColor: isDarkMode ? '#334155' : '#E5E7EB' }]}>
                               <View
                                 style={[
                                   styles.barFill,
@@ -290,7 +292,7 @@ export const ReviewsScreen: React.FC<ReviewsScreenProps> = ({
                   <View style={styles.filterSection}>
                     <View style={styles.filterSectionHeader}>
                       <Ionicons name="filter" size={16} color="#00BDD6" style={{ marginRight: 6 }} />
-                      <Text style={styles.filterSectionTitle}>Lọc theo số sao:</Text>
+                      <Text style={[styles.filterSectionTitle, { color: colors.text }]}>Lọc theo số sao:</Text>
                       {selectedStarFilter !== null && (
                         <TouchableOpacity
                           onPress={() => setSelectedStarFilter(null)}
@@ -411,16 +413,16 @@ export const ReviewsScreen: React.FC<ReviewsScreenProps> = ({
           onRequestClose={() => setIsModalOpen(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalBox}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Viết đánh giá</Text>
+            <View style={[styles.modalBox, { backgroundColor: colors.card }]}>
+              <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>Viết đánh giá</Text>
                 <TouchableOpacity onPress={() => setIsModalOpen(false)}>
-                  <Ionicons name="close" size={24} color="#374151" />
+                  <Ionicons name="close" size={24} color={colors.text} />
                 </TouchableOpacity>
               </View>
 
               <View style={styles.modalContent}>
-                <Text style={styles.ratingLabel}>Bạn cảm thấy trải nghiệm thế nào?</Text>
+                <Text style={[styles.ratingLabel, { color: colors.text }]}>Bạn cảm thấy trải nghiệm thế nào?</Text>
                 <View style={styles.starPickerRow}>
                   {[1, 2, 3, 4, 5].map((s) => (
                     <TouchableOpacity
@@ -437,11 +439,11 @@ export const ReviewsScreen: React.FC<ReviewsScreenProps> = ({
                   ))}
                 </View>
 
-                <Text style={styles.inputLabel}>Nội dung nhận xét</Text>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>Nội dung nhận xét</Text>
                 <TextInput
-                  style={styles.reviewInput}
+                  style={[styles.reviewInput, { backgroundColor: isDarkMode ? '#0F172A' : '#F9FAFB', borderColor: colors.border, color: colors.text }]}
                   placeholder="Chia sẻ trải nghiệm của bạn về phòng, vị trí, tiện nghi và sự tiếp đón..."
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
                   multiline
                   numberOfLines={4}
                   value={commentText}
@@ -464,16 +466,16 @@ export const ReviewsScreen: React.FC<ReviewsScreenProps> = ({
           onRequestClose={() => setIsEditModalOpen(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalBox}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Chỉnh sửa đánh giá</Text>
+            <View style={[styles.modalBox, { backgroundColor: colors.card }]}>
+              <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>Chỉnh sửa đánh giá</Text>
                 <TouchableOpacity onPress={() => setIsEditModalOpen(false)}>
-                  <Ionicons name="close" size={24} color="#374151" />
+                  <Ionicons name="close" size={24} color={colors.text} />
                 </TouchableOpacity>
               </View>
 
               <View style={styles.modalContent}>
-                <Text style={styles.ratingLabel}>Đánh giá số sao:</Text>
+                <Text style={[styles.ratingLabel, { color: colors.text }]}>Đánh giá số sao:</Text>
                 <View style={styles.starPickerRow}>
                   {[1, 2, 3, 4, 5].map((s) => (
                     <TouchableOpacity
@@ -490,11 +492,11 @@ export const ReviewsScreen: React.FC<ReviewsScreenProps> = ({
                   ))}
                 </View>
 
-                <Text style={styles.inputLabel}>Nội dung nhận xét</Text>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>Nội dung nhận xét</Text>
                 <TextInput
-                  style={styles.reviewInput}
+                  style={[styles.reviewInput, { backgroundColor: isDarkMode ? '#0F172A' : '#F9FAFB', borderColor: colors.border, color: colors.text }]}
                   placeholder="Nhập nội dung nhận xét của bạn..."
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
                   multiline
                   numberOfLines={4}
                   value={editComment}
@@ -503,10 +505,10 @@ export const ReviewsScreen: React.FC<ReviewsScreenProps> = ({
 
                 <View style={styles.modalBtnRow}>
                   <TouchableOpacity
-                    style={styles.cancelBtn}
+                    style={[styles.cancelBtn, { backgroundColor: isDarkMode ? '#1E293B' : '#F3F4F6' }]}
                     onPress={() => setIsEditModalOpen(false)}
                   >
-                    <Text style={styles.cancelBtnText}>Hủy</Text>
+                    <Text style={[styles.cancelBtnText, { color: colors.text }]}>Hủy</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity

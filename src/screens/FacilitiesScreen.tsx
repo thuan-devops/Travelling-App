@@ -58,7 +58,7 @@ export const FacilitiesScreen: React.FC<FacilitiesScreenProps> = ({ stay, onBack
 
         <View style={styles.itemsList}>
           {facilities.map((fac, idx) => (
-            <View key={`fac-${idx}`} style={styles.facilityRow}>
+            <View key={`fac-${idx}`} style={[styles.facilityRow, { borderBottomColor: colors.border }]}>
               <Ionicons name={getAmenityIcon(fac)} size={22} color="#00BDD6" style={styles.itemIcon} />
               <Text style={[styles.itemText, { color: colors.text }]}>{fac}</Text>
             </View>
@@ -69,11 +69,11 @@ export const FacilitiesScreen: React.FC<FacilitiesScreenProps> = ({ stay, onBack
 
         {/* SERVICES SECTION */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Dịch vụ</Text>
-        <Text style={styles.subCategoryHeader}>Dịch vụ & tiện nghi bổ sung</Text>
+        <Text style={[styles.subCategoryHeader, { color: colors.text }]}>Dịch vụ & tiện nghi bổ sung</Text>
 
         <View style={styles.itemsList}>
           {services.map((srv, idx) => (
-            <View key={`srv-${idx}`} style={styles.facilityRow}>
+            <View key={`srv-${idx}`} style={[styles.facilityRow, { borderBottomColor: colors.border }]}>
               <Ionicons name={getAmenityIcon(srv)} size={22} color="#00BDD6" style={styles.itemIcon} />
               <Text style={[styles.itemText, { color: colors.text }]}>{srv}</Text>
             </View>
@@ -83,11 +83,11 @@ export const FacilitiesScreen: React.FC<FacilitiesScreenProps> = ({ stay, onBack
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
         {/* BATHROOM SECTION */}
-        <Text style={styles.subCategoryHeader}>Phòng tắm & vệ sinh cá nhân</Text>
+        <Text style={[styles.subCategoryHeader, { color: colors.text }]}>Phòng tắm & vệ sinh cá nhân</Text>
 
         <View style={styles.itemsList}>
           {bathroom.map((bath, idx) => (
-            <View key={`bath-${idx}`} style={styles.facilityRow}>
+            <View key={`bath-${idx}`} style={[styles.facilityRow, { borderBottomColor: colors.border }]}>
               <Ionicons name={getAmenityIcon(bath)} size={22} color="#00BDD6" style={styles.itemIcon} />
               <Text style={[styles.itemText, { color: colors.text }]}>{bath}</Text>
             </View>

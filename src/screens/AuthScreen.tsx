@@ -5,31 +5,28 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Alert,
+  ImageBackground,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { AppLogo } from '../components/AppLogo';
 
 export const AuthScreen: React.FC = () => {
-  const {
-    loginWithCredentials,
-    register,
-    loginWithSocial,
-    loginWithSocialDemo,
-    isLoading,
-  } = useAuth();
+  const { loginWithCredentials, register, isLoading } = useAuth();
+  const { isDarkMode } = useTheme();
 
   // Mode: 'login' | 'register'
   const [mode, setMode] = useState<'login' | 'register'>('login');
 
-  // Form Fields - strictly not preserved on logout/re-entry
+  // Form Fields
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
@@ -41,7 +38,6 @@ export const AuthScreen: React.FC = () => {
   // Status & Feedback
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
-  const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null);
 
   const resetForm = (newMode: 'login' | 'register') => {
     setMode(newMode);
@@ -124,406 +120,592 @@ export const AuthScreen: React.FC = () => {
     }
   };
 
-  const handleSocialAuth = async (provider: 'google' | 'facebook') => {
-    setSocialLoading(provider);
-    setErrorMessage('');
-    setSuccessMessage('');
-    try {
-      await loginWithSocial(provider);
-    } catch (err: any) {
-      const isDismissed =
-        err.message &&
-        (err.message.includes('đóng') ||
-          err.message.includes('hủy') ||
-          err.message.includes('cancel') ||
-          err.message.includes('dismiss'));
-
-      if (isDismissed) {
-        if (Platform.OS === 'web' && typeof window !== 'undefined' && window.confirm) {
-          const proceed = window.confirm(
-            `Cửa sổ đăng nhập ${provider === 'google' ? 'Google' : 'Facebook'} đã đóng.\n\nNếu ${provider === 'google' ? 'Google' : 'Facebook'} đang chặn quyền truy cập (do Google Cloud Console chưa thêm redirect URI hoặc Test User), bạn có muốn đăng nhập nhanh bằng tài khoản ${provider === 'google' ? 'Google' : 'Facebook'} để tiếp tục không?`
-          );
-          if (proceed) {
-            await loginWithSocialDemo(provider);
-          }
-        } else {
-          Alert.alert(
-            'Đăng nhập ' + (provider === 'google' ? 'Google' : 'Facebook'),
-            `Cửa sổ đăng nhập đã đóng hoặc ${provider === 'google' ? 'Google' : 'Facebook'} đang chặn quyền truy cập.\n\nBạn có muốn đăng nhập nhanh bằng tài khoản ${provider === 'google' ? 'Google' : 'Facebook'} để tiếp tục không?`,
-            [
-              { text: 'Hủy', style: 'cancel' },
-              {
-                text: 'Đăng nhập tiếp tục',
-                onPress: async () => {
-                  await loginWithSocialDemo(provider);
-                },
-              },
-            ]
-          );
-        }
-      } else {
-        Alert.alert(
-          'Đăng nhập ' + (provider === 'google' ? 'Google' : 'Facebook'),
-          err.message || 'Không thể đăng nhập. Vui lòng thử lại.'
-        );
-      }
-    } finally {
-      setSocialLoading(null);
-    }
-  };
-
-  const isFormBusy = isLoading || socialLoading !== null;
+  const isFormBusy = isLoading;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
+    <View style={styles.rootContainer}>
+      <StatusBar style="light" />
+
+      {/* BACKGROUND IMAGE VỚI HIỆU ỨNG BLUR MỜ MỜ NGHỆ THUẬT */}
+      <ImageBackground
+        source={{
+          uri: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80',
+        }}
+        style={styles.backgroundImage}
+        blurRadius={Platform.OS === 'web' ? 10 : 16}
+        resizeMode="cover"
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContainer}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+        {/* LỚP PHỦ GRADIENT & TINT TẠO ĐỘ SÂU ĐẸP MẮT */}
+        <View
+          style={[
+            styles.backdropOverlay,
+            {
+              backgroundColor: isDarkMode
+                ? 'rgba(11, 19, 43, 0.78)'
+                : 'rgba(15, 23, 42, 0.52)',
+            },
+          ]}
         >
-          {/* LOGO & BRANDING (Displayed on BOTH Login and Register) */}
-          <View style={styles.brandHeader}>
-            <View style={styles.logoWrapper}>
-              <AppLogo size={68} />
-            </View>
-            <Text style={styles.brandTitle}>Travelling App</Text>
-            <Text style={styles.brandSubtitle}>
-              {mode === 'login'
-                ? 'Đăng nhập để tiếp tục hành trình khám phá'
-                : 'Tạo tài khoản mới để trải nghiệm dịch vụ du lịch'}
-            </Text>
-          </View>
+          {/* VẦNG SÁNG AMBIENT GLOW TRANG TRÍ */}
+          <View style={[styles.ambientOrb, styles.ambientOrbTop]} />
+          <View style={[styles.ambientOrb, styles.ambientOrbBottom]} />
 
-          {/* TAB SWITCHER: ĐĂNG NHẬP / ĐĂNG KÝ */}
-          <View style={styles.tabContainer}>
-            <TouchableOpacity
-              style={[styles.tabButton, mode === 'login' && styles.tabButtonActive]}
-              activeOpacity={0.8}
-              onPress={() => resetForm('login')}
+          <SafeAreaView style={styles.safeArea}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              style={styles.keyboardView}
             >
-              <Text style={[styles.tabText, mode === 'login' && styles.tabTextActive]}>
-                Đăng nhập
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.tabButton, mode === 'register' && styles.tabButtonActive]}
-              activeOpacity={0.8}
-              onPress={() => resetForm('register')}
-            >
-              <Text style={[styles.tabText, mode === 'register' && styles.tabTextActive]}>
-                Đăng ký
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* FORM CARD */}
-          <View style={styles.formCard}>
-            {/* Field: Username */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Tên đăng nhập</Text>
-              <View style={[styles.inputBox, errorMessage ? styles.inputBoxError : null]}>
-                <Ionicons name="person-outline" size={20} color="#6B7280" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Nhập tên đăng nhập hoặc email"
-                  placeholderTextColor="#9CA3AF"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  value={username}
-                  onChangeText={(text) => {
-                    setUsername(text);
-                    if (errorMessage) setErrorMessage('');
-                    if (successMessage) setSuccessMessage('');
-                  }}
-                  editable={!isFormBusy}
-                />
-              </View>
-            </View>
-
-            {/* Field: Password */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Mật khẩu</Text>
-              <View style={[styles.inputBox, errorMessage ? styles.inputBoxError : null]}>
-                <Ionicons name="lock-closed-outline" size={20} color="#6B7280" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Nhập mật khẩu"
-                  placeholderTextColor="#9CA3AF"
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  value={password}
-                  onChangeText={(text) => {
-                    setPassword(text);
-                    if (errorMessage) setErrorMessage('');
-                    if (successMessage) setSuccessMessage('');
-                  }}
-                  editable={!isFormBusy}
-                />
-                <TouchableOpacity
-                  style={styles.eyeButton}
-                  onPress={() => setShowPassword(!showPassword)}
-                  activeOpacity={0.7}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              <ScrollView
+                contentContainerStyle={styles.scrollContainer}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                {/* KHUNG ĐĂNG NHẬP / ĐĂNG KÝ GLASSMORPHISM HIỆN ĐẠI */}
+                <View
+                  style={[
+                    styles.glassCard,
+                    {
+                      backgroundColor: isDarkMode
+                        ? 'rgba(15, 23, 42, 0.84)'
+                        : 'rgba(255, 255, 255, 0.90)',
+                      borderColor: isDarkMode
+                        ? 'rgba(255, 255, 255, 0.12)'
+                        : 'rgba(255, 255, 255, 0.65)',
+                    },
+                  ]}
                 >
-                  <Ionicons
-                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                    size={20}
-                    color="#6B7280"
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
+                  {/* LOGO & BRAND HEADER */}
+                  <View style={styles.brandHeader}>
+                    <View
+                      style={[
+                        styles.logoEmblem,
+                        {
+                          backgroundColor: isDarkMode
+                            ? 'rgba(0, 189, 214, 0.15)'
+                            : '#FFFFFF',
+                          borderColor: isDarkMode
+                            ? 'rgba(0, 189, 214, 0.4)'
+                            : '#E0F7FA',
+                        },
+                      ]}
+                    >
+                      <AppLogo size={48} />
+                    </View>
 
-            {/* Field: Confirm Password (Register Only) */}
-            {mode === 'register' && (
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Xác nhận mật khẩu</Text>
-                <View style={[styles.inputBox, errorMessage ? styles.inputBoxError : null]}>
-                  <Ionicons
-                    name="shield-checkmark-outline"
-                    size={20}
-                    color="#6B7280"
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Nhập lại mật khẩu"
-                    placeholderTextColor="#9CA3AF"
-                    secureTextEntry={!showConfirmPassword}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    value={confirmPassword}
-                    onChangeText={(text) => {
-                      setConfirmPassword(text);
-                      if (errorMessage) setErrorMessage('');
-                      if (successMessage) setSuccessMessage('');
-                    }}
-                    editable={!isFormBusy}
-                  />
-                  <TouchableOpacity
-                    style={styles.eyeButton}
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                    activeOpacity={0.7}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    <Text
+                      style={[
+                        styles.brandTitle,
+                        { color: isDarkMode ? '#F8FAFC' : '#0F172A' },
+                      ]}
+                    >
+                      Travelling App
+                    </Text>
+
+                    <Text
+                      style={[
+                        styles.brandSubtitle,
+                        { color: isDarkMode ? '#94A3B8' : '#64748B' },
+                      ]}
+                    >
+                      {mode === 'login'
+                        ? 'Đăng nhập để tiếp tục hành trình khám phá'
+                        : 'Tạo tài khoản mới để trải nghiệm dịch vụ'}
+                    </Text>
+                  </View>
+
+                  {/* TAB SWITCHER: ĐĂNG NHẬP / ĐĂNG KÝ */}
+                  <View
+                    style={[
+                      styles.tabContainer,
+                      {
+                        backgroundColor: isDarkMode
+                          ? 'rgba(30, 41, 59, 0.85)'
+                          : 'rgba(241, 245, 249, 0.95)',
+                        borderColor: isDarkMode
+                          ? 'rgba(255, 255, 255, 0.08)'
+                          : 'rgba(203, 213, 225, 0.5)',
+                      },
+                    ]}
                   >
-                    <Ionicons
-                      name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
-                      size={20}
-                      color="#6B7280"
-                    />
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.tabButton,
+                        mode === 'login' && styles.tabButtonActive,
+                      ]}
+                      activeOpacity={0.8}
+                      onPress={() => resetForm('login')}
+                    >
+                      <Text
+                        style={[
+                          styles.tabText,
+                          {
+                            color:
+                              mode === 'login'
+                                ? '#FFFFFF'
+                                : isDarkMode
+                                ? '#94A3B8'
+                                : '#64748B',
+                          },
+                          mode === 'login' && styles.tabTextActive,
+                        ]}
+                      >
+                        Đăng nhập
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.tabButton,
+                        mode === 'register' && styles.tabButtonActive,
+                      ]}
+                      activeOpacity={0.8}
+                      onPress={() => resetForm('register')}
+                    >
+                      <Text
+                        style={[
+                          styles.tabText,
+                          {
+                            color:
+                              mode === 'register'
+                                ? '#FFFFFF'
+                                : isDarkMode
+                                ? '#94A3B8'
+                                : '#64748B',
+                          },
+                          mode === 'register' && styles.tabTextActive,
+                        ]}
+                      >
+                        Đăng ký
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* FORM FIELDS */}
+                  <View style={styles.formFields}>
+                    {/* Tên đăng nhập */}
+                    <View style={styles.inputGroup}>
+                      <Text
+                        style={[
+                          styles.inputLabel,
+                          { color: isDarkMode ? '#E2E8F0' : '#334155' },
+                        ]}
+                      >
+                        Tên đăng nhập
+                      </Text>
+                      <View
+                        style={[
+                          styles.inputBox,
+                          {
+                            backgroundColor: isDarkMode
+                              ? 'rgba(30, 41, 59, 0.7)'
+                              : 'rgba(248, 250, 252, 0.95)',
+                            borderColor: isDarkMode
+                              ? 'rgba(255, 255, 255, 0.1)'
+                              : '#E2E8F0',
+                          },
+                          errorMessage ? styles.inputBoxError : null,
+                        ]}
+                      >
+                        <Ionicons
+                          name="person-outline"
+                          size={19}
+                          color="#00BDD6"
+                          style={styles.inputIcon}
+                        />
+                        <TextInput
+                          style={[
+                            styles.textInput,
+                            { color: isDarkMode ? '#F8FAFC' : '#0F172A' },
+                          ]}
+                          placeholder="Nhập tên đăng nhập hoặc email"
+                          placeholderTextColor={
+                            isDarkMode ? '#64748B' : '#9CA3AF'
+                          }
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          value={username}
+                          onChangeText={(text) => {
+                            setUsername(text);
+                            if (errorMessage) setErrorMessage('');
+                            if (successMessage) setSuccessMessage('');
+                          }}
+                          editable={!isFormBusy}
+                        />
+                      </View>
+                    </View>
+
+                    {/* Mật khẩu */}
+                    <View style={styles.inputGroup}>
+                      <Text
+                        style={[
+                          styles.inputLabel,
+                          { color: isDarkMode ? '#E2E8F0' : '#334155' },
+                        ]}
+                      >
+                        Mật khẩu
+                      </Text>
+                      <View
+                        style={[
+                          styles.inputBox,
+                          {
+                            backgroundColor: isDarkMode
+                              ? 'rgba(30, 41, 59, 0.7)'
+                              : 'rgba(248, 250, 252, 0.95)',
+                            borderColor: isDarkMode
+                              ? 'rgba(255, 255, 255, 0.1)'
+                              : '#E2E8F0',
+                          },
+                          errorMessage ? styles.inputBoxError : null,
+                        ]}
+                      >
+                        <Ionicons
+                          name="lock-closed-outline"
+                          size={19}
+                          color="#00BDD6"
+                          style={styles.inputIcon}
+                        />
+                        <TextInput
+                          style={[
+                            styles.textInput,
+                            { color: isDarkMode ? '#F8FAFC' : '#0F172A' },
+                          ]}
+                          placeholder="Nhập mật khẩu"
+                          placeholderTextColor={
+                            isDarkMode ? '#64748B' : '#9CA3AF'
+                          }
+                          secureTextEntry={!showPassword}
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          value={password}
+                          onChangeText={(text) => {
+                            setPassword(text);
+                            if (errorMessage) setErrorMessage('');
+                            if (successMessage) setSuccessMessage('');
+                          }}
+                          editable={!isFormBusy}
+                        />
+                        <TouchableOpacity
+                          style={styles.eyeButton}
+                          onPress={() => setShowPassword(!showPassword)}
+                          activeOpacity={0.7}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                          <Ionicons
+                            name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                            size={20}
+                            color={isDarkMode ? '#94A3B8' : '#64748B'}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* Xác nhận mật khẩu (Chỉ khi Đăng ký) */}
+                    {mode === 'register' && (
+                      <View style={styles.inputGroup}>
+                        <Text
+                          style={[
+                            styles.inputLabel,
+                            { color: isDarkMode ? '#E2E8F0' : '#334155' },
+                          ]}
+                        >
+                          Xác nhận mật khẩu
+                        </Text>
+                        <View
+                          style={[
+                            styles.inputBox,
+                            {
+                              backgroundColor: isDarkMode
+                                ? 'rgba(30, 41, 59, 0.7)'
+                                : 'rgba(248, 250, 252, 0.95)',
+                              borderColor: isDarkMode
+                                ? 'rgba(255, 255, 255, 0.1)'
+                                : '#E2E8F0',
+                            },
+                            errorMessage ? styles.inputBoxError : null,
+                          ]}
+                        >
+                          <Ionicons
+                            name="shield-checkmark-outline"
+                            size={19}
+                            color="#00BDD6"
+                            style={styles.inputIcon}
+                          />
+                          <TextInput
+                            style={[
+                              styles.textInput,
+                              { color: isDarkMode ? '#F8FAFC' : '#0F172A' },
+                            ]}
+                            placeholder="Nhập lại mật khẩu"
+                            placeholderTextColor={
+                              isDarkMode ? '#64748B' : '#9CA3AF'
+                            }
+                            secureTextEntry={!showConfirmPassword}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            value={confirmPassword}
+                            onChangeText={(text) => {
+                              setConfirmPassword(text);
+                              if (errorMessage) setErrorMessage('');
+                              if (successMessage) setSuccessMessage('');
+                            }}
+                            editable={!isFormBusy}
+                          />
+                          <TouchableOpacity
+                            style={styles.eyeButton}
+                            onPress={() =>
+                              setShowConfirmPassword(!showConfirmPassword)
+                            }
+                            activeOpacity={0.7}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          >
+                            <Ionicons
+                              name={
+                                showConfirmPassword
+                                  ? 'eye-off-outline'
+                                  : 'eye-outline'
+                              }
+                              size={20}
+                              color={isDarkMode ? '#94A3B8' : '#64748B'}
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
+
+                    {/* Thông báo thành công */}
+                    {successMessage ? (
+                      <View style={styles.successContainer}>
+                        <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+                        <Text style={styles.successText}>{successMessage}</Text>
+                      </View>
+                    ) : null}
+
+                    {/* Thông báo lỗi */}
+                    {errorMessage ? (
+                      <View style={styles.errorContainer}>
+                        <Ionicons name="alert-circle" size={18} color="#EF4444" />
+                        <Text style={styles.errorText}>{errorMessage}</Text>
+                      </View>
+                    ) : null}
+
+                    {/* NÚT HÀNH ĐỘNG CHÍNH */}
+                    <TouchableOpacity
+                      style={[
+                        styles.primaryButton,
+                        isFormBusy && styles.buttonDisabled,
+                      ]}
+                      activeOpacity={0.88}
+                      onPress={mode === 'login' ? handleLogin : handleRegister}
+                      disabled={isFormBusy}
+                    >
+                      {isLoading ? (
+                        <ActivityIndicator color="#FFFFFF" size="small" />
+                      ) : (
+                        <View style={styles.primaryButtonInner}>
+                          <Ionicons
+                            name={
+                              mode === 'login'
+                                ? 'log-in-outline'
+                                : 'person-add-outline'
+                            }
+                            size={20}
+                            color="#FFFFFF"
+                            style={{ marginRight: 8 }}
+                          />
+                          <Text style={styles.primaryButtonText}>
+                            {mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}
+                          </Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* FOOTER SWITCH */}
+                  <View style={styles.footerContainer}>
+                    <Text
+                      style={[
+                        styles.footerText,
+                        { color: isDarkMode ? '#94A3B8' : '#64748B' },
+                      ]}
+                    >
+                      {mode === 'login'
+                        ? 'Chưa có tài khoản?'
+                        : 'Đã có tài khoản?'}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() =>
+                        resetForm(mode === 'login' ? 'register' : 'login')
+                      }
+                      disabled={isFormBusy}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.footerLink}>
+                        {mode === 'login' ? ' Đăng ký ngay' : ' Đăng nhập ngay'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-            )}
-
-            {/* Success Message */}
-            {successMessage ? (
-              <View style={styles.successContainer}>
-                <Ionicons name="checkmark-circle" size={17} color="#10B981" />
-                <Text style={styles.successText}>{successMessage}</Text>
-              </View>
-            ) : null}
-
-            {/* Error Message */}
-            {errorMessage ? (
-              <View style={styles.errorContainer}>
-                <Ionicons name="alert-circle" size={17} color="#EF4444" />
-                <Text style={styles.errorText}>{errorMessage}</Text>
-              </View>
-            ) : null}
-
-            {/* Submit Button */}
-            <TouchableOpacity
-              style={[styles.primaryButton, isFormBusy && styles.buttonDisabled]}
-              activeOpacity={0.8}
-              onPress={mode === 'login' ? handleLogin : handleRegister}
-              disabled={isFormBusy}
-            >
-              {isLoading && socialLoading === null ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.primaryButtonText}>
-                  {mode === 'login' ? 'Đăng nhập' : 'Đăng ký tài khoản'}
-                </Text>
-              )}
-            </TouchableOpacity>
-
-            {/* SOCIAL LOGIN SECTION */}
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>Hoặc tiếp tục với</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <View style={styles.socialRow}>
-              {/* Google Login */}
-              <TouchableOpacity
-                style={styles.socialButton}
-                activeOpacity={0.7}
-                onPress={() => handleSocialAuth('google')}
-                disabled={isFormBusy}
-              >
-                {socialLoading === 'google' ? (
-                  <ActivityIndicator size="small" color="#EA4335" />
-                ) : (
-                  <>
-                    <Ionicons name="logo-google" size={20} color="#EA4335" style={styles.socialIcon} />
-                    <Text style={styles.socialButtonText}>Google</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              {/* Facebook Login */}
-              <TouchableOpacity
-                style={styles.socialButton}
-                activeOpacity={0.7}
-                onPress={() => handleSocialAuth('facebook')}
-                disabled={isFormBusy}
-              >
-                {socialLoading === 'facebook' ? (
-                  <ActivityIndicator size="small" color="#1877F2" />
-                ) : (
-                  <>
-                    <Ionicons name="logo-facebook" size={21} color="#1877F2" style={styles.socialIcon} />
-                    <Text style={styles.socialButtonText}>Facebook</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* FOOTER SWITCH */}
-          <View style={styles.footerContainer}>
-            <Text style={styles.footerText}>
-              {mode === 'login' ? 'Chưa có tài khoản?' : 'Đã có tài khoản?'}
-            </Text>
-            <TouchableOpacity
-              onPress={() => resetForm(mode === 'login' ? 'register' : 'login')}
-              disabled={isFormBusy}
-            >
-              <Text style={styles.footerLink}>
-                {mode === 'login' ? ' Đăng ký ngay' : ' Đăng nhập ngay'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+              </ScrollView>
+            </KeyboardAvoidingView>
+          </SafeAreaView>
+        </View>
+      </ImageBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  rootContainer: {
+    flex: 1,
+    backgroundColor: '#0B132B',
+  },
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  backdropOverlay: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  // Vầng sáng màu Ambient Glow tạo chiều sâu nghệ thuật
+  ambientOrb: {
+    position: 'absolute',
+    borderRadius: 999,
+  },
+  ambientOrbTop: {
+    width: 320,
+    height: 320,
+    backgroundColor: '#00BDD6',
+    top: -80,
+    left: -80,
+    opacity: 0.22,
+  },
+  ambientOrbBottom: {
+    width: 360,
+    height: 360,
+    backgroundColor: '#3B82F6',
+    bottom: -100,
+    right: -100,
+    opacity: 0.18,
+  },
   safeArea: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+  },
+  keyboardView: {
+    flex: 1,
+    justifyContent: 'center',
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingHorizontal: 22,
-    paddingTop: 24,
-    paddingBottom: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 36,
   },
+
+  // KHUNG ĐĂNG NHẬP / ĐĂNG KÝ GLASSMORPHISM
+  glassCard: {
+    width: '100%',
+    maxWidth: 440,
+    borderRadius: 24,
+    paddingHorizontal: 26,
+    paddingVertical: 30,
+    borderWidth: 1.5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.28,
+    shadowRadius: 24,
+    elevation: 10,
+  },
+
   brandHeader: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 22,
   },
-  logoWrapper: {
-    marginBottom: 10,
-    padding: 10,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
+  logoEmblem: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    marginBottom: 12,
     shadowColor: '#00BDD6',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.25,
     shadowRadius: 10,
-    elevation: 3,
+    elevation: 4,
   },
   brandTitle: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#0F172A',
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
   },
   brandSubtitle: {
     fontSize: 13,
-    color: '#64748B',
     textAlign: 'center',
-    marginTop: 4,
-    paddingHorizontal: 20,
+    marginTop: 5,
+    paddingHorizontal: 12,
     lineHeight: 18,
   },
+
+  // TAB SWITCHER
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#E2E8F0',
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 4,
-    marginBottom: 18,
+    marginBottom: 22,
+    borderWidth: 1,
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 10,
+    height: 42,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 9,
+    borderRadius: 10,
   },
   tabButtonActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
+    backgroundColor: '#00BDD6',
+    shadowColor: '#00BDD6',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 3,
   },
   tabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#64748B',
   },
   tabTextActive: {
-    color: '#00BDD6',
     fontWeight: '700',
   },
-  formCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 20,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.06,
-    shadowRadius: 14,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
+
+  formFields: {
+    width: '100%',
   },
   inputGroup: {
-    marginBottom: 14,
+    marginBottom: 16,
   },
   inputLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#334155',
-    marginBottom: 6,
+    marginBottom: 7,
   },
   inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    height: 52,
+    paddingHorizontal: 14,
     borderWidth: 1.2,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    height: 50,
-    paddingHorizontal: 12,
   },
   inputBoxError: {
     borderColor: '#EF4444',
-    backgroundColor: '#FEF2F2',
+    backgroundColor: 'rgba(254, 242, 242, 0.9)',
   },
   inputIcon: {
     marginRight: 10,
@@ -531,60 +713,66 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     fontSize: 14.5,
-    color: '#0F172A',
     paddingVertical: 0,
   },
   eyeButton: {
     padding: 6,
   },
+
   successContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-    marginTop: 2,
-    backgroundColor: '#ECFDF5',
+    marginBottom: 14,
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
     borderWidth: 1,
-    borderColor: '#A7F3D0',
+    borderColor: '#10B981',
     paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 8,
+    paddingVertical: 10,
+    borderRadius: 10,
     gap: 8,
   },
   successText: {
     flex: 1,
     fontSize: 12.5,
-    color: '#065F46',
-    fontWeight: '500',
+    color: '#10B981',
+    fontWeight: '600',
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-    marginTop: 2,
-    backgroundColor: '#FEF2F2',
+    marginBottom: 14,
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    borderWidth: 1,
+    borderColor: '#EF4444',
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 10,
+    borderRadius: 10,
     gap: 8,
   },
   errorText: {
     flex: 1,
     fontSize: 12.5,
     color: '#EF4444',
-    fontWeight: '500',
+    fontWeight: '600',
   },
+
   primaryButton: {
     backgroundColor: '#00BDD6',
-    height: 50,
-    borderRadius: 12,
+    height: 52,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 6,
+    marginTop: 8,
     shadowColor: '#00BDD6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  primaryButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   buttonDisabled: {
     opacity: 0.65,
@@ -593,60 +781,20 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 15.5,
     fontWeight: '700',
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
   },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 18,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E2E8F0',
-  },
-  dividerText: {
-    marginHorizontal: 12,
-    color: '#94A3B8',
-    fontSize: 12.5,
-    fontWeight: '500',
-  },
-  socialRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  socialButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 46,
-    borderWidth: 1.2,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-  },
-  socialIcon: {
-    marginRight: 8,
-  },
-  socialButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#334155',
-  },
+
   footerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 22,
-    paddingBottom: 10,
   },
   footerText: {
-    fontSize: 14,
-    color: '#64748B',
+    fontSize: 13.5,
   },
   footerLink: {
-    fontSize: 14,
+    fontSize: 13.5,
     color: '#00BDD6',
     fontWeight: '700',
   },

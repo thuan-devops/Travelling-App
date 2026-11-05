@@ -45,24 +45,28 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
     await setCurrency(next);
   };
 
+  // Ngưỡng phân biệt giữa số tiền USD và số tiền VND:
+  // Giá phòng nghỉ ở VN luôn >= 50.000đ. Các giá trị < 50.000 (như 35, 78, 1014, 2500) là USD hợp lệ!
+  const VND_THRESHOLD = 50000;
+
   const formatPrice = (usdAmount: number | undefined | null): string => {
     const amount = Number(usdAmount) || 0;
     if (currency === 'VND') {
-      const vndAmount = amount >= 1000 ? amount : Math.round(amount * USD_TO_VND_RATE);
+      const vndAmount = amount >= VND_THRESHOLD ? amount : Math.round(amount * USD_TO_VND_RATE);
       return `${vndAmount.toLocaleString('vi-VN')} ₫`;
     }
-    const finalUsd = amount >= 1000 ? Math.round(amount / USD_TO_VND_RATE) : amount;
-    return `$${finalUsd}`;
+    const finalUsd = amount >= VND_THRESHOLD ? Math.round(amount / USD_TO_VND_RATE) : amount;
+    return `$${finalUsd.toLocaleString('en-US')}`;
   };
 
   const formatNumberOnly = (usdAmount: number | undefined | null): string => {
     const amount = Number(usdAmount) || 0;
     if (currency === 'VND') {
-      const vndAmount = amount >= 1000 ? amount : Math.round(amount * USD_TO_VND_RATE);
+      const vndAmount = amount >= VND_THRESHOLD ? amount : Math.round(amount * USD_TO_VND_RATE);
       return vndAmount.toLocaleString('vi-VN');
     }
-    const finalUsd = amount >= 1000 ? Math.round(amount / USD_TO_VND_RATE) : amount;
-    return `${finalUsd}`;
+    const finalUsd = amount >= VND_THRESHOLD ? Math.round(amount / USD_TO_VND_RATE) : amount;
+    return `${finalUsd.toLocaleString('en-US')}`;
   };
 
   const currencySymbol = currency === 'USD' ? '$' : '₫';

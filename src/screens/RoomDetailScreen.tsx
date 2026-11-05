@@ -664,7 +664,7 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
             </View>
 
             <TouchableOpacity
-              style={styles.datesDisplayCard}
+              style={[styles.datesDisplayCard, { backgroundColor: isDarkMode ? colors.card : "#F9FAFB", borderColor: colors.border }]}
               onPress={() => setIsCalendarModalOpen(true)}
               activeOpacity={0.8}
             >
@@ -752,7 +752,7 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
 
                 {/* Date & Guests Box */}
                 <TouchableOpacity
-                  style={styles.desktopDateBox}
+                  style={[styles.desktopDateBox, { backgroundColor: isDarkMode ? "#0F172A" : "#FAFAFA", borderColor: colors.border }]}
                   activeOpacity={0.85}
                   onPress={() => setIsCalendarModalOpen(true)}
                 >
@@ -761,7 +761,7 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
                       <Text style={[styles.desktopDateLabel, { color: colors.textSecondary }]}>NHẬN PHÒNG</Text>
                       <Text style={[styles.desktopDateVal, { color: colors.text }]}>{formatDateStr(startDate)}</Text>
                     </View>
-                    <View style={[styles.desktopDateCol, { borderLeftWidth: 1, borderLeftColor: '#E5E7EB', paddingLeft: 12 }]}>
+                    <View style={[styles.desktopDateCol, { borderLeftWidth: 1, borderLeftColor: colors.border, paddingLeft: 12 }]}>
                       <Text style={[styles.desktopDateLabel, { color: colors.textSecondary }]}>TRẢ PHÒNG</Text>
                       <Text style={[styles.desktopDateVal, { color: colors.text }]}>{formatDateStr(endDate)}</Text>
                     </View>
@@ -773,7 +773,7 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
                         {totalGuests} khách {totalExtraGuests > 0 ? `(${totalExtraGuests} phụ thu)` : ''}
                       </Text>
                     </View>
-                    <Ionicons name="chevron-down" size={18} color="#6B7280" />
+                    <Ionicons name="chevron-down" size={18} color={isDarkMode ? "#94A3B8" : "#6B7280"} />
                   </View>
                 </TouchableOpacity>
 
@@ -887,7 +887,7 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setIsCalendarModalOpen(false)}>
-                <Ionicons name="close" size={24} color="#374151" />
+                <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
@@ -916,14 +916,14 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
                     style={[styles.counterBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
                     onPress={() => setAdults((prev) => Math.max(1, prev - 1))}
                   >
-                    <Ionicons name="remove" size={16} color="#111827" />
+                    <Ionicons name="remove" size={16} color={colors.text} />
                   </TouchableOpacity>
                   <Text style={[styles.counterNum, { color: colors.text }]}>{adults}</Text>
                   <TouchableOpacity
                     style={[styles.counterBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
                     onPress={() => setAdults((prev) => Math.min(10, prev + 1))}
                   >
-                    <Ionicons name="add" size={16} color="#111827" />
+                    <Ionicons name="add" size={16} color={colors.text} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -938,14 +938,14 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
                     style={[styles.counterBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
                     onPress={() => setChildren((prev) => Math.max(0, prev - 1))}
                   >
-                    <Ionicons name="remove" size={16} color="#111827" />
+                    <Ionicons name="remove" size={16} color={colors.text} />
                   </TouchableOpacity>
                   <Text style={[styles.counterNum, { color: colors.text }]}>{children}</Text>
                   <TouchableOpacity
                     style={[styles.counterBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
                     onPress={() => setChildren((prev) => Math.min(6, prev + 1))}
                   >
-                    <Ionicons name="add" size={16} color="#111827" />
+                    <Ionicons name="add" size={16} color={colors.text} />
                   </TouchableOpacity>
                 </View>
               </View>
