@@ -16,6 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Accommodation } from '../types';
 import { useCurrency } from '../context/CurrencyContext';
+import { useTheme } from '../context/ThemeContext';
 
 interface StayCardProps {
   stay: Accommodation;
@@ -29,6 +30,7 @@ export const StayCard: React.FC<StayCardProps> = ({
   onPress,
 }) => {
   const { formatPrice } = useCurrency();
+  const { isDarkMode, colors } = useTheme();
   const { width: windowWidth } = useWindowDimensions();
   // Clamped to 440px inside the 480px mobile frame (480 - 40 margin)
   const initialWidth = Math.max(windowWidth > 480 ? 440 : windowWidth - 40, 200);
@@ -256,14 +258,14 @@ export const StayCard: React.FC<StayCardProps> = ({
       >
         {/* Details Row 1: Title and Star Rating */}
         <View style={styles.detailsRow1}>
-          <Text style={styles.titleText} numberOfLines={1}>
+          <Text style={[styles.titleText, { color: colors.text }]} numberOfLines={1}>
             {stay.title}
           </Text>
           <View style={styles.ratingBadge}>
             {stay.reviewCount > 0 ? (
               <>
                 <Ionicons name="star" size={14} color="#FBBF24" style={styles.starIcon} />
-                <Text style={styles.ratingText}>{Number(stay.rating).toFixed(1)}</Text>
+                <Text style={[styles.ratingText, { color: colors.text }]}>{Number(stay.rating).toFixed(1)}</Text>
               </>
             ) : (
               <View style={styles.newBadge}>
@@ -276,10 +278,10 @@ export const StayCard: React.FC<StayCardProps> = ({
 
         {/* Details Row 2: Category and Price */}
         <View style={styles.detailsRow2}>
-          <Text style={styles.categoryText}>{stay.category}</Text>
+          <Text style={[styles.categoryText, { color: colors.textSecondary }]}>{stay.category}</Text>
           <Text style={styles.priceContainer}>
-            <Text style={styles.priceAmount}>{formatPrice(stay.pricePerNight)}</Text>
-            <Text style={styles.priceUnit}>/đêm</Text>
+            <Text style={[styles.priceAmount, { color: colors.text }]}>{formatPrice(stay.pricePerNight)}</Text>
+            <Text style={[styles.priceUnit, { color: colors.textSecondary }]}>/đêm</Text>
           </Text>
         </View>
       </TouchableOpacity>

@@ -1,3 +1,4 @@
+import { notificationService } from '../services/notificationService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Accommodation,
@@ -62,7 +63,7 @@ const formatAccommodation = (
     ? Math.round((itemReviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount) * 10) / 10
     : 0;
 
-  const isFavorite = favoriteIds.includes(id) || (favoriteIds.length === 0 && Boolean(raw.isFavorite));
+  const isFavorite = favoriteIds.includes(id);
 
   const images = Array.isArray(raw.images) && raw.images.length > 0
     ? raw.images
@@ -415,9 +416,46 @@ class MockApiService {
     return list;
   }
 
-  // --- FAVORITES (AsyncStorage + sync mockapi) ---
+  // --- USER ISOLATION HELPERS ---
+  private currentUserId: string | null = null;
+
+  setCurrentUserId(userId: string | null) {
+    this.currentUserId = userId ? String(userId) : null;
+  }
+
+  getCurrentUserId(): string | null {
+    return this.currentUserId;
+  }
+
+  private async resolveUserId(): Promise<string> {
+    if (this.currentUserId) return this.currentUserId;
+    try {
+      const stored = await AsyncStorage.getItem('@travelling_app_user_session');
+      if (stored) {
+        const u = JSON.parse(stored);
+        if (u && (u.id || u.email || u.phoneNumber)) {
+          this.currentUserId = String(u.id || u.email || u.phoneNumber);
+          return this.currentUserId;
+        }
+      }
+    } catch {}
+    return 'guest';
+  }
+
+  private async getFavoritesKey(): Promise<string> {
+    const uid = await this.resolveUserId();
+    return `@travelling_app_favs_${uid}`;
+  }
+
+  private async getBookingsKey(): Promise<string> {
+    const uid = await this.resolveUserId();
+    return `@travelling_app_bookings_${uid}`;
+  }
+
+  // --- FAVORITES (AsyncStorage per User) ---
   async toggleFavorite(id: string): Promise<boolean> {
     try {
+      const key = await this.getFavoritesKey();
       const favoriteIds = await this.getStoredFavorites();
       const isFav = favoriteIds.includes(id);
       let newFavorites: string[];
@@ -428,7 +466,7 @@ class MockApiService {
         newFavorites = [...favoriteIds, id];
       }
 
-      await AsyncStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(newFavorites));
+      await AsyncStorage.setItem(key, JSON.stringify(newFavorites));
 
       // Thử đồng bộ PUT lên mockapi nếu có mạng
       fetch(`${MOCK_API_URL}/${id}`, {
@@ -446,46 +484,30 @@ class MockApiService {
 
   async getStoredFavorites(): Promise<string[]> {
     try {
-      const raw = await AsyncStorage.getItem(FAVORITES_STORAGE_KEY);
+      const key = await this.getFavoritesKey();
+      const raw = await AsyncStorage.getItem(key);
       if (raw !== null) {
         return JSON.parse(raw);
       }
-      const defaultFavs = ['beach-2', 'beach-3', 'mountain-1', 'villa-2'];
-      await AsyncStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(defaultFavs));
-      return defaultFavs;
+      // Người dùng mới: bắt đầu với danh sách yêu thích rỗng
+      await AsyncStorage.setItem(key, JSON.stringify([]));
+      return [];
     } catch {
       return [];
     }
   }
 
-  // --- BOOKINGS ---
+  // --- BOOKINGS (AsyncStorage per User) ---
   async getBookings(): Promise<BookingDetails[]> {
     try {
-      const raw = await AsyncStorage.getItem(BOOKINGS_STORAGE_KEY);
+      const key = await this.getBookingsKey();
+      const raw = await AsyncStorage.getItem(key);
       if (raw !== null) {
         return JSON.parse(raw);
       }
-      const initialBooking: BookingDetails = {
-        bookingId: '00000072697027',
-        accommodation: INITIAL_ACCOMMODATIONS[0],
-        checkIn: '09-05-2023',
-        checkOut: '15-05-2023',
-        nights: 1,
-        guests: 1,
-        paymentType: 'full',
-        roomTotal: INITIAL_ACCOMMODATIONS[0].pricePerNight,
-        fees: [
-          { label: 'Phí chèo thuyền Kayak', amount: 5 },
-          { label: 'Phí đỗ xe', amount: 5 },
-        ],
-        totalPrice: INITIAL_ACCOMMODATIONS[0].pricePerNight + 10,
-        paidAmount: INITIAL_ACCOMMODATIONS[0].pricePerNight + 10,
-        paymentDate: '09-05-2023',
-        paymentTime: '05:40 AM',
-        paymentMethod: 'Thẻ tín dụng (Credit card)',
-      };
-      await AsyncStorage.setItem(BOOKINGS_STORAGE_KEY, JSON.stringify([initialBooking]));
-      return [initialBooking];
+      // Người dùng mới: bắt đầu với danh sách chuyến đi rỗng
+      await AsyncStorage.setItem(key, JSON.stringify([]));
+      return [];
     } catch {
       return [];
     }
@@ -493,9 +515,10 @@ class MockApiService {
 
   async saveBooking(newBooking: BookingDetails): Promise<BookingDetails[]> {
     try {
+      const key = await this.getBookingsKey();
       const existing = await this.getBookings();
       const updated = [newBooking, ...existing];
-      await AsyncStorage.setItem(BOOKINGS_STORAGE_KEY, JSON.stringify(updated));
+      await AsyncStorage.setItem(key, JSON.stringify(updated));
       return updated;
     } catch {
       return [];
@@ -504,11 +527,12 @@ class MockApiService {
 
   async cancelBooking(bookingId: string, reason?: string): Promise<BookingDetails[]> {
     try {
+      const key = await this.getBookingsKey();
       const existing = await this.getBookings();
       const updated = existing.map((b) =>
         b.bookingId === bookingId ? { ...b, status: 'cancelled' as const, cancellationReason: reason || 'Thay đổi lịch trình cá nhân', cancelledAt: new Date().toLocaleDateString('vi-VN') } : b
       );
-      await AsyncStorage.setItem(BOOKINGS_STORAGE_KEY, JSON.stringify(updated));
+      await AsyncStorage.setItem(key, JSON.stringify(updated));
       return updated;
     } catch {
       return [];

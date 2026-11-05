@@ -14,6 +14,7 @@ import {
   Alert,
   Modal,
   TextInput,
+  Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -165,6 +166,23 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
   ).current;
 
   // Mở Google Maps cho từng địa điểm
+  const handleShareStay = async () => {
+    try {
+      const shareMessage = `🌟 Khám phá "${stay.title}" tại ${stay.location} trên Travelling App!\n\n` +
+        `• Giá chỉ từ: ${formatPrice(stay.pricePerNight)}/đêm\n` +
+        `• Đánh giá: ⭐ ${stay.rating.toFixed(1)} (${currentReviewCount} nhận xét)\n` +
+        `• Tiện ích: ${stay.amenities.slice(0, 4).join(', ')}\n\n` +
+        `Đặt phòng ngay qua Travelling App nhé! 🌴`;
+
+      await Share.share({
+        message: shareMessage,
+        title: stay.title,
+      });
+    } catch (e) {
+      console.warn('Lỗi khi chia sẻ:', e);
+    }
+  };
+
   const handleOpenGoogleMaps = () => {
     const query = encodeURIComponent(`${stay.title}, ${stay.location}`);
     const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
@@ -725,6 +743,19 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 6,
+  },
+  writeReviewHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E0F7FA',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  writeReviewHeaderText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#00BDD6',
   },
   sectionHeaderRow: {
     flexDirection: 'row',

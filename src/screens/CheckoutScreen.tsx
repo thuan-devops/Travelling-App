@@ -53,9 +53,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
   const basePricePerNight = stay.pricePerNight || 20;
   const pricePerNight = isVnd ? Math.round(basePricePerNight * USD_TO_VND_RATE) : basePricePerNight;
   const roomSubtotal = pricePerNight * nights;
-  const kayakFee = isVnd ? 120000 : 5;
-  const parkingFee = isVnd ? 120000 : 5;
-  const totalAmount = roomSubtotal + kayakFee + parkingFee;
+  const totalAmount = roomSubtotal;
 
   const isPartPayment = paymentOption === 'part';
   const dueNow = isPartPayment ? Math.round(totalAmount / 2) : totalAmount;
@@ -89,10 +87,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
       guests: totalGuests,
       paymentType: paymentOption,
       roomTotal: roomSubtotal,
-      fees: [
-        { label: 'Phí chèo thuyền Kayak', amount: kayakFee },
-        { label: 'Phí đỗ xe', amount: parkingFee },
-      ],
+      fees: [],
       totalPrice: totalAmount,
       paidAmount: dueNow,
       dueAmount: dueLater,
@@ -178,9 +173,9 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
         <Text style={styles.sectionTitle}>Tùy chọn thanh toán</Text>
 
         <TouchableOpacity
-          style={styles.paymentOptionRow}
           activeOpacity={0.8}
           onPress={() => setPaymentOption('full')}
+          style={[styles.paymentOptionRow, paymentOption === 'full' && styles.paymentOptionRowSelected]}
         >
           <View style={styles.paymentOptionText}>
             <Text style={styles.paymentOptionTitle}>Thanh toán toàn bộ</Text>
@@ -194,9 +189,9 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.paymentOptionRow}
           activeOpacity={0.8}
           onPress={() => setPaymentOption('part')}
+          style={[styles.paymentOptionRow, paymentOption === 'part' && styles.paymentOptionRowSelected]}
         >
           <View style={styles.paymentOptionText}>
             <Text style={styles.paymentOptionTitle}>Thanh toán một phần</Text>
@@ -211,7 +206,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
 
         <View style={styles.divider} />
 
-        {/* PRICE DETAILS */}
+                {/* PRICE DETAILS */}
         <Text style={styles.sectionTitle}>Chi tiết giá</Text>
 
         <View style={styles.priceRow}>
@@ -219,37 +214,48 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
           <Text style={styles.priceItemValue}>{formatDisplay(roomSubtotal)}</Text>
         </View>
 
-        <View style={styles.priceRow}>
-          <Text style={styles.priceItemLabel}>Phí chèo thuyền Kayak</Text>
-          <Text style={styles.priceItemValue}>{formatDisplay(kayakFee)}</Text>
-        </View>
+        {isPartPayment ? (
+          <>
+            <View style={styles.priceRow}>
+              <Text style={styles.priceItemLabel}>Tổng tiền phòng ({nights} đêm)</Text>
+              <Text style={styles.priceItemValue}>{formatDisplay(totalAmount)}</Text>
+            </View>
 
-        <View style={styles.priceRow}>
-          <Text style={styles.priceItemLabel}>Phí đỗ xe</Text>
-          <Text style={styles.priceItemValue}>{formatDisplay(parkingFee)}</Text>
-        </View>
-
-        <View style={[styles.priceRow, { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#F3F4F6' }]}>
-          <Text style={styles.totalLabel}>Tổng cộng ({currency})</Text>
-          <Text style={styles.totalValue}>{formatDisplay(totalAmount)}</Text>
-        </View>
-
-        {isPartPayment && (
-          <View style={styles.partPaymentBox}>
             <View style={styles.priceRow}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Ionicons name="card-outline" size={16} color="#00BDD6" style={{ marginRight: 6 }} />
-                <Text style={styles.dueNowLabel}>Thanh toán ngay hôm nay (50%)</Text>
+                <Ionicons name="card-outline" size={15} color="#0D9488" style={{ marginRight: 5 }} />
+                <Text style={[styles.priceItemLabel, { color: '#0D9488', fontWeight: '600' }]}>Thanh toán trước hôm nay (50%)</Text>
               </View>
-              <Text style={styles.dueNowValue}>{formatDisplay(dueNow)}</Text>
+              <Text style={[styles.priceItemValue, { color: '#0D9488', fontWeight: '700' }]}>{formatDisplay(dueNow)}</Text>
             </View>
-            <View style={[styles.priceRow, { marginTop: 4 }]}>
+
+            <View style={styles.priceRow}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Ionicons name="time-outline" size={16} color="#6B7280" style={{ marginRight: 6 }} />
-                <Text style={styles.dueLaterLabel}>Thanh toán khi nhận phòng</Text>
+                <Ionicons name="time-outline" size={15} color="#6B7280" style={{ marginRight: 5 }} />
+                <Text style={styles.priceItemLabel}>Còn lại khi nhận phòng (50%)</Text>
               </View>
-              <Text style={styles.dueLaterValue}>{formatDisplay(dueLater)}</Text>
+              <Text style={styles.priceItemValue}>{formatDisplay(dueLater)}</Text>
             </View>
+
+            <View style={[styles.priceRow, { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#F3F4F6' }]}>
+              <View>
+                <Text style={styles.totalLabel}>Cần thanh toán ngay ({currency})</Text>
+                <Text style={{ fontSize: 12, color: '#0D9488', marginTop: 2, fontWeight: '500' }}>
+                  Trả trước 50% để giữ chỗ
+                </Text>
+              </View>
+              <Text style={[styles.totalValue, { color: '#00BDD6', fontSize: 20 }]}>{formatDisplay(dueNow)}</Text>
+            </View>
+          </>
+        ) : (
+          <View style={[styles.priceRow, { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#F3F4F6' }]}>
+            <View>
+              <Text style={styles.totalLabel}>Tổng cộng ({currency})</Text>
+              <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2, fontWeight: '500' }}>
+                Thanh toán toàn bộ 100%
+              </Text>
+            </View>
+            <Text style={styles.totalValue}>{formatDisplay(totalAmount)}</Text>
           </View>
         )}
       </ScrollView>
@@ -489,6 +495,19 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 8,
     backgroundColor: '#EDF9FA',
+  },
+  paymentOptionRowSelected: {
+    borderColor: '#00BDD6',
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1.5,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginVertical: -2,
+  },
+  radioOuterSelected: {
+    borderColor: '#00BDD6',
+    borderWidth: 2,
   },
   paymentOptionRow: {
     flexDirection: 'row',

@@ -4,23 +4,35 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
 import { CurrencyProvider } from './src/context/CurrencyContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
+
+function MainApp() {
+  const { isDarkMode, colors } = useTheme();
+
+  return (
+    <View style={[styles.outerContainer, { backgroundColor: isDarkMode ? '#0B0F17' : '#F3F4F6' }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar style={colors.statusBar} />
+        <AppNavigator />
+      </View>
+    </View>
+  );
+}
 
 export default function App() {
   return (
     <SafeAreaProvider style={styles.outerContainer}>
-      <View style={styles.container}>
-        <StatusBar style="auto" />
-        <AuthProvider>
+      <AuthProvider>
+        <ThemeProvider>
           <CurrencyProvider>
-            <AppNavigator />
+            <MainApp />
           </CurrencyProvider>
-        </AuthProvider>
-      </View>
+        </ThemeProvider>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }
-
 
 const styles = StyleSheet.create({
   outerContainer: {

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabType } from '../types';
+import { useTheme } from '../context/ThemeContext';
 
 interface BottomTabBarProps {
   activeTab: BottomTabType;
@@ -30,11 +31,13 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
   onTabChange,
   favoritesCount = 0,
 }) => {
+  const { isDarkMode, colors } = useTheme();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
       {TABS.map((tab) => {
         const isActive = activeTab === tab.key;
-        const iconColor = isActive ? '#00BDD6' : '#6B7280';
+        const iconColor = isActive ? '#00BDD6' : (isDarkMode ? '#94A3B8' : '#6B7280');
 
         return (
           <TouchableOpacity
@@ -57,7 +60,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
                 </View>
               )}
             </View>
-            <Text style={[styles.tabLabel, isActive && styles.activeTabLabel]}>
+            <Text style={[styles.tabLabel, { color: isDarkMode ? '#94A3B8' : '#6B7280' }, isActive && styles.activeTabLabel]}>
               {tab.label}
             </Text>
           </TouchableOpacity>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   View,
+  Share,
   Text,
   StyleSheet,
   SafeAreaView,
@@ -12,10 +13,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { BookingDetails, BottomTabType } from '../types';
+import { Accommodation, BookingDetails, BottomTabType } from '../types';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { mockApi } from '../api/mockApi';
 import { useCurrency } from '../context/CurrencyContext';
+import { useTheme } from '../context/ThemeContext';
 
 const CANCELLATION_REASONS = [
   'Thay đổi lịch trình cá nhân',
@@ -28,6 +30,7 @@ interface BookingsScreenProps {
   bookings: BookingDetails[];
   onExplore: () => void;
   onSelectBookingDetail: (booking: BookingDetails) => void;
+  onRebook?: (stay: Accommodation) => void;
   onTabChange: (tab: BottomTabType) => void;
   onBookingsUpdated?: (updated: BookingDetails[]) => void;
 }
@@ -36,10 +39,12 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
   bookings = [],
   onExplore,
   onSelectBookingDetail,
+  onRebook,
   onTabChange,
   onBookingsUpdated,
 }) => {
   const { formatPrice } = useCurrency();
+  const { isDarkMode, colors } = useTheme();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'cancelled'>('upcoming');
   const [localBookings, setLocalBookings] = useState<BookingDetails[]>(bookings);
 
@@ -57,6 +62,25 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
 
   const displayedList = activeTab === 'upcoming' ? upcomingList : cancelledList;
 
+  const handleShareBooking = async (booking: BookingDetails) => {
+    try {
+      const shareMsg = `✈️ Thông tin chuyến đi tại "${booking.accommodation.title}"!\n\n` +
+        `📍 Nơi lưu trú: ${booking.accommodation.location}\n` +
+        `📅 Nhận phòng: ${booking.checkIn} ➔ Trả phòng: ${booking.checkOut} (${booking.nights} đêm)\n` +
+        `👥 Số lượng: ${booking.guests} khách\n` +
+        `🔖 Mã đặt chỗ: #${booking.bookingId.slice(-8)}\n` +
+        `💳 Đã thanh toán: ${formatPrice(booking.paidAmount)}\n\n` +
+        `Cùng chuẩn bị cho chuyến đi tuyệt vời với Travelling App nhé! 🌟`;
+
+      await Share.share({
+        message: shareMsg,
+        title: `Chuyến đi: ${booking.accommodation.title}`,
+      });
+    } catch (e) {
+      console.warn('Lỗi khi chia sẻ chuyến đi:', e);
+    }
+  };
+
   const handleOpenCancelModal = (booking: BookingDetails) => {
     setCancellingBooking(booking);
     setSelectedReason(CANCELLATION_REASONS[0]);
@@ -73,13 +97,14 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
     }
     setCancelModalVisible(false);
     setCancellingBooking(null);
+    setActiveTab('cancelled');
   };
 
   const renderBookingCard = ({ item }: { item: BookingDetails }) => {
     const isCancelled = item.status === 'cancelled';
 
     return (
-      <View style={styles.bookingCard}>
+      <View style={[styles.bookingCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={styles.cardTop}>
           <Image
             source={{
@@ -103,35 +128,55 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
         </View>
 
         <View style={styles.cardBody}>
-          <Text style={styles.stayTitle}>{item.accommodation.title}</Text>
-          <Text style={styles.stayLocation}>{item.accommodation.location}</Text>
+          <Text style={[styles.stayTitle, { color: colors.text }]}>{item.accommodation.title}</Text>
+          <Text style={[styles.stayLocation, { color: colors.textSecondary }]}>{item.accommodation.location}</Text>
 
-          <View style={styles.detailRow}>
+          <View style={[styles.detailRow, { backgroundColor: isDarkMode ? '#0F172A' : '#F8FAFC', borderColor: isDarkMode ? '#334155' : '#E2E8F0', borderWidth: 1 }]}>
             <View style={styles.detailCol}>
-              <Text style={styles.detailLabel}>Nhận phòng</Text>
-              <Text style={styles.detailVal}>{item.checkIn}</Text>
+              <Text style={[styles.detailLabel, { color: isDarkMode ? '#94A3B8' : '#64748B' }]}>Nhận phòng</Text>
+              <Text style={[styles.detailVal, { color: isDarkMode ? '#F8FAFC' : '#0F172A' }]}>{item.checkIn}</Text>
             </View>
             <View style={styles.detailCol}>
-              <Text style={styles.detailLabel}>Trả phòng</Text>
-              <Text style={styles.detailVal}>{item.checkOut}</Text>
+              <Text style={[styles.detailLabel, { color: isDarkMode ? '#94A3B8' : '#64748B' }]}>Trả phòng</Text>
+              <Text style={[styles.detailVal, { color: isDarkMode ? '#F8FAFC' : '#0F172A' }]}>{item.checkOut}</Text>
             </View>
             <View style={styles.detailCol}>
-              <Text style={styles.detailLabel}>Thời gian & Khách</Text>
-              <Text style={styles.detailVal}>
+              <Text style={[styles.detailLabel, { color: isDarkMode ? '#94A3B8' : '#64748B' }]}>Thời gian & Khách</Text>
+              <Text style={[styles.detailVal, { color: isDarkMode ? '#F8FAFC' : '#0F172A' }]}>
                 {item.nights} đêm • {item.guests} khách
               </Text>
             </View>
           </View>
 
+          {/* Cancellation Info box if trip is cancelled */}
+          {isCancelled && (
+            <View style={styles.cancelledInfoBox}>
+              <View style={styles.cancelledInfoRow}>
+                <Ionicons name="information-circle" size={15} color="#DC2626" style={{ marginRight: 6 }} />
+                <Text style={styles.cancelledReasonText}>
+                  Lý do hủy:{' '}
+                  <Text style={styles.cancelledReasonBold}>
+                    {item.cancellationReason || 'Thay đổi lịch trình cá nhân'}
+                  </Text>
+                </Text>
+              </View>
+              {item.cancelledAt && (
+                <Text style={styles.cancelledDateText}>
+                  Thời gian hủy: {item.cancelledAt}
+                </Text>
+              )}
+            </View>
+          )}
+
           <View style={styles.divider} />
 
           <View style={styles.totalRow}>
             <View>
-              <Text style={styles.totalLabel}>Mã đặt chỗ: #{item.bookingId.slice(-8)}</Text>
-              <Text style={styles.bookingDateText}>Ngày: {item.paymentDate}</Text>
+              <Text style={[styles.totalLabel, { color: isDarkMode ? "#94A3B8" : "#6B7280" }]}>Mã đặt chỗ: #{item.bookingId.slice(-8)}</Text>
+              <Text style={[styles.bookingDateText, { color: isDarkMode ? "#94A3B8" : "#9CA3AF" }]}>Ngày: {item.paymentDate}</Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={styles.totalLabel}>
+              <Text style={[styles.totalLabel, { color: isDarkMode ? "#94A3B8" : "#6B7280" }]}>
                 {isCancelled
                   ? 'Đã hoàn tiền'
                   : item.paymentType === 'part'
@@ -158,13 +203,30 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
               <Text style={styles.viewDetailBtnText}>Biên lai & Xuất PDF</Text>
             </TouchableOpacity>
 
-            {!isCancelled && (
+            <TouchableOpacity
+              style={[styles.shareTripBtn, isDarkMode && { backgroundColor: '#1E293B', borderColor: '#334155' }]}
+              onPress={() => handleShareBooking(item)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="share-social-outline" size={16} color={isDarkMode ? '#38BDF8' : '#0D9488'} />
+            </TouchableOpacity>
+
+            {isCancelled ? (
               <TouchableOpacity
-                style={styles.cancelBtn}
+                style={styles.rebookBtn}
+                onPress={() => (onRebook ? onRebook(item.accommodation) : onExplore())}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="refresh-outline" size={16} color="#00BDD6" style={{ marginRight: 4 }} />
+                <Text style={styles.rebookBtnText}>Đặt lại chuyến này</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.cancelBtn, isDarkMode && { backgroundColor: "#371818", borderColor: "#7F1D1D" }]}
                 onPress={() => handleOpenCancelModal(item)}
               >
                 <Ionicons name="close-circle-outline" size={16} color="#EF4444" style={{ marginRight: 4 }} />
-                <Text style={styles.cancelBtnText}>Hủy chuyến</Text>
+                <Text style={[styles.cancelBtnText, isDarkMode && { color: "#F87171" }]}>Hủy chuyến</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -187,7 +249,7 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
         onRequestClose={() => setCancelModalVisible(false)}
       >
         <View style={modalStyles.overlay}>
-          <View style={modalStyles.container}>
+          <View style={[modalStyles.container, { backgroundColor: isDarkMode ? "#1E293B" : "#FFFFFF" }]}>
             <ScrollView showsVerticalScrollIndicator={false}>
               {/* Header */}
               <View style={modalStyles.header}>
@@ -195,10 +257,10 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
                   <View style={modalStyles.warningIcon}>
                     <Ionicons name="warning" size={22} color="#FFFFFF" />
                   </View>
-                  <Text style={modalStyles.headerTitle}>Xác nhận hủy chuyến</Text>
+                  <Text style={[modalStyles.headerTitle, { color: colors.text }]}>Xác nhận hủy chuyến</Text>
                 </View>
                 <TouchableOpacity
-                  style={modalStyles.closeBtn}
+                  style={[modalStyles.closeBtn, { backgroundColor: isDarkMode ? "#334155" : "#F3F4F6" }]}
                   onPress={() => setCancelModalVisible(false)}
                 >
                   <Ionicons name="close" size={22} color="#6B7280" />
@@ -206,11 +268,11 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
               </View>
 
               {/* Booking Info Card */}
-              <View style={modalStyles.bookingInfoCard}>
-                <Text style={modalStyles.bookingTitle}>
+              <View style={[modalStyles.bookingInfoCard, { backgroundColor: isDarkMode ? "#0F172A" : "#F8FAFC", borderColor: isDarkMode ? "#334155" : "#E2E8F0" }]}>
+                <Text style={[modalStyles.bookingTitle, { color: colors.text }]}>
                   {cancellingBooking.accommodation.title}
                 </Text>
-                <Text style={modalStyles.bookingDates}>
+                <Text style={[modalStyles.bookingDates, { color: isDarkMode ? "#94A3B8" : "#64748B" }]}>
                   {cancellingBooking.checkIn} → {cancellingBooking.checkOut} ({cancellingBooking.nights} đêm)
                 </Text>
 
@@ -221,15 +283,15 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
               </View>
 
               {/* Refund Notice */}
-              <View style={modalStyles.noticeBox}>
+              <View style={[modalStyles.noticeBox, { backgroundColor: isDarkMode ? "#082F49" : "#EFF6FF", borderColor: isDarkMode ? "#0284C7" : "#BFDBFE" }]}>
                 <Ionicons name="information-circle" size={18} color="#0284C7" style={{ marginRight: 8, marginTop: 2 }} />
-                <Text style={modalStyles.noticeText}>
+                <Text style={[modalStyles.noticeText, { color: isDarkMode ? "#BAE6FD" : "#1E40AF" }]}>
                   Số tiền đã thanh toán sẽ được hoàn trả đầy đủ vào phương thức thanh toán ban đầu trong vòng 3-5 ngày làm việc.
                 </Text>
               </View>
 
               {/* Cancellation Reasons */}
-              <Text style={modalStyles.reasonsTitle}>Vui lòng chọn lý do hủy:</Text>
+              <Text style={[modalStyles.reasonsTitle, { color: colors.text }]}>Vui lòng chọn lý do hủy:</Text>
 
               {CANCELLATION_REASONS.map((reason, index) => {
                 const isSelected = selectedReason === reason;
@@ -238,7 +300,7 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
                     key={index}
                     style={[
                       modalStyles.reasonOption,
-                      isSelected && modalStyles.reasonOptionSelected,
+                      { backgroundColor: isDarkMode ? (isSelected ? "#042F2E" : "#0F172A") : (isSelected ? "#F0FDFA" : "#FFFFFF"), borderColor: isSelected ? "#00BDD6" : (isDarkMode ? "#334155" : "#E5E7EB") },
                     ]}
                     onPress={() => setSelectedReason(reason)}
                     activeOpacity={0.7}
@@ -246,7 +308,7 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
                     <View style={[modalStyles.radioOuter, isSelected && modalStyles.radioOuterSelected]}>
                       {isSelected && <View style={modalStyles.radioInner} />}
                     </View>
-                    <Text style={[modalStyles.reasonText, isSelected && modalStyles.reasonTextSelected]}>
+                    <Text style={[modalStyles.reasonText, { color: isSelected ? "#00BDD6" : (isDarkMode ? "#E2E8F0" : "#374151") }]}>
                       {reason}
                     </Text>
                   </TouchableOpacity>
@@ -256,11 +318,11 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
               {/* Action Buttons */}
               <View style={modalStyles.actionRow}>
                 <TouchableOpacity
-                  style={modalStyles.keepBtn}
+                  style={[modalStyles.keepBtn, { backgroundColor: isDarkMode ? "#334155" : "#F3F4F6" }]}
                   onPress={() => setCancelModalVisible(false)}
                   activeOpacity={0.8}
                 >
-                  <Text style={modalStyles.keepBtnText}>Giữ lại chuyến</Text>
+                  <Text style={[modalStyles.keepBtnText, { color: isDarkMode ? "#E2E8F0" : "#4B5563" }]}>Giữ lại chuyến</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -280,29 +342,57 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <StatusBar style={colors.statusBar} />
 
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Chuyến đi của tôi</Text>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Chuyến đi của tôi</Text>
       </View>
 
       {/* Segmented Filter */}
-      <View style={styles.filterRow}>
+      <View style={[styles.filterRow, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <TouchableOpacity
-          style={[styles.tabChip, activeTab === 'upcoming' && styles.tabChipActive]}
+          style={[
+            styles.tabChip,
+            {
+              backgroundColor: activeTab === 'upcoming' ? '#00BDD6' : (isDarkMode ? '#1E293B' : '#FFFFFF'),
+              borderColor: activeTab === 'upcoming' ? '#00BDD6' : (isDarkMode ? '#334155' : '#E2E8F0'),
+            },
+          ]}
           onPress={() => setActiveTab('upcoming')}
         >
-          <Text style={[styles.tabChipText, activeTab === 'upcoming' && styles.tabChipTextActive]}>
+          <Text
+            style={[
+              styles.tabChipText,
+              {
+                color: activeTab === 'upcoming' ? '#FFFFFF' : (isDarkMode ? '#E2E8F0' : '#4B5563'),
+                fontWeight: activeTab === 'upcoming' ? '700' : '600',
+              },
+            ]}
+          >
             Chuyến sắp tới ({upcomingList.length})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tabChip, activeTab === 'cancelled' && styles.tabChipActive]}
+          style={[
+            styles.tabChip,
+            {
+              backgroundColor: activeTab === 'cancelled' ? '#00BDD6' : (isDarkMode ? '#1E293B' : '#FFFFFF'),
+              borderColor: activeTab === 'cancelled' ? '#00BDD6' : (isDarkMode ? '#334155' : '#E2E8F0'),
+            },
+          ]}
           onPress={() => setActiveTab('cancelled')}
         >
-          <Text style={[styles.tabChipText, activeTab === 'cancelled' && styles.tabChipTextActive]}>
+          <Text
+            style={[
+              styles.tabChipText,
+              {
+                color: activeTab === 'cancelled' ? '#FFFFFF' : (isDarkMode ? '#E2E8F0' : '#4B5563'),
+                fontWeight: activeTab === 'cancelled' ? '700' : '600',
+              },
+            ]}
+          >
             Chuyến đã hủy ({cancelledList.length})
           </Text>
         </TouchableOpacity>
@@ -319,12 +409,12 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
             <Ionicons
               name={activeTab === 'upcoming' ? 'airplane-outline' : 'archive-outline'}
               size={64}
-              color="#D1D5DB"
+              color={isDarkMode ? '#475569' : '#D1D5DB'}
             />
-            <Text style={styles.emptyTitle}>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>
               {activeTab === 'upcoming' ? 'Chưa có chuyến đi nào' : 'Không có chuyến đi đã hủy'}
             </Text>
-            <Text style={styles.emptySub}>
+            <Text style={[styles.emptySub, { color: colors.textSecondary }]}>
               {activeTab === 'upcoming'
                 ? 'Hãy khám phá những điểm đến tuyệt vời và lên kế hoạch chuyến đi ngay!'
                 : 'Các chuyến đi bạn hủy sẽ được lưu giữ tại đây.'}
@@ -666,6 +756,32 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#0F172A',
   },
+  cancelledInfoBox: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+  },
+  cancelledInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cancelledReasonText: {
+    fontSize: 12.5,
+    color: '#991B1B',
+  },
+  cancelledReasonBold: {
+    fontWeight: '700',
+    color: '#B91C1C',
+  },
+  cancelledDateText: {
+    fontSize: 11,
+    color: '#6B7280',
+    marginTop: 4,
+    marginLeft: 21,
+  },
   divider: {
     height: 1,
     backgroundColor: '#F1F5F9',
@@ -696,6 +812,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
+  shareTripBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
+  },
   viewDetailBtn: {
     flex: 1,
     flexDirection: 'row',
@@ -707,7 +834,23 @@ const styles = StyleSheet.create({
   },
   viewDetailBtnText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 13.5,
+    fontWeight: '700',
+  },
+  rebookBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#00BDD6',
+    backgroundColor: '#F0FDFA',
+  },
+  rebookBtnText: {
+    color: '#00BDD6',
+    fontSize: 13,
     fontWeight: '700',
   },
   cancelBtn: {

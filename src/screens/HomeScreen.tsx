@@ -20,6 +20,7 @@ import { CategorySelector } from '../components/CategorySelector';
 import { StayCard } from '../components/StayCard';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 interface HomeScreenProps {
   onOpenSearch: () => void;
@@ -33,6 +34,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onTabChange,
 }) => {
   const { user, logout } = useAuth();
+  const { colors, isDark } = useTheme();
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<StayCategory | 'All'>('Beach');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -92,12 +94,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const favoritesCount = stays.filter((s) => s.isFavorite).length;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
 
       <View style={styles.container}>
         {/* TOP GREETING & LOGOUT BAR */}
-        <View style={styles.topBar}>
+        <View style={[styles.topBar, { backgroundColor: isDark ? colors.card : '#EDF9FA', borderBottomColor: colors.border, borderBottomWidth: isDark ? 1 : 0 }]}>
           <TouchableOpacity
             style={styles.userInfoRow}
             activeOpacity={0.7}
@@ -112,15 +114,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               style={styles.avatar}
             />
             <View>
-              <Text style={styles.greetingSub}>Xin chào 👋</Text>
-              <Text style={styles.greetingName} numberOfLines={1}>
+              <Text style={[styles.greetingSub, { color: colors.subText }]}>Xin chào 👋</Text>
+              <Text style={[styles.greetingName, { color: colors.text }]} numberOfLines={1}>
                 {user?.name || 'Du khách'}
               </Text>
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.quickLogoutBtn}
+            style={[styles.quickLogoutBtn, { backgroundColor: isDark ? colors.card : '#FFFFFF', borderColor: isDark ? '#7F1D1D' : '#FEE2E2' }]}
             activeOpacity={0.7}
             onPress={() => setIsLogoutModalOpen(true)}
           >
@@ -174,8 +176,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Ionicons name="compass-outline" size={54} color="#D1D5DB" />
-                <Text style={styles.emptyTitle}>Không tìm thấy nơi lưu trú phù hợp</Text>
-                <Text style={styles.emptySubtitle}>Hãy thử chọn danh mục khác hoặc nhập từ khóa tìm kiếm mới.</Text>
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>Không tìm thấy nơi lưu trú phù hợp</Text>
+                <Text style={[styles.emptySubtitle, { color: colors.subText }]}>Hãy thử chọn danh mục khác hoặc nhập từ khóa tìm kiếm mới.</Text>
               </View>
             }
           />
@@ -190,23 +192,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         onRequestClose={() => setIsLogoutModalOpen(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.confirmModalBox}>
+          <View style={[styles.confirmModalBox, { backgroundColor: colors.card }]}>
             <View style={styles.logoutIconCircle}>
               <Ionicons name="log-out" size={32} color="#EF4444" />
             </View>
 
-            <Text style={styles.confirmModalTitle}>Đăng xuất tài khoản</Text>
-            <Text style={styles.confirmModalMessage}>
+            <Text style={[styles.confirmModalTitle, { color: colors.text }]}>Đăng xuất tài khoản</Text>
+            <Text style={[styles.confirmModalMessage, { color: colors.subText }]}>
               Bạn có chắc chắn muốn đăng xuất không? Khi đăng nhập lại, bạn sẽ cần nhập lại tên đăng nhập và mật khẩu.
             </Text>
 
             <View style={styles.confirmModalBtnRow}>
               <TouchableOpacity
-                style={styles.confirmCancelBtn}
+                style={[styles.confirmCancelBtn, { backgroundColor: colors.inputBg }]}
                 onPress={() => setIsLogoutModalOpen(false)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.confirmCancelText}>Hủy</Text>
+                <Text style={[styles.confirmCancelText, { color: colors.subText }]}>Hủy</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
