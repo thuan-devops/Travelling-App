@@ -5,6 +5,7 @@ import {
   Text,
   StyleSheet,
 TouchableOpacity,
+  ScrollView,
   Alert,
   ActivityIndicator,
 } from 'react-native';
@@ -46,7 +47,11 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <StatusBar style={isDarkMode ? "light" : "dark"} />
 
-      <View style={styles.container}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={[styles.container, { paddingBottom: 40 }]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* CELEBRATION ICON GRAPHIC (Page 15) */}
         <View style={styles.graphicContainer}>
           {/* Confetti elements */}
@@ -185,7 +190,7 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
             </TouchableOpacity>
           )}
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -297,23 +302,34 @@ const styles = StyleSheet.create({
   receiptRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
+    alignItems: 'flex-start',
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    gap: 12,
   },
   receiptLabel: {
-    fontSize: 15,
+    fontSize: 14,
     color: '#6B7280',
     fontWeight: '500',
+    flex: 1,
+    lineHeight: 20,
   },
   receiptValueBold: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: '#111827',
+    flex: 1.3,
+    textAlign: 'right',
+    lineHeight: 20,
   },
   receiptAmount: {
     fontSize: 16,
     fontWeight: '800',
     color: '#111827',
+    flex: 1.2,
+    textAlign: 'right',
+    lineHeight: 22,
   },
   pdfButton: {
     flexDirection: 'row',

@@ -414,11 +414,11 @@ class MockApiService {
       );
     }
 
-    // Lọc theo từ khóa tìm kiếm (hỗ trợ có dấu, không dấu và từng từ khóa)
+    // Lọc theo từ khóa tìm kiếm (hỗ trợ có dấu, không dấu và khớp theo từ ngữ chuẩn)
     if (searchQuery && searchQuery.trim() !== '' && searchQuery !== 'Anywhere' && searchQuery !== 'Bất kỳ đâu') {
       const rawQ = searchQuery.toLowerCase().trim();
       const cleanQ = removeVietnameseTones(searchQuery);
-      const queryTokens = cleanQ.split(/\s+/).filter(Boolean);
+      const queryTokens = cleanQ.split(/\s+/).filter((t) => t.length > 0);
 
       list = list.filter((item) => {
         const rawTitle = (item.title || '').toLowerCase();
@@ -428,19 +428,18 @@ class MockApiService {
         const rawCat = (item.category || '').toLowerCase();
         const rawDesc = (item.description || '').toLowerCase();
 
-        // 1. Khớp chuỗi có dấu
+        // 1. Khớp cụm tìm kiếm có dấu
         if (
           rawTitle.includes(rawQ) ||
           rawLoc.includes(rawQ) ||
           rawCity.includes(rawQ) ||
           rawCountry.includes(rawQ) ||
-          rawCat.includes(rawQ) ||
-          rawDesc.includes(rawQ)
+          rawCat.includes(rawQ)
         ) {
           return true;
         }
 
-        // 2. Khớp chuỗi không dấu
+        // 2. Khớp cụm tìm kiếm không dấu
         const cleanTitle = removeVietnameseTones(item.title || '');
         const cleanLoc = removeVietnameseTones(item.location || '');
         const cleanCity = removeVietnameseTones(item.city || '');
@@ -453,17 +452,27 @@ class MockApiService {
           cleanLoc.includes(cleanQ) ||
           cleanCity.includes(cleanQ) ||
           cleanCountry.includes(cleanQ) ||
-          cleanCat.includes(cleanQ) ||
-          cleanDesc.includes(cleanQ)
+          cleanCat.includes(cleanQ)
         ) {
           return true;
         }
 
-        // 3. Khớp từng từ khóa token
+        // 3. Khớp cụm nguyên vẹn trong phần mô tả
+        if (rawDesc.includes(rawQ) || cleanDesc.includes(cleanQ)) {
+          return true;
+        }
+
+        // 4. Nếu tìm nhiều từ (ví dụ "villa nha trang", "ha long beach"):
+        // So khớp theo từng từ vựng riêng biệt (Word boundary), không so sánh substring bừa bãi
         if (queryTokens.length > 1) {
-          const combinedClean = cleanTitle + " " + cleanLoc + " " + cleanCity + " " + cleanCountry + " " + cleanCat + " " + cleanDesc;
-          const allTokensMatch = queryTokens.every((token) => combinedClean.includes(token));
-          if (allTokensMatch) return true;
+          const combinedClean = `${cleanTitle} ${cleanLoc} ${cleanCity} ${cleanCountry} ${cleanCat}`;
+          const words = combinedClean.split(/[\s,./\-+()]+/).filter(Boolean);
+
+          const allTokensMatchWords = queryTokens.every((token) => {
+            return words.some((w) => w === token || (token.length >= 4 && w.startsWith(token)));
+          });
+
+          if (allTokensMatchWords) return true;
         }
 
         return false;
@@ -670,10 +679,11 @@ class MockApiService {
         return b;
       });
 
-      // Nếu người dùng đã có chuyến đi nhưng chưa có chuyến nào hoàn thành,
-      // tự động thêm 1 chuyến mẫu đã hoàn thành trong quá khứ để trải nghiệm tính năng Đánh giá
+      // Tự động bổ sung chuyến mẫu đã hoàn thành (kèm đánh giá) và chuyến đã hủy nếu chưa có
       const hasCompleted = list.some((b) => b.status === 'completed');
-      if (list.length > 0 && !hasCompleted) {
+      const hasCancelled = list.some((b) => b.status === 'cancelled');
+
+      if (!hasCompleted) {
         const sampleCompleted: BookingDetails = {
           bookingId: '00000088921456',
           accommodation: INITIAL_ACCOMMODATIONS[1] || INITIAL_ACCOMMODATIONS[0],
@@ -695,9 +705,45 @@ class MockApiService {
           estimatedCheckInTime: '14:00 - 15:00 (Tiêu chuẩn)',
           status: 'completed',
           completedAt: '21/10/2026',
-          hasReviewed: false,
+          hasReviewed: true,
+          review: {
+            id: 'rev-sample-1',
+            author: 'Bạn (Người dùng)',
+            avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
+            rating: 5,
+            date: '21/10/2026',
+            comment: 'Không gian nghỉ dưỡng tuyệt đẹp, hồ bơi riêng sạch sẽ và dịch vụ chu đáo 24/7. Trải nghiệm rất đáng tiền!',
+          },
         };
         list.push(sampleCompleted);
+        hasChanges = true;
+      }
+
+      if (!hasCancelled) {
+        const halongStay = INITIAL_ACCOMMODATIONS.find((a) => a.id === 'beach-2') || INITIAL_ACCOMMODATIONS[0];
+        const sampleCancelled: BookingDetails = {
+          bookingId: '00000099412034',
+          accommodation: halongStay,
+          checkIn: '05-10-2026',
+          checkOut: '07-10-2026',
+          nights: 2,
+          guests: 2,
+          paymentType: 'full',
+          roomTotal: 3900000,
+          fees: [
+            { label: 'Phí bảo hiểm du lịch', amount: 100000 },
+          ],
+          totalPrice: 4000000,
+          paidAmount: 4000000,
+          paymentDate: '01/10/2026',
+          paymentTime: '10:30',
+          paymentMethod: 'Ví MoMo 24/7',
+          status: 'cancelled',
+          cancellationReason: 'Thay đổi lịch trình gia đình',
+          cancelledAt: '03/10/2026',
+          hasReviewed: false,
+        };
+        list.push(sampleCancelled);
         hasChanges = true;
       }
 

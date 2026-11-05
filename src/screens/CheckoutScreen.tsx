@@ -25,6 +25,7 @@ interface CheckoutScreenProps {
   initialFilters?: SearchFilterState;
   selectedDates?: SelectedStayDates;
   onBack: () => void;
+  onHome?: () => void;
   onConfirmPayment: (booking: BookingDetails) => void;
 }
 
@@ -80,6 +81,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
   initialFilters,
   selectedDates,
   onBack,
+  onHome,
   onConfirmPayment,
 }) => {
   const { user } = useAuth();
@@ -345,7 +347,17 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
               </View>
             )}
           </View>
-          <View style={{ width: 24 }} />
+          {onHome ? (
+            <TouchableOpacity
+              onPress={onHome}
+              style={[styles.backButton, { alignItems: 'flex-end' }]}
+              accessibilityLabel="Trở về trang chủ"
+            >
+              <Ionicons name="home-outline" size={22} color={colors.text} />
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: 24 }} />
+          )}
         </View>
       </View>
 

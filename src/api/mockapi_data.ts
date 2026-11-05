@@ -66,6 +66,39 @@ export const MOCKAPI_RAW_DATA = [
     "isFavorite": true
   },
   {
+    "id": "halong-grand-cruise",
+    "category": "Beach",
+    "title": "Hạ Long Bay Luxury Paradise Cruise",
+    "location": "Cảng tàu khách quốc tế Tuần Châu, TP. Hạ Long, Quảng Ninh",
+    "city": "Hạ Long",
+    "pricePerNight": 115,
+    "rating": 4.98,
+    "reviewCount": 182,
+    "bedrooms": 2,
+    "beds": 2,
+    "bathrooms": 2,
+    "maxGuests": 4,
+    "amenities": [
+      "Ban công riêng hướng vịnh Hạ Long",
+      "Bồn tắm sục Jacuzzi ngắm hoàng hôn",
+      "Bữa ăn buffet hải sản 5 sao",
+      "Chèo thuyền Kayak tham quan hang động",
+      "Lớp học nấu ăn & câu mực đêm"
+    ],
+    "host": {
+      "name": "Trần Tuấn Anh",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80"
+    },
+    "description": "Du thuyền 5 sao đẳng cấp thế giới bồng bềnh giữa lòng kỳ quan vịnh Hạ Long, phòng nghỉ có ban công riêng nhìn trọn vịnh ngọc kỳ vĩ cùng ẩm thực thượng hạng.",
+    "images": [
+      "https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1506929562872-bb421503ef21?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "country": "Việt Nam",
+    "isFavorite": false
+  },
+  {
     "id": "beach-3",
     "category": "Beach",
     "title": "An Bàng Oceanfront Retreat Hội An",

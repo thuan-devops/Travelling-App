@@ -48,6 +48,12 @@ const VN_DESTINATIONS = [
     query: '',
   },
   {
+    id: 'Hạ Long',
+    name: 'Hạ Long',
+    image: 'https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=500&q=80',
+    query: 'Hạ Long',
+  },
+  {
     id: 'Đà Lạt',
     name: 'Đà Lạt',
     image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=500&q=80',

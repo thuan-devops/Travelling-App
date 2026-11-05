@@ -45,6 +45,7 @@ interface BookingsScreenProps {
   onExplore: () => void;
   onSelectBookingDetail: (booking: BookingDetails) => void;
   onRebook?: (stay: Accommodation) => void;
+  onViewReviews?: (stay: Accommodation) => void;
   onTabChange: (tab: BottomTabType) => void;
   onBookingsUpdated?: (updated: BookingDetails[]) => void;
 }
@@ -54,6 +55,7 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
   onExplore,
   onSelectBookingDetail,
   onRebook,
+  onViewReviews,
   onTabChange,
   onBookingsUpdated,
 }) => {
@@ -570,6 +572,25 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
                     {hasReviewed ? 'Sửa đánh giá' : 'Viết đánh giá'}
                   </Text>
                 </TouchableOpacity>
+
+                {onViewReviews && (
+                  <TouchableOpacity
+                    style={[
+                      styles.reviewActionBtn,
+                      {
+                        backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
+                        borderColor: isDark ? '#334155' : '#E2E8F0',
+                      },
+                    ]}
+                    onPress={() => onViewReviews(item.accommodation)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="chatbubbles-outline" size={15} color="#00BDD6" style={{ marginRight: 4 }} />
+                    <Text style={[styles.reviewActionBtnText, { color: isDark ? '#38BDF8' : '#0284C7' }]}>
+                      Xem đánh giá
+                    </Text>
+                  </TouchableOpacity>
+                )}
 
                 <TouchableOpacity
                   style={[

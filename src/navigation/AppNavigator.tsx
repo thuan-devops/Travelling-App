@@ -326,6 +326,10 @@ export const AppNavigator: React.FC = () => {
           initialFilters={searchFilters}
           selectedDates={selectedBookingDates}
           onBack={goBack}
+          onHome={() => {
+            setCurrentScreen('HOME');
+            setHistory(['HOME']);
+          }}
           onConfirmPayment={async (newBooking) => {
             const uniqueBooking: BookingDetails = {
               ...newBooking,
@@ -406,6 +410,10 @@ export const AppNavigator: React.FC = () => {
             navigateTo('PAYMENT_SUCCESS');
           }}
           onRebook={handleSelectStay}
+          onViewReviews={(stay) => {
+            setActiveStay(stay);
+            navigateTo('REVIEWS');
+          }}
           onTabChange={handleTabChange}
           onBookingsUpdated={setBookings}
         />
