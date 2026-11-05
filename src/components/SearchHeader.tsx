@@ -34,9 +34,9 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
           </Text>
         ) : (
           <TextInput
-            style={[styles.searchInput, { color: colors.text }]}
+            style={[styles.searchInput, { color: isDarkMode ? '#FFFFFF' : '#111827', fontWeight: '600' }]}
             placeholder="Bạn muốn nghỉ ngơi ở đâu?"
-            placeholderTextColor={colors.textSecondary}
+            placeholderTextColor={isDarkMode ? '#94A3B8' : '#9CA3AF'}
             value={searchQuery}
             onChangeText={onSearchChange}
             returnKeyType="search"
