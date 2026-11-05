@@ -207,12 +207,12 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                 <View style={styles.stepContainer}>
                   <Text style={[styles.title, { color: isDarkMode ? colors.text : '#111827' }]}>Bạn muốn đi đâu?</Text>
 
-                  <View style={[styles.searchBar, { backgroundColor: isDarkMode ? '#1E293B' : '#FAFAFA', borderColor: isDarkMode ? '#475569' : '#E5E7EB', borderWidth: isDarkMode ? 1.5 : 1 }]}>
-                    <Ionicons name="search-outline" size={20} color={isDarkMode ? '#94A3B8' : '#374151'} style={{ marginRight: 8 }} />
+                  <View style={[styles.searchBar, { backgroundColor: isDarkMode ? '#0F172A' : '#FAFAFA', borderColor: isDarkMode ? '#00BDD6' : '#E5E7EB', borderWidth: 1.5 }]}>
+                    <Ionicons name="search-outline" size={20} color={isDarkMode ? '#00BDD6' : '#374151'} style={{ marginRight: 8 }} />
                     <TextInput
-                      style={styles.input}
+                      style={[styles.input, { color: isDarkMode ? '#FFFFFF' : '#111827', fontSize: 16, fontWeight: '600' }]}
                       placeholder="Tìm kiếm điểm đến (Đà Lạt, Phú Quốc...)"
-                      placeholderTextColor="#9CA3AF"
+                      placeholderTextColor={isDarkMode ? '#94A3B8' : '#9CA3AF'}
                       value={searchQuery}
                       onChangeText={(text) => {
                         setSearchQuery(text);
