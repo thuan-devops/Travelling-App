@@ -19,6 +19,7 @@ import { AppNotification, BottomTabType } from '../types';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { notificationService } from '../services/notificationService';
 import { aiService } from '../services/aiService';
+import { useTheme } from '../context/ThemeContext';
 
 interface ChatMessage {
   id: string;
@@ -40,64 +41,21 @@ interface Conversation {
 
 interface InboxScreenProps {
   onTabChange: (tab: BottomTabType) => void;
+  onOpenAiSupport?: () => void;
   onViewBooking?: (bookingId?: string) => void;
 }
 
 export const InboxScreen: React.FC<InboxScreenProps> = ({
   onTabChange,
+  onOpenAiSupport,
   onViewBooking,
 }) => {
+  const { isDarkMode, colors } = useTheme();
   const [inboxTab, setInboxTab] = useState<'messages' | 'notifications'>('messages');
   const [notifFilter, setNotifFilter] = useState<'all' | 'trips' | 'other'>('all');
 
-  // Conversations state
-  const [conversations, setConversations] = useState<Conversation[]>([
-    {
-      id: 'msg-1',
-      sender: 'Ketut Astawa (Chủ nhà - Balian treehouse)',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
-      lastMessage: 'Xin chào! Rất mong được chào đón bạn đến Balian treehouse. Hãy nhắn cho tôi nếu bạn cần hỗ trợ đón tại sân bay nhé!',
-      time: '10:30',
-      unread: true,
-      messages: [
-        {
-          id: '1',
-          sender: 'other',
-          text: 'Xin chào! Cảm ơn bạn đã quan tâm và đặt chỗ tại Balian Treehouse.',
-          time: '10:28',
-        },
-        {
-          id: '2',
-          sender: 'other',
-          text: 'Rất mong được chào đón bạn đến Bali. Hãy nhắn cho tôi nếu bạn cần hỗ trợ đón tại sân bay nhé!',
-          time: '10:30',
-        },
-      ],
-    },
-    {
-      id: 'msg-2',
-      sender: 'Hỗ trợ khách hàng Travelling App (AI)',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-      lastMessage: 'Thanh toán của bạn đã thành công! Chúc bạn có một chuyến đi thật tuyệt vời.',
-      time: '05:41',
-      unread: false,
-      isAiSupport: true,
-      messages: [
-        {
-          id: '1',
-          sender: 'other',
-          text: 'Xin chào! Chúng tôi là bộ phận hỗ trợ du lịch 24/7 của Travelling App.',
-          time: '05:40',
-        },
-        {
-          id: '2',
-          sender: 'other',
-          text: 'Thanh toán đặt chỗ của bạn đã thành công! Biên lai đã được cập nhật. Bạn cần hỗ trợ gì về chuyến đi hoặc hủy/hoàn tiền không?',
-          time: '05:41',
-        },
-      ],
-    },
-  ]);
+  // Conversations state - Empty by default, no fake/mock host chats
+  const [conversations, setConversations] = useState<Conversation[]>([]);
 
   const [activeChat, setActiveChat] = useState<Conversation | null>(null);
   const [inputMessage, setInputMessage] = useState<string>('');
@@ -281,16 +239,16 @@ export const InboxScreen: React.FC<InboxScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <StatusBar style={colors.statusBar} />
 
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Hộp thư</Text>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Hộp thư</Text>
       </View>
 
       {/* Top Segmented Tabs: Tin nhắn & Thông báo */}
-      <View style={styles.tabBarContainer}>
+      <View style={[styles.tabBarContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity
           style={[styles.segmentBtn, inboxTab === 'messages' && styles.segmentBtnActive]}
           onPress={() => setInboxTab('messages')}
@@ -325,31 +283,101 @@ export const InboxScreen: React.FC<InboxScreenProps> = ({
       {/* TAB 1: TIN NHẮN (MESSAGES) */}
       {inboxTab === 'messages' && (
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          {conversations.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.messageRow}
-              activeOpacity={0.7}
-              onPress={() => handleOpenChat(item)}
-            >
-              <Image source={{ uri: item.avatar }} style={styles.avatar} />
-              <View style={styles.messageBody}>
-                <View style={styles.topRow}>
-                  <Text style={styles.senderName} numberOfLines={1}>
-                    {item.sender}
-                  </Text>
-                  <Text style={styles.timeText}>{item.time}</Text>
-                </View>
-                <Text
-                  style={[styles.messageSnippet, item.unread && styles.messageSnippetUnread]}
-                  numberOfLines={2}
-                >
-                  {item.lastMessage}
-                </Text>
+          {/* AI Travel Assistant Hero Card (Liên kết trực tiếp với Trợ lý Du lịch AI) */}
+          <TouchableOpacity
+            style={[
+              styles.aiHeroCard,
+              {
+                backgroundColor: isDarkMode ? '#1E293B' : '#F0FDFA',
+                borderColor: isDarkMode ? '#0D9488' : '#99F6E4',
+              },
+            ]}
+            activeOpacity={0.85}
+            onPress={() => {
+              if (onOpenAiSupport) {
+                onOpenAiSupport();
+              }
+            }}
+          >
+            <View style={styles.aiHeroHeader}>
+              <View style={[styles.aiIconBadge, { backgroundColor: isDarkMode ? '#0F766E' : '#CCFBF1' }]}>
+                <Ionicons name="sparkles" size={20} color="#0D9488" />
               </View>
-              {item.unread && <View style={styles.unreadDot} />}
-            </TouchableOpacity>
-          ))}
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <View style={styles.aiOnlineRow}>
+                  <View style={styles.aiOnlineDot} />
+                  <Text style={styles.aiOnlineText}>TRỢ LÝ AI TRỰC TUYẾN 24/7</Text>
+                </View>
+                <Text style={[styles.aiHeroTitle, { color: colors.text }]}>Trợ lý Du lịch AI</Text>
+              </View>
+              <View style={styles.aiBadgeTag}>
+                <Text style={styles.aiBadgeTagText}>Trợ giúp AI</Text>
+              </View>
+            </View>
+
+            <Text style={[styles.aiHeroDesc, { color: colors.textSecondary }]}>
+              Hỏi đáp ngôn ngữ tự nhiên: Tìm chỗ nghỉ theo ngân sách và tiện ích, tư vấn điểm đến, hỗ trợ chính sách hủy chuyến & hoàn tiền tức thì.
+            </Text>
+
+            <View style={styles.aiActionRow}>
+              <View style={styles.aiActionBtn}>
+                <Text style={styles.aiActionBtnText}>Trò chuyện với AI ngay</Text>
+                <Ionicons name="arrow-forward" size={15} color="#FFFFFF" style={{ marginLeft: 6 }} />
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          {/* Section Divider */}
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.sectionHeaderText, { color: colors.textSecondary }]}>TIN NHẮN VỚI CHỦ NHÀ</Text>
+          </View>
+
+          {/* User Conversations or Empty State */}
+          {conversations.length === 0 ? (
+            <View style={[styles.emptyMessagesCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={[styles.emptyIconCircle, { backgroundColor: isDarkMode ? '#334155' : '#F3F4F6' }]}>
+                <Ionicons name="chatbubbles-outline" size={38} color={isDarkMode ? '#94A3B8' : '#9CA3AF'} />
+              </View>
+              <Text style={[styles.emptyMessagesTitle, { color: colors.text }]}>Chưa có cuộc trò chuyện nào</Text>
+              <Text style={[styles.emptyMessagesSub, { color: colors.textSecondary }]}>
+                Khi bạn gửi tin nhắn cho chủ chỗ nghỉ hoặc nhận phản hồi riêng, danh sách liên hệ sẽ hiển thị tại đây.
+              </Text>
+              <TouchableOpacity
+                style={styles.connectAiOutlineBtn}
+                onPress={() => onOpenAiSupport && onOpenAiSupport()}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="sparkles-outline" size={16} color="#0D9488" style={{ marginRight: 6 }} />
+                <Text style={styles.connectAiOutlineText}>Hỏi Trợ lý AI du lịch</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            conversations.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={[styles.messageRow, { backgroundColor: colors.card, borderBottomColor: colors.border }]}
+                activeOpacity={0.7}
+                onPress={() => handleOpenChat(item)}
+              >
+                <Image source={{ uri: item.avatar }} style={styles.avatar} />
+                <View style={styles.messageBody}>
+                  <View style={styles.topRow}>
+                    <Text style={[styles.senderName, { color: colors.text }]} numberOfLines={1}>
+                      {item.sender}
+                    </Text>
+                    <Text style={[styles.timeText, { color: colors.textSecondary }]}>{item.time}</Text>
+                  </View>
+                  <Text
+                    style={[styles.messageSnippet, { color: colors.textSecondary }, item.unread && styles.messageSnippetUnread]}
+                    numberOfLines={2}
+                  >
+                    {item.lastMessage}
+                  </Text>
+                </View>
+                {item.unread && <View style={styles.unreadDot} />}
+              </TouchableOpacity>
+            ))
+          )}
         </ScrollView>
       )}
 
@@ -357,25 +385,25 @@ export const InboxScreen: React.FC<InboxScreenProps> = ({
       {inboxTab === 'notifications' && (
         <View style={{ flex: 1 }}>
           {/* Notification Filter Chips & Mark All Read */}
-          <View style={styles.notifToolbar}>
+          <View style={[styles.notifToolbar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
             <View style={styles.filterChipsRow}>
               <TouchableOpacity
-                style={[styles.chip, notifFilter === 'all' && styles.chipActive]}
+                style={[styles.chip, { backgroundColor: isDarkMode ? colors.card : '#FFFFFF', borderColor: colors.border }, notifFilter === 'all' && styles.chipActive]}
                 onPress={() => setNotifFilter('all')}
               >
-                <Text style={[styles.chipText, notifFilter === 'all' && styles.chipTextActive]}>Tất cả</Text>
+                <Text style={[styles.chipText, { color: isDarkMode && notifFilter !== 'all' ? colors.textSecondary : undefined }, notifFilter === 'all' && styles.chipTextActive]}>Tất cả</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.chip, notifFilter === 'trips' && styles.chipActive]}
+                style={[styles.chip, { backgroundColor: isDarkMode ? colors.card : '#FFFFFF', borderColor: colors.border }, notifFilter === 'trips' && styles.chipActive]}
                 onPress={() => setNotifFilter('trips')}
               >
-                <Text style={[styles.chipText, notifFilter === 'trips' && styles.chipTextActive]}>Chuyến đi & Hủy</Text>
+                <Text style={[styles.chipText, { color: isDarkMode && notifFilter !== 'trips' ? colors.textSecondary : undefined }, notifFilter === 'trips' && styles.chipTextActive]}>Chuyến đi & Hủy</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.chip, notifFilter === 'other' && styles.chipActive]}
+                style={[styles.chip, { backgroundColor: isDarkMode ? colors.card : '#FFFFFF', borderColor: colors.border }, notifFilter === 'other' && styles.chipActive]}
                 onPress={() => setNotifFilter('other')}
               >
-                <Text style={[styles.chipText, notifFilter === 'other' && styles.chipTextActive]}>Ưu đãi</Text>
+                <Text style={[styles.chipText, { color: isDarkMode && notifFilter !== 'other' ? colors.textSecondary : undefined }, notifFilter === 'other' && styles.chipTextActive]}>Ưu đãi</Text>
               </TouchableOpacity>
             </View>
 
@@ -390,9 +418,9 @@ export const InboxScreen: React.FC<InboxScreenProps> = ({
           <ScrollView contentContainerStyle={styles.notifListContent} showsVerticalScrollIndicator={false}>
             {filteredNotifications.length === 0 ? (
               <View style={styles.emptyNotifContainer}>
-                <Ionicons name="notifications-off-outline" size={54} color="#D1D5DB" />
-                <Text style={styles.emptyNotifTitle}>Không có thông báo nào</Text>
-                <Text style={styles.emptyNotifSub}>
+                <Ionicons name="notifications-off-outline" size={54} color={isDarkMode ? '#475569' : '#D1D5DB'} />
+                <Text style={[styles.emptyNotifTitle, { color: colors.text }]}>Không có thông báo nào</Text>
+                <Text style={[styles.emptyNotifSub, { color: colors.textSecondary }]}>
                   Các thông báo về đặt chuyến, xác nhận hủy chuyến và ưu đãi sẽ xuất hiện tại đây.
                 </Text>
               </View>
@@ -402,23 +430,27 @@ export const InboxScreen: React.FC<InboxScreenProps> = ({
                 return (
                   <TouchableOpacity
                     key={notif.id}
-                    style={[styles.notifCard, !notif.read && styles.notifCardUnread]}
+                    style={[
+                      styles.notifCard,
+                      { backgroundColor: colors.card, borderColor: colors.border },
+                      !notif.read && (isDarkMode ? { backgroundColor: '#1E293B', borderColor: '#0D9488' } : styles.notifCardUnread),
+                    ]}
                     onPress={() => handleNotificationPress(notif)}
                     activeOpacity={0.8}
                   >
-                    <View style={[styles.notifIconWrap, { backgroundColor: iconInfo.bgColor }]}>
+                    <View style={[styles.notifIconWrap, { backgroundColor: isDarkMode ? '#334155' : iconInfo.bgColor }]}>
                       <Ionicons name={iconInfo.name as any} size={22} color={iconInfo.color} />
                     </View>
 
                     <View style={styles.notifBody}>
                       <View style={styles.notifTopRow}>
-                        <Text style={[styles.notifTitle, !notif.read && styles.notifTitleUnread]}>
+                        <Text style={[styles.notifTitle, { color: colors.text }, !notif.read && styles.notifTitleUnread]}>
                           {notif.title}
                         </Text>
-                        <Text style={styles.notifTime}>{notif.time}</Text>
+                        <Text style={[styles.notifTime, { color: colors.textSecondary }]}>{notif.time}</Text>
                       </View>
 
-                      <Text style={styles.notifMessage}>{notif.message}</Text>
+                      <Text style={[styles.notifMessage, { color: colors.textSecondary }]}>{notif.message}</Text>
 
                       {notif.actionText && (
                         <View style={styles.notifActionRow}>
@@ -474,7 +506,7 @@ export const InboxScreen: React.FC<InboxScreenProps> = ({
                           {activeChat.sender}
                         </Text>
                         <Text style={styles.onlineStatus}>
-                          {activeChat.isAiSupport ? 'Trợ lý AI Gemini 24/7' : 'Đang trực tuyến'}
+                          {activeChat.isAiSupport ? 'Trợ lý AI 24/7' : 'Đang trực tuyến'}
                         </Text>
                       </View>
                     </View>
@@ -668,6 +700,141 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: '#00BDD6',
     marginLeft: 8,
+  },
+  // AI Hero Card
+  aiHeroCard: {
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    marginBottom: 16,
+    shadowColor: '#0D9488',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  aiHeroHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  aiIconBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiOnlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  aiOnlineDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+    marginRight: 5,
+  },
+  aiOnlineText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#0D9488',
+    letterSpacing: 0.5,
+  },
+  aiHeroTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  aiBadgeTag: {
+    backgroundColor: '#0D9488',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  aiBadgeTagText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  aiHeroDesc: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  aiActionRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  aiActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0D9488',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  aiActionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12.5,
+    fontWeight: '700',
+  },
+  // Section Header
+  sectionHeaderRow: {
+    marginBottom: 10,
+    marginTop: 4,
+    paddingHorizontal: 4,
+  },
+  sectionHeaderText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+  },
+  // Empty Messages Card
+  emptyMessagesCard: {
+    padding: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  emptyIconCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  emptyMessagesTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  emptyMessagesSub: {
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 12,
+  },
+  connectAiOutlineBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#0D9488',
+    backgroundColor: 'transparent',
+  },
+  connectAiOutlineText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0D9488',
   },
   // Notifications Toolbar
   notifToolbar: {

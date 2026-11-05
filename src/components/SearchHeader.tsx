@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
 interface SearchHeaderProps {
   searchQuery: string;
@@ -15,23 +16,25 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
   onClear,
   onPress,
 }) => {
+  const { isDarkMode, colors } = useTheme();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: isDarkMode ? colors.background : '#EDF9FA' }]}>
       <TouchableOpacity
-        style={styles.searchBar}
+        style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}
         activeOpacity={0.8}
         onPress={onPress}
       >
-        <Ionicons name="search-outline" size={20} color="#374151" style={styles.searchIcon} />
+        <Ionicons name="search-outline" size={20} color={isDarkMode ? colors.text : "#374151"} style={styles.searchIcon} />
         {onPress ? (
-          <Text style={[styles.searchInput, { color: searchQuery ? '#1F2937' : '#9CA3AF' }]}>
+          <Text style={[styles.searchInput, { color: searchQuery ? colors.text : colors.textSecondary }]}>
             {searchQuery || 'Bạn muốn nghỉ ngơi ở đâu?'}
           </Text>
         ) : (
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: colors.text }]}
             placeholder="Bạn muốn nghỉ ngơi ở đâu?"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colors.textSecondary}
             value={searchQuery}
             onChangeText={onSearchChange}
             returnKeyType="search"

@@ -15,6 +15,7 @@ import { Accommodation, BottomTabType } from '../types';
 import { mockApi } from '../api/mockApi';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { useCurrency } from '../context/CurrencyContext';
+import { useTheme } from '../context/ThemeContext';
 
 interface FavoritesScreenProps {
   onBack: () => void;
@@ -28,6 +29,7 @@ export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({
   onTabChange,
 }) => {
   const { formatPrice } = useCurrency();
+  const { isDarkMode, colors } = useTheme();
   const [favoriteStays, setFavoriteStays] = useState<Accommodation[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -55,7 +57,7 @@ export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({
 
   const renderStayCard = ({ item }: { item: Accommodation }) => (
     <TouchableOpacity
-      style={styles.cardContainer}
+      style={[styles.cardContainer, { backgroundColor: colors.card, borderColor: colors.border }]}
       activeOpacity={0.9}
       onPress={() => onSelectStay(item)}
     >
@@ -75,7 +77,7 @@ export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({
 
       <View style={styles.cardContent}>
         <View style={styles.cardTitleRow}>
-          <Text style={styles.cardTitle} numberOfLines={1}>
+          <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
             {item.title}
           </Text>
           <View style={styles.ratingRow}>
@@ -86,11 +88,11 @@ export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({
 
         <View style={styles.cardInfoRow}>
           <View style={styles.bedroomInfo}>
-            <Ionicons name="bed-outline" size={14} color="#6B7280" style={{ marginRight: 4 }} />
-            <Text style={styles.bedroomText}>{item.bedrooms || 1} phòng ngủ</Text>
+            <Ionicons name="bed-outline" size={14} color={colors.textSecondary} style={{ marginRight: 4 }} />
+            <Text style={[styles.bedroomText, { color: colors.textSecondary }]}>{item.bedrooms || 1} phòng ngủ</Text>
           </View>
-          <Text style={styles.priceText}>
-            <Text style={styles.priceBold}>{formatPrice(item.pricePerNight)}</Text>
+          <Text style={[styles.priceText, { color: colors.textSecondary }]}>
+            <Text style={[styles.priceBold, { color: colors.text }]}>{formatPrice(item.pricePerNight)}</Text>
             /đêm
           </Text>
         </View>
@@ -99,17 +101,17 @@ export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <StatusBar style={colors.statusBar} />
 
       {/* HEADER (Page 16) */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={onBack} style={styles.headerButton}>
-          <Ionicons name="chevron-back" size={24} color="#111827" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Yêu thích</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Yêu thích</Text>
         <TouchableOpacity style={styles.headerButton}>
-          <Ionicons name="ellipsis-horizontal" size={22} color="#6B7280" />
+          <Ionicons name="ellipsis-horizontal" size={22} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -126,13 +128,13 @@ export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={() => (
-            <Text style={styles.sectionTitle}>Những nơi bạn thích</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Những nơi bạn thích</Text>
           )}
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
-              <Ionicons name="heart-dislike-outline" size={48} color="#D1D5DB" />
-              <Text style={styles.emptyTitle}>Chưa có mục yêu thích nào</Text>
-              <Text style={styles.emptySubtitle}>Bấm biểu tượng trái tim ở bất kỳ nơi lưu trú nào để lưu lại tại đây.</Text>
+              <Ionicons name="heart-dislike-outline" size={48} color={isDarkMode ? '#475569' : '#D1D5DB'} />
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>Chưa có mục yêu thích nào</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>Bấm biểu tượng trái tim ở bất kỳ nơi lưu trú nào để lưu lại tại đây.</Text>
             </View>
           )}
         />

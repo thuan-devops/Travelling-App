@@ -129,6 +129,43 @@ class AuthService {
     };
   }
 
+    async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+    username?: string,
+    email?: string
+  ): Promise<void> {
+    if (!currentPassword) {
+      throw new Error('Vui lòng nhập mật khẩu hiện tại.');
+    }
+    if (!newPassword || newPassword.length < 6) {
+      throw new Error('Mật khẩu mới phải có ít nhất 6 ký tự.');
+    }
+    if (currentPassword === newPassword) {
+      throw new Error('Mật khẩu mới không được trùng với mật khẩu hiện tại.');
+    }
+
+    const accounts = await this.getRegisteredAccounts();
+    const accountIndex = accounts.findIndex(
+      (acc) =>
+        acc.id === userId ||
+        (username && acc.username.toLowerCase() === username.toLowerCase()) ||
+        (email && acc.email && acc.email.toLowerCase() === email.toLowerCase())
+    );
+
+    if (accountIndex === -1) {
+      throw new Error('Không tìm thấy tài khoản người dùng trong hệ thống.');
+    }
+
+    if (accounts[accountIndex].password !== currentPassword) {
+      throw new Error('Mật khẩu hiện tại không chính xác.');
+    }
+
+    accounts[accountIndex].password = newPassword;
+    await AsyncStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(accounts));
+  }
+
   getDemoUser(provider: 'google' | 'facebook'): User {
     if (provider === 'google') {
       return {

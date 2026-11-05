@@ -14,6 +14,7 @@ interface AuthContextType {
   loginWithSocialDemo: (provider: 'google' | 'facebook') => Promise<User>;
   logout: () => Promise<void>;
   skipToGuest: () => void;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 const AUTH_STORAGE_KEY = '@travelling_app_user_session';
@@ -28,11 +29,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadStoredUser();
   }, []);
 
+  useEffect(() => {
+    mockApi.setCurrentUserId(user ? user.id : null);
+  }, [user]);
+
   const loadStoredUser = async () => {
     try {
       const stored = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
       if (stored) {
-        setUser(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        setUser(parsed);
+        mockApi.setCurrentUserId(parsed ? parsed.id : null);
       }
     } catch (e) {
       console.warn('Error reading stored user', e);
@@ -108,10 +115,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+    const changePassword = async (currentPassword: string, newPassword: string): Promise<void> => {
+    if (!user) {
+      throw new Error('Vui lòng đăng nhập để đổi mật khẩu.');
+    }
+    await authService.changePassword(user.id, currentPassword, newPassword, user.username, user.email);
+  };
+
   const logout = async () => {
     setIsLoading(true);
     try {
       setUser(null);
+      mockApi.setCurrentUserId(null);
       await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
     } finally {
       setIsLoading(false);
@@ -140,6 +155,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginWithSocialDemo,
         logout,
         skipToGuest,
+        changePassword,
       }}
     >
       {children}

@@ -32,17 +32,17 @@ const DEFAULT_WELCOME_MSG: AiChatMessage = {
   id: 'welcome-msg',
   sender: 'ai',
   text:
-    'Xin chào! 👋 Mình là Trợ lý Du lịch AI của Travelling App (được hỗ trợ bởi Google Gemini).\n\n' +
+    'Xin chào! 👋 Mình là Trợ lý Du lịch AI của Travelling App.\n\n' +
     'Mình có thể tư vấn lịch trình, tìm kiếm chỗ nghỉ thông minh bằng ngôn ngữ tự nhiên, hoặc giải đáp mọi câu hỏi về đặt chỗ & hủy chuyến hoàn tiền.\n\n' +
     'Bạn đang muốn đi đâu hoặc cần hỗ trợ điều gì hôm nay?',
   time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
 };
 
 const QUICK_PROMPTS = [
-  { label: '🌴 Chỗ nghỉ Bali có hồ bơi dưới $60', query: 'Tìm chỗ nghỉ ở Bali có hồ bơi dưới 60 USD' },
-  { label: '⛰️ Phòng view núi ở Đà Lạt', query: 'Gợi ý phòng view núi đẹp và lãng mạn ở Đà Lạt' },
+  { label: '🗺️ Lịch trình 3N2Đ Đà Lạt 3 triệu', query: 'Lên lịch trình du lịch 3 ngày 2 đêm ở Đà Lạt với ngân sách 3 triệu cho 2 người' },
+  { label: '🏖️ Kế hoạch 3N2Đ Phú Quốc', query: 'Lập lịch trình du lịch 3 ngày 2 đêm biển Phú Quốc tiết kiệm' },
+  { label: '🌴 Chỗ nghỉ Bali có hồ bơi dưới 1.500.000đ', query: 'Tìm chỗ nghỉ ở Bali có hồ bơi dưới 1.500.000 VNĐ' },
   { label: '🔄 Chính sách hủy chuyến & hoàn tiền', query: 'Chính sách hủy chuyến và hoàn trả tiền của app như thế nào?' },
-  { label: '🏕️ Chỗ cắm trại thiên nhiên', query: 'Gợi ý cho mình các địa điểm cắm trại hòa mình với thiên nhiên' },
 ];
 
 export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
@@ -231,7 +231,7 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
             <View style={styles.aiSenderHeader}>
               <Text style={styles.aiSenderName}>Trợ lý AI Travelling</Text>
               <View style={styles.geminiBadge}>
-                <Text style={styles.geminiBadgeText}>Gemini</Text>
+                <Text style={styles.geminiBadgeText}>AI</Text>
               </View>
             </View>
           )}

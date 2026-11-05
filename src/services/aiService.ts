@@ -82,7 +82,10 @@ class AiService {
     const systemPrompt = `
 Bạn là "Trợ lý Du lịch AI" (AI Travel Assistant) thông minh của ứng dụng Travelling App.
 Nhiệm vụ của bạn là hỗ trợ khách hàng bằng tiếng Việt một cách thân thiện, chu đáo và nhiệt tình:
-1. Tư vấn lịch trình, gợi ý chỗ nghỉ theo ngôn ngữ tự nhiên (ví dụ: "Tìm chỗ nghỉ ở Bali có hồ bơi dưới $50", "Phòng view đẹp ở Đà Lạt cho 2 người").
+1. LẬP LỊCH TRÌNH DU LỊCH THÔNG MINH (AI Itinerary Planner):
+   - Khi người dùng hỏi lập lịch trình, lên kế hoạch du lịch (ví dụ: "Lập lịch trình 3 ngày 2 đêm ở Đà Lạt", "Kế hoạch đi Phú Quốc 2N1Đ", "Tour Bali tiết kiệm"):
+   - Hãy thiết kế một lịch trình chi tiết theo từng ngày (Ngày 1, Ngày 2...), chia theo các buổi Sáng - Trưa - Chiều - Tối, bao gồm các điểm check-in hấp dẫn, địa điểm ăn uống đặc sản địa phương, và dự toán chi phí hợp lý.
+   - Luôn kèm theo 1 đến 2 chỗ nghỉ phù hợp nhất trong danh sách có sẵn của app đưa vào "suggestedStayIds" để khách có thể đặt phòng ngay.
 2. Giải đáp thắc mắc về chính sách đặt chỗ, hủy chuyến và hoàn tiền:
    - Chính sách hủy chuyến: Khách có thể hủy chuyến trực tiếp tại tab "Chuyến đi của tôi" bất cứ lúc nào trước giờ nhận phòng.
    - Tiền thanh toán sẽ được hoàn trả 100% về phương thức thanh toán ban đầu trong vòng 3-5 ngày làm việc.
@@ -275,11 +278,37 @@ QUAN TRỌNG: Bạn PHẢI trả về duy nhất một chuỗi JSON hợp lệ (
   private heuristicSearch(stays: Accommodation[], text: string): Accommodation[] {
     const q = text.toLowerCase();
 
-    // Check price in query e.g. "dưới 50", "duoi 60", "< 70", "50$"
+    // Check price in query (supports both VND and USD):
     let maxPrice: number | null = null;
-    const priceMatch = q.match(/(?:dưới|<|khoảng|tầm)\s*(\d+)/i) || q.match(/(\d+)\s*(?:\$|usd|đô)/i);
-    if (priceMatch) {
-      maxPrice = parseInt(priceMatch[1], 10);
+
+    // 1. VND patterns like "1.500.000", "1500000", "1.200.000", "1500k"
+    const vndFullMatch = q.match(/(?:dưới|<|khoảng|tầm)\s*([\d\.,]+)\s*(?:đ|vnd|vnđ|đồng|k)?/i);
+    if (vndFullMatch) {
+      const cleanNumStr = vndFullMatch[1].replace(/\./g, '').replace(/,/g, '');
+      let val = parseInt(cleanNumStr, 10);
+      if (q.includes('k') && val < 10000) {
+        val = val * 1000;
+      }
+      if (val >= 10000) {
+        maxPrice = Math.round(val / 25000); // quy đổi về USD để so khớp với dữ liệu
+      } else if (val > 0 && val < 500) {
+        maxPrice = val;
+      }
+    }
+
+    // 2. VND patterns like "1,5 triệu", "1.5 triệu", "1tr5", "1 triệu"
+    const trieuMatch = q.match(/(?:dưới|<|khoảng|tầm)\s*(\d+)(?:[,\.](\d+))?\s*(?:triệu|tr)/i);
+    if (trieuMatch) {
+      const whole = parseInt(trieuMatch[1], 10);
+      const frac = trieuMatch[2] ? parseInt(trieuMatch[2], 10) : 0;
+      const vndVal = whole * 1000000 + frac * 100000;
+      maxPrice = Math.round(vndVal / 25000);
+    }
+
+    // 3. USD explicit: "$60", "60 usd", "60 đô"
+    const usdMatch = q.match(/(\d+)\s*(?:\$|usd|đô)/i);
+    if (usdMatch) {
+      maxPrice = parseInt(usdMatch[1], 10);
     }
 
     return stays.filter((s) => {
@@ -334,7 +363,7 @@ QUAN TRỌNG: Bạn PHẢI trả về duy nhất một chuỗi JSON hợp lệ (
     }
 
     return [
-      'Tìm chỗ nghỉ ở Bali có hồ bơi dưới 60 USD',
+      'Tìm chỗ nghỉ ở Bali có hồ bơi dưới 1.500.000 VNĐ',
       'Gợi ý phòng view núi lãng mạn ở Đà Lạt',
       'Chính sách hủy chuyến & hoàn tiền ra sao?',
     ];
@@ -355,6 +384,91 @@ QUAN TRỌNG: Bạn PHẢI trả về duy nhất một chuỗi JSON hợp lệ (
   } {
     const q = userText.toLowerCase();
 
+    // 0. ITINERARY PLANNER (Lập lịch trình du lịch thông minh)
+    if (q.includes('lịch trình') || q.includes('kế hoạch') || q.includes('tour') || (q.includes('ngày') && q.includes('đêm'))) {
+      if (q.includes('đà lạt') || q.includes('da lat')) {
+        const dalatStays = allStays.filter(s => s.location.toLowerCase().includes('đà lạt') || s.location.toLowerCase().includes('da lat') || s.category === 'Mountain');
+        return {
+          reply:
+            '🗺️ **LỊCH TRÌNH 3 NGÀY 2 ĐÊM TẠI ĐÀ LẠT (Dự toán ngân sách ~3.000.000đ/2 người)**\n\n' +
+            '🌿 **Ngày 1: Chạm ngõ thành phố sương mù**\n' +
+            '• Sáng (8:00 - 11:30): Nhận phòng chỗ nghỉ, thưởng thức bánh căn xíu mại nóng hổi.\n' +
+            '• Chiều (14:00 - 17:30): Check-in Đồi chè Cầu Đất săn mây & hái dâu tây công nghệ cao.\n' +
+            '• Tối (18:30 - 21:30): Thưởng thức lẩu gà lá é Tao Ngộ, dạo Chợ Đêm ăn bánh tráng nướng & uống sữa đậu nành nóng.\n\n' +
+            '🌲 **Ngày 2: Rừng thông & Hoàng hôn thơ mộng**\n' +
+            '• Sáng: Chèo thuyền SUP đón sương sớm tại Hồ Tuyền Lâm, viếng Thiền Viện Trúc Lâm.\n' +
+            '• Chiều: Thưởng thức cà phê ngắm hoàng hôn đồi thông (Tiệm Cà Phê Túi Mơ To hoặc Lululola).\n' +
+            '• Tối: Tiệc nướng BBQ sưởi ấm ngắm thung lũng đèn lung linh.\n\n' +
+            '☕ **Ngày 3: Thư giãn & Mua sắm đặc sản**\n' +
+            '• Sáng: Cà phê vợt cổ truyền, mua hồng treo gió & mứt atiso làm quà cho gia đình.\n' +
+            '• Trưa: Trả phòng, kết thúc chuyến đi tuyệt vời!\n\n' +
+            '🏨 Dưới đây là các chỗ nghỉ view núi tuyệt đẹp tại Đà Lạt để bạn đặt phòng:',
+          recommendedStays: dalatStays.length > 0 ? dalatStays.slice(0, 3) : allStays.slice(0, 3),
+          intent: 'search_stays',
+          followUps: [
+            'Phòng view núi lãng mạn ở Đà Lạt',
+            'Chính sách hủy phòng & hoàn tiền',
+            'Lập lịch trình 3N2Đ biển Phú Quốc',
+          ],
+        };
+      }
+
+      if (q.includes('phú quốc') || q.includes('phu quoc')) {
+        const pqStays = allStays.filter(s => s.location.toLowerCase().includes('phú quốc') || s.location.toLowerCase().includes('phu quoc') || s.category === 'Beach');
+        return {
+          reply:
+            '🏖️ **LỊCH TRÌNH 3 NGÀY 2 ĐÊM THIÊN ĐƯỜNG BIỂN PHÚ QUỐC**\n\n' +
+            '🌊 **Ngày 1: Đón hoàng hôn & Thưởng thức hải sản**\n' +
+            '• Trưa: Đến Phú Quốc, nhận phòng bungalow ven biển nghỉ ngơi.\n' +
+            '• Chiều: Check-in Sunset Sanato ngắm hoàng hôn rực rỡ bên biển Bãi Trường.\n' +
+            '• Tối: Ăn bún quậy Kiến Xây, dạo chợ đêm thưởng thức hải sản nướng mỡ hành.\n\n' +
+            '🤿 **Ngày 2: Tour 4 đảo & Cáp treo Hòn Thơm**\n' +
+            '• Sáng: Cano tham quan Hòn Mây Rút, Hòn Móng Tay lặn ngắm san hô tự nhiên.\n' +
+            '• Chiều: Đi cáp treo vượt biển Hòn Thơm ngắm toàn cảnh vịnh An Thới.\n' +
+            '• Tối: Thưởng thức cocktail tại OCSEN Beach Bar ngắm biển đêm.\n\n' +
+            '🏝️ **Ngày 3: Tắm biển Bãi Sao & Mua sắm**\n' +
+            '• Sáng: Tắm biển tại Bãi Sao với bờ cát trắng mịn, mua ngọc trai & tiêu đen làm quà.\n' +
+            '• Trưa: Trả phòng, chuẩn bị ra sân bay.\n\n' +
+            '🏨 Dưới đây là các resort & bungalow ven biển tại Phú Quốc dành cho bạn:',
+          recommendedStays: pqStays.length > 0 ? pqStays.slice(0, 3) : allStays.slice(0, 3),
+          intent: 'search_stays',
+          followUps: [
+            'Bungalow view biển Phú Quốc',
+            'Chính sách trả trước 50% ra sao?',
+            'Lập lịch trình 4N3Đ Bali tiết kiệm',
+          ],
+        };
+      }
+
+      if (q.includes('bali')) {
+        const baliStays = allStays.filter(s => s.location.toLowerCase().includes('bali') || s.category === 'Beach' || s.category === 'Villa');
+        return {
+          reply:
+            '🌴 **LỊCH TRÌNH 4 NGÀY 3 ĐÊM KHÁM PHÁ THIÊN ĐƯỜNG BALI TIẾT KIỆM**\n\n' +
+            '🌺 **Ngày 1: Đến Bali & Thư giãn hồ bơi**\n' +
+            '• Nhận phòng villa có hồ bơi riêng, ngắm hoàng hôn bãi biển Kuta.\n' +
+            '• Ăn tối món cơm Nasi Goreng & thịt xiên Satay đặc trưng Indonesia.\n\n' +
+            '🌾 **Ngày 2: Trái tim văn hóa Ubud**\n' +
+            '• Sáng: Check-in ruộng bậc thang Tegalalang xanh mướt & trải nghiệm Bali Swing.\n' +
+            '• Chiều: Khám phá Rừng khỉ thiêng Sacred Monkey Forest & Thác nước Tegenungan.\n\n' +
+            '🏛️ **Ngày 3: Đền Uluwatu & Múa lửa Kecak**\n' +
+            '• Sáng: Tắm biển cát trắng tại Padang Padang Beach.\n' +
+            '• Chiều: Tham quan đền vách đá Uluwatu, thưởng thức múa lửa Kecak lúc hoàng hôn.\n' +
+            '• Tối: Tiệc hải sản BBQ trên bãi cát vịnh Jimbaran.\n\n' +
+            '🛍️ **Ngày 4: Mua sắm quà lưu niệm & Tạm biệt**\n' +
+            '• Mua đồ thủ công tại chợ nghệ thuật Ubud Art Market, ra sân bay.\n\n' +
+            '🏨 Dưới đây là các villa & chỗ nghỉ Bali đẹp giá dưới 1.500.000đ dành cho bạn:',
+          recommendedStays: baliStays.length > 0 ? baliStays.slice(0, 3) : allStays.slice(0, 3),
+          intent: 'search_stays',
+          followUps: [
+            '🌴 Chỗ nghỉ Bali có hồ bơi dưới 1.500.000đ',
+            'Chính sách hủy phòng hoàn tiền',
+            '🗺️ Lập lịch trình 3N2Đ Đà Lạt',
+          ],
+        };
+      }
+    }
+
     // 1. FAQ / Support questions
     if (q.includes('hủy') || q.includes('hoàn tiền') || q.includes('chính sách')) {
       return {
@@ -368,7 +482,7 @@ QUAN TRỌNG: Bạn PHẢI trả về duy nhất một chuỗi JSON hợp lệ (
         followUps: [
           'Làm sao để xem chuyến đi đã hủy?',
           'Gợi ý chỗ nghỉ lãng mạn ở Đà Lạt',
-          'Tìm phòng có hồ bơi dưới 50 USD',
+          'Tìm phòng có hồ bơi dưới 1.200.000 VNĐ',
         ],
       };
     }
@@ -411,7 +525,7 @@ QUAN TRỌNG: Bạn PHẢI trả về duy nhất một chuỗi JSON hợp lệ (
     return {
       reply:
         'Chào bạn! Mình là Trợ lý Du lịch AI của Travelling App. Bạn có thể hỏi mình bất kỳ điều gì, ví dụ:\n\n' +
-        '• "Tìm chỗ nghỉ ở Bali có hồ bơi dưới $50"\n' +
+        '• "Tìm chỗ nghỉ ở Bali có hồ bơi dưới 1.500.000đ"\n' +
         '• "Gợi ý phòng view núi lãng mạn Đà Lạt"\n' +
         '• "Chính sách hủy chuyến và hoàn tiền như thế nào?"\n\n' +
         'Mình có thể giúp bạn tìm phòng và giải đáp thắc mắc ngay!',

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CategoryItem, StayCategory } from '../types';
+import { useTheme } from '../context/ThemeContext';
 
 interface CategorySelectorProps {
   categories: CategoryItem[];
@@ -14,6 +15,8 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   selectedCategory,
   onSelectCategory,
 }) => {
+  const { isDarkMode, colors } = useTheme();
+
   // Map category to accurate icon matching screenshot 3
   const getIconName = (category: StayCategory): keyof typeof Ionicons.glyphMap => {
     switch (category) {
@@ -33,7 +36,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -51,9 +54,9 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
               <Ionicons
                 name={getIconName(cat.id)}
                 size={22}
-                color={isActive ? '#00BDD6' : '#6B7280'}
+                color={isActive ? '#00BDD6' : (isDarkMode ? '#94A3B8' : '#6B7280')}
               />
-              <Text style={[styles.categoryLabel, isActive && styles.activeLabel]}>
+              <Text style={[styles.categoryLabel, { color: isDarkMode ? '#94A3B8' : '#6B7280' }, isActive && styles.activeLabel]}>
                 {cat.name}
               </Text>
               {isActive && <View style={styles.activeIndicator} />}

@@ -71,15 +71,18 @@ export const AppNavigator: React.FC = () => {
   // Track previous screen for AI Support back navigation
   const [previousScreen, setPreviousScreen] = useState<ScreenName>('PROFILE');
 
-  // Load persistent bookings on start
+  // Load persistent bookings on start and whenever user changes
   React.useEffect(() => {
+    mockApi.setCurrentUserId(user ? user.id : null);
     mockApi.getBookings().then((data) => {
       setBookings(data);
       if (data.length > 0) {
         setLastBooking(data[0]);
+      } else {
+        setLastBooking(null);
       }
     });
-  }, []);
+  }, [user]);
 
   React.useEffect(() => {
     if (!user) {
@@ -219,12 +222,9 @@ export const AppNavigator: React.FC = () => {
               guests: 1,
               paymentType: 'full',
               roomTotal: 20,
-              fees: [
-                { label: 'Phí chèo thuyền Kayak', amount: 5 },
-                { label: 'Phí đỗ xe', amount: 5 },
-              ],
-              totalPrice: 30,
-              paidAmount: 30,
+              fees: [],
+              totalPrice: 20,
+              paidAmount: 20,
               paymentDate: '09-05-2023',
               paymentTime: '05:40 AM',
               paymentMethod: 'Thẻ tín dụng (Credit card)',
@@ -265,6 +265,10 @@ export const AppNavigator: React.FC = () => {
       {currentScreen === 'INBOX' && (
         <InboxScreen
           onTabChange={handleTabChange}
+          onOpenAiSupport={() => {
+            setPreviousScreen('INBOX');
+            setCurrentScreen('AI_SUPPORT');
+          }}
           onViewBooking={(bookingId) => {
             const found = bookings.find((b) => b.bookingId === bookingId);
             if (found) {
