@@ -1,10 +1,10 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
-  ScrollView,
+ScrollView,
   Image,
   TouchableOpacity,
   TextInput,
@@ -318,31 +318,33 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
       <StatusBar style="dark" />
 
       {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => {
-            if (currentStep === 'payment') {
-              setCurrentStep('form');
-            } else {
-              onBack();
-            }
-          }}
-          style={styles.backButton}
-        >
-          <Ionicons name="chevron-back" size={24} color="#111827" />
-        </TouchableOpacity>
-        <View style={{ alignItems: 'center' }}>
-          <Text style={styles.headerTitle}>
-            {currentStep === 'form' ? 'Thông tin đặt phòng' : 'Xác nhận & Thanh toán'}
-          </Text>
-          {currentStep === 'payment' && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-              <Ionicons name="shield-checkmark" size={12} color="#0D9488" style={{ marginRight: 3 }} />
-              <Text style={{ fontSize: 11, color: '#0D9488', fontWeight: '600' }}>Bảo mật SSL 256-bit</Text>
-            </View>
-          )}
+      <View style={{ width: '100%', backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}>
+        <View style={[styles.header, { maxWidth: 840, alignSelf: 'center', width: '100%' }]}>
+          <TouchableOpacity
+            onPress={() => {
+              if (currentStep === 'payment') {
+                setCurrentStep('form');
+              } else {
+                onBack();
+              }
+            }}
+            style={styles.backButton}
+          >
+            <Ionicons name="chevron-back" size={24} color="#111827" />
+          </TouchableOpacity>
+          <View style={{ alignItems: 'center' }}>
+            <Text style={styles.headerTitle}>
+              {currentStep === 'form' ? 'Thông tin đặt phòng' : 'Xác nhận & Thanh toán'}
+            </Text>
+            {currentStep === 'payment' && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                <Ionicons name="shield-checkmark" size={12} color="#0D9488" style={{ marginRight: 3 }} />
+                <Text style={{ fontSize: 11, color: '#0D9488', fontWeight: '600' }}>Bảo mật SSL 256-bit</Text>
+              </View>
+            )}
+          </View>
+          <View style={{ width: 24 }} />
         </View>
-        <View style={{ width: 24 }} />
       </View>
 
       {/* ============================================================== */}
@@ -350,7 +352,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
       {/* ============================================================== */}
       {currentStep === 'form' && (
         <>
-          <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView contentContainerStyle={[styles.content, { maxWidth: 840, alignSelf: 'center', width: '100%' }]} showsVerticalScrollIndicator={false}>
             {/* PROPERTY SUMMARY BANNER */}
             <View style={styles.hotelBannerCard}>
               <Image
@@ -626,6 +628,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
 
           {/* STEP 1 FOOTER: PROCEED TO PAYMENT */}
           <View style={styles.footerContainer}>
+            <View style={{ maxWidth: 840, alignSelf: 'center', width: '100%' }}>
             <View style={{ marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text style={{ fontSize: 13, color: '#6B7280' }}>Tổng thanh toán ({nights} đêm):</Text>
               <Text style={{ fontSize: 18, fontWeight: '800', color: '#00BDD6' }}>{formatDisplay(totalAmount)}</Text>
@@ -638,6 +641,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
             >
               <Text style={styles.proceedButtonText}>Tiếp tục thanh toán ➔</Text>
             </TouchableOpacity>
+            </View>
           </View>
         </>
       )}
@@ -647,7 +651,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
       {/* ============================================================== */}
       {currentStep === 'payment' && (
         <>
-          <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView contentContainerStyle={[styles.content, { maxWidth: 840, alignSelf: 'center', width: '100%' }]} showsVerticalScrollIndicator={false}>
             {/* COMPONENT 1: TRAVEL BOARDING PASS TICKET CARD */}
             <View style={styles.ticketCard}>
               {/* Ticket Header */}
@@ -917,6 +921,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
 
           {/* STEP 2 FOOTER: XÁC NHẬN THANH TOÁN (MÀU CYAN THƯƠNG HIỆU APP) */}
           <View style={styles.footerContainer}>
+            <View style={{ maxWidth: 840, alignSelf: 'center', width: '100%' }}>
             <View style={styles.footerSummaryRow}>
               <View>
                 <Text style={styles.footerDueLabel}>Số tiền thanh toán trực tuyến:</Text>
@@ -937,6 +942,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
                 Xác nhận thanh toán • {formatDisplay(dueNow)}
               </Text>
             </TouchableOpacity>
+            </View>
           </View>
         </>
       )}

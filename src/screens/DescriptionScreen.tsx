@@ -1,10 +1,10 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
-  ScrollView,
+ScrollView,
   Image,
   TouchableOpacity,
   Linking,
@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { Accommodation } from '../types';
+import { useTheme } from '../context/ThemeContext';
 
 interface DescriptionScreenProps {
   stay: Accommodation;
@@ -20,6 +21,7 @@ interface DescriptionScreenProps {
 }
 
 export const DescriptionScreen: React.FC<DescriptionScreenProps> = ({ stay, onBack }) => {
+  const { isDarkMode, colors } = useTheme();
   const heroImage = stay.images?.[1] || stay.images?.[0];
   const descriptionText = stay.fullDescription || stay.description;
 
@@ -39,15 +41,15 @@ export const DescriptionScreen: React.FC<DescriptionScreenProps> = ({ stay, onBa
   ];
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <StatusBar style={isDarkMode ? "light" : "dark"} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="#111827" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Mô tả chi tiết</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Mô tả chi tiết</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -56,16 +58,16 @@ export const DescriptionScreen: React.FC<DescriptionScreenProps> = ({ stay, onBa
         <Image source={{ uri: heroImage }} style={styles.heroImage} />
 
         {/* Title */}
-        <Text style={styles.stayTitle}>{stay.title}</Text>
+        <Text style={[styles.stayTitle, { color: colors.text }]}>{stay.title}</Text>
 
         {/* Description Text */}
-        <Text style={styles.paragraph}>{descriptionText}</Text>
+        <Text style={[styles.paragraph, { color: colors.textSecondary }]}>{descriptionText}</Text>
 
         {/* Location & Open Map Link */}
-        <View style={styles.locationRow}>
+        <View style={[styles.locationRow, { borderColor: colors.border }]}>
           <View style={styles.locationLeft}>
             <Ionicons name="location-sharp" size={20} color="#00BDD6" style={{ marginRight: 6 }} />
-            <Text style={styles.locationText}>{stay.location}</Text>
+            <Text style={[styles.locationText, { color: colors.textSecondary }]}>{stay.location}</Text>
           </View>
           <TouchableOpacity onPress={handleOpenGoogleMaps} style={styles.openMapButton}>
             <Ionicons name="map-outline" size={16} color="#00838F" style={{ marginRight: 4 }} />
@@ -74,12 +76,12 @@ export const DescriptionScreen: React.FC<DescriptionScreenProps> = ({ stay, onBa
         </View>
 
         {/* Feature Bullets with Checkmarks */}
-        <Text style={styles.highlightsHeader}>Điểm nổi bật của chỗ ở</Text>
+        <Text style={[styles.highlightsHeader, { color: colors.text }]}>Điểm nổi bật của chỗ ở</Text>
         <View style={styles.bulletsList}>
           {highlights.map((bullet, idx) => (
             <View key={idx} style={styles.bulletItem}>
               <Ionicons name="checkmark-circle" size={22} color="#00BDD6" style={styles.checkIcon} />
-              <Text style={styles.bulletText}>{bullet}</Text>
+              <Text style={[styles.bulletText, { color: colors.textSecondary }]}>{bullet}</Text>
             </View>
           ))}
         </View>
@@ -93,7 +95,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
     width: '100%',
-    maxWidth: 480,
+    maxWidth: 840,
     alignSelf: 'center',
   },
   header: {

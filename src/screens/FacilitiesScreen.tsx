@@ -1,10 +1,10 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
-  ScrollView,
+ScrollView,
   TouchableOpacity,
   Platform,
 } from 'react-native';
@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { Accommodation } from '../types';
 import { getAmenityIcon } from '../api/mockApi';
+import { useTheme } from '../context/ThemeContext';
 
 interface FacilitiesScreenProps {
   stay: Accommodation;
@@ -19,6 +20,7 @@ interface FacilitiesScreenProps {
 }
 
 export const FacilitiesScreen: React.FC<FacilitiesScreenProps> = ({ stay, onBack }) => {
+  const { isDarkMode, colors } = useTheme();
   const facilities =
     stay.facilitiesBreakdown?.facilities && stay.facilitiesBreakdown.facilities.length > 0
       ? stay.facilitiesBreakdown.facilities
@@ -35,22 +37,22 @@ export const FacilitiesScreen: React.FC<FacilitiesScreenProps> = ({ stay, onBack
       : ['Phòng tắm riêng biệt', 'Khăn tắm cao cấp', 'Máy sấy tóc'];
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <StatusBar style={isDarkMode ? "light" : "dark"} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="#111827" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Tiện ích & dịch vụ</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Tiện ích & dịch vụ</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* FACILITIES SECTION */}
-        <Text style={styles.sectionTitle}>Tiện ích</Text>
-        <Text style={styles.summaryText}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Tiện ích</Text>
+        <Text style={[styles.summaryText, { color: colors.textSecondary }]}>
           {stay.maxGuests || 2} Khách   {stay.bedrooms || 1} phòng ngủ   {stay.beds || 1} giường   {stay.bathrooms || 1} phòng tắm
         </Text>
 
@@ -58,27 +60,27 @@ export const FacilitiesScreen: React.FC<FacilitiesScreenProps> = ({ stay, onBack
           {facilities.map((fac, idx) => (
             <View key={`fac-${idx}`} style={styles.facilityRow}>
               <Ionicons name={getAmenityIcon(fac)} size={22} color="#00BDD6" style={styles.itemIcon} />
-              <Text style={styles.itemText}>{fac}</Text>
+              <Text style={[styles.itemText, { color: colors.text }]}>{fac}</Text>
             </View>
           ))}
         </View>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
         {/* SERVICES SECTION */}
-        <Text style={styles.sectionTitle}>Dịch vụ</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Dịch vụ</Text>
         <Text style={styles.subCategoryHeader}>Dịch vụ & tiện nghi bổ sung</Text>
 
         <View style={styles.itemsList}>
           {services.map((srv, idx) => (
             <View key={`srv-${idx}`} style={styles.facilityRow}>
               <Ionicons name={getAmenityIcon(srv)} size={22} color="#00BDD6" style={styles.itemIcon} />
-              <Text style={styles.itemText}>{srv}</Text>
+              <Text style={[styles.itemText, { color: colors.text }]}>{srv}</Text>
             </View>
           ))}
         </View>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
         {/* BATHROOM SECTION */}
         <Text style={styles.subCategoryHeader}>Phòng tắm & vệ sinh cá nhân</Text>
@@ -87,7 +89,7 @@ export const FacilitiesScreen: React.FC<FacilitiesScreenProps> = ({ stay, onBack
           {bathroom.map((bath, idx) => (
             <View key={`bath-${idx}`} style={styles.facilityRow}>
               <Ionicons name={getAmenityIcon(bath)} size={22} color="#00BDD6" style={styles.itemIcon} />
-              <Text style={styles.itemText}>{bath}</Text>
+              <Text style={[styles.itemText, { color: colors.text }]}>{bath}</Text>
             </View>
           ))}
         </View>
@@ -102,7 +104,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
     width: '100%',
-    maxWidth: 480,
+    maxWidth: 840,
     alignSelf: 'center',
   },
   header: {

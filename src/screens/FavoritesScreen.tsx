@@ -1,10 +1,10 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
-  FlatList,
+FlatList,
   TouchableOpacity,
   Image,
   ActivityIndicator,
@@ -16,6 +16,8 @@ import { mockApi } from '../api/mockApi';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { useCurrency } from '../context/CurrencyContext';
 import { useTheme } from '../context/ThemeContext';
+
+import { useResponsive, formatGridData } from '../hooks/useResponsive';
 
 interface FavoritesScreenProps {
   onBack: () => void;
@@ -30,6 +32,8 @@ export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({
 }) => {
   const { formatPrice } = useCurrency();
   const { isDarkMode, colors } = useTheme();
+  const { isMobile, isTablet, isDesktop, gridColumns, contentMaxWidth, horizontalPadding } = useResponsive();
+
   const [favoriteStays, setFavoriteStays] = useState<Accommodation[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -55,9 +59,29 @@ export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({
     await mockApi.toggleFavorite(id);
   };
 
-  const renderStayCard = ({ item }: { item: Accommodation }) => (
+  const renderStayCard = ({ item }: { item: any }) => {
+    if (item.empty) {
+      return (
+        <View
+          style={{
+            flex: gridColumns > 1 ? 1 : undefined,
+            marginHorizontal: gridColumns > 1 ? 8 : 20,
+          }}
+        />
+      );
+    }
+    return (
     <TouchableOpacity
-      style={[styles.cardContainer, { backgroundColor: colors.card, borderColor: colors.border }]}
+      style={[
+        styles.cardContainer,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          flex: gridColumns > 1 ? 1 : undefined,
+          marginHorizontal: gridColumns > 1 ? 8 : 20,
+          marginBottom: 20,
+        },
+      ]}
       activeOpacity={0.9}
       onPress={() => onSelectStay(item)}
     >
@@ -98,21 +122,24 @@ export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({
         </View>
       </View>
     </TouchableOpacity>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <StatusBar style={colors.statusBar} />
 
       {/* HEADER (Page 16) */}
-      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={onBack} style={styles.headerButton}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Yêu thích</Text>
-        <TouchableOpacity style={styles.headerButton}>
-          <Ionicons name="ellipsis-horizontal" size={22} color={colors.textSecondary} />
-        </TouchableOpacity>
+      <View style={{ width: '100%', backgroundColor: colors.card, borderBottomColor: colors.border, borderBottomWidth: 1 }}>
+        <View style={[styles.header, { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%', paddingHorizontal: horizontalPadding }]}>
+          <TouchableOpacity onPress={onBack} style={styles.headerButton}>
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Yêu thích</Text>
+          <TouchableOpacity style={styles.headerButton}>
+            <Ionicons name="ellipsis-horizontal" size={22} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* MAIN CONTENT */}
@@ -122,13 +149,26 @@ export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({
         </View>
       ) : (
         <FlatList
-          data={favoriteStays}
+          key={`fav-grid-${gridColumns}`}
+          data={formatGridData(favoriteStays, gridColumns)}
+          numColumns={gridColumns}
           keyExtractor={(item) => item.id}
+          columnWrapperStyle={gridColumns > 1 ? { paddingHorizontal: isDesktop ? 16 : 8, justifyContent: 'flex-start' } : undefined}
           renderItem={renderStayCard}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            {
+              maxWidth: contentMaxWidth,
+              alignSelf: 'center',
+              width: '100%',
+              paddingHorizontal: gridColumns > 1 ? 8 : 0,
+            },
+          ]}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={() => (
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Những nơi bạn thích</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text, paddingHorizontal: gridColumns > 1 ? 12 : 20 }]}>
+              Những nơi bạn thích
+            </Text>
           )}
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>

@@ -18,10 +18,13 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { StatusBar as RNStatusBar } from 'react-native';
 import { Accommodation, ReviewItem, SearchFilterState } from '../types';
 import { CalendarPicker } from '../components/CalendarPicker';
 import { getAmenityIcon, mockApi } from '../api/mockApi';
 import { useCurrency } from '../context/CurrencyContext';
+import { useResponsive } from '../hooks/useResponsive';
+import { useTheme } from '../context/ThemeContext';
 
 export interface SelectedStayDates {
   startDate: Date;
@@ -53,6 +56,7 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
   onBookNow,
 }) => {
   const { formatPrice } = useCurrency();
+  const { isDarkMode, colors } = useTheme();
   const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
 
   // Date selection state
@@ -88,8 +92,10 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
   const formatDateStr = (d: Date) => {
     return `${d.getDate()} Thg ${d.getMonth() + 1}, ${d.getFullYear()}`;
   };
+  const { isMobile, isTablet, isDesktop, width: screenWidth, contentMaxWidth, horizontalPadding } = useResponsive();
+  const [measuredHeroWidth, setMeasuredHeroWidth] = useState<number>(0);
+  const heroWidth = measuredHeroWidth > 0 ? measuredHeroWidth : (isDesktop ? Math.min(contentMaxWidth as number, screenWidth - 48) : screenWidth);
   const scrollViewRef = useRef<any>(null);
-  const heroWidth = Math.min(Dimensions.get('window').width, 480);
 
   // Quản lý đánh giá và chỉnh sửa đánh giá
   const [reviewsList, setReviewsList] = useState<ReviewItem[]>(stay.reviewsList || []);
@@ -239,138 +245,244 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar style={isDarkMode ? "light" : "dark"} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* HERO IMAGE SLIDER */}
-        <View style={styles.imageContainer} {...panResponder.panHandlers}>
-          <ScrollView
-            ref={scrollViewRef}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={(e) => {
-              const slide = Math.round(e.nativeEvent.contentOffset.x / heroWidth);
-              if (slide !== activeImageIndex && slide >= 0 && slide < images.length) {
-                setActiveImageIndex(slide);
-              }
-            }}
-            scrollEventThrottle={16}
-          >
-            {images.map((img, index) => (
-              <Image
-                key={index}
-                source={{ uri: img }}
-                style={[
-                  styles.heroImage,
-                  { width: heroWidth },
-                  Platform.OS === 'web'
-                    ? ({ userSelect: 'none', pointerEvents: 'none' } as any)
-                    : null,
-                ]}
-              />
-            ))}
-          </ScrollView>
-
-          {/* Previous Arrow Button */}
-          {images.length > 1 && activeImageIndex > 0 && (
-            <TouchableOpacity
-              style={[styles.arrowButton, styles.arrowButtonLeft]}
-              activeOpacity={0.85}
-              onPress={(e) => {
-                e?.stopPropagation?.();
-                handlePrevImage();
-              }}
-            >
-              <Ionicons name="chevron-back" size={20} color="#111827" />
-            </TouchableOpacity>
+        <View style={[styles.mainDetailWrapper, { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%', paddingHorizontal: isDesktop ? horizontalPadding : 0 }]}>
+          {/* DESKTOP TOP NAV BAR */}
+          {isDesktop && (
+            <View style={[styles.desktopTopNav, { borderBottomColor: colors.border }]}>
+              <TouchableOpacity style={[styles.desktopBackBtn, { backgroundColor: colors.surface }]} onPress={onBack}>
+                <Ionicons name="arrow-back" size={18} color={colors.text} style={{ marginRight: 6 }} />
+                <Text style={[styles.desktopBackText, { color: colors.text }]}>Quay lại danh sách</Text>
+              </TouchableOpacity>
+              <View style={styles.desktopNavActions}>
+                <TouchableOpacity style={[styles.desktopActionBtn, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={handleShareStay}>
+                  <Ionicons name="share-social-outline" size={16} color={colors.text} style={{ marginRight: 6 }} />
+                  <Text style={[styles.desktopActionText, { color: colors.text }]}>Chia sẻ</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.desktopActionBtn, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => onToggleFavorite(stay.id)}>
+                  <Ionicons
+                    name={stay.isFavorite ? 'heart' : 'heart-outline'}
+                    size={16}
+                    color={stay.isFavorite ? '#EF4444' : colors.text}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text style={[styles.desktopActionText, { color: colors.text }]}>{stay.isFavorite ? 'Đã lưu' : 'Lưu'}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           )}
 
-          {/* Next Arrow Button */}
-          {images.length > 1 && activeImageIndex < images.length - 1 && (
-            <TouchableOpacity
-              style={[styles.arrowButton, styles.arrowButtonRight]}
-              activeOpacity={0.85}
-              onPress={(e) => {
-                e?.stopPropagation?.();
-                handleNextImage();
+          {/* HERO IMAGE SECTION */}
+          {isDesktop ? (
+            <View style={[styles.desktopHeroContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              {/* Main Photo (left 65% or 100% if 1 image) */}
+              <View style={[styles.desktopMainImageCol, images.length === 1 && { flex: 1 }]}>
+                <Image
+                  source={{ uri: images[activeImageIndex] || images[0] }}
+                  style={styles.desktopMainImage}
+                />
+
+                {/* Left/Right navigation arrows */}
+                {images.length > 1 && (
+                  <>
+                    <TouchableOpacity
+                      style={[styles.arrowButton, styles.arrowButtonLeft, { opacity: activeImageIndex > 0 ? 0.92 : 0.4 }]}
+                      activeOpacity={0.85}
+                      disabled={activeImageIndex === 0}
+                      onPress={handlePrevImage}
+                    >
+                      <Ionicons name="chevron-back" size={20} color="#111827" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.arrowButton, styles.arrowButtonRight, { opacity: activeImageIndex < images.length - 1 ? 0.92 : 0.4 }]}
+                      activeOpacity={0.85}
+                      disabled={activeImageIndex >= images.length - 1}
+                      onPress={handleNextImage}
+                    >
+                      <Ionicons name="chevron-forward" size={20} color="#111827" />
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                {/* Photo counter badge */}
+                <View style={styles.photoCountBadge}>
+                  <Ionicons name="images-outline" size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
+                  <Text style={styles.photoCountText}>{`${activeImageIndex + 1}/${images.length}`}</Text>
+                </View>
+              </View>
+
+              {/* Side Photo(s) on right (35% width) */}
+              {images.length > 1 && (
+                <View style={styles.desktopSideImagesCol}>
+                  {images.slice(1, 3).map((imgUrl, idx) => {
+                    const actualIdx = idx + 1;
+                    const isActive = activeImageIndex === actualIdx;
+                    return (
+                      <TouchableOpacity
+                        key={idx}
+                        style={[
+                          styles.desktopSideImageWrap,
+                          images.length === 2 && { flex: 1, height: '100%' },
+                          isActive && styles.desktopSideImageWrapActive,
+                        ]}
+                        activeOpacity={0.85}
+                        onPress={() => setActiveImageIndex(actualIdx)}
+                      >
+                        <Image source={{ uri: imgUrl }} style={styles.desktopSideImage} />
+                        {isActive && (
+                          <View style={styles.activeSideIndicator}>
+                            <Ionicons name="eye" size={16} color="#00BDD6" />
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          ) : (
+            <View
+              style={styles.imageContainer}
+              onLayout={(e) => {
+                const w = e.nativeEvent.layout.width;
+                if (w > 0 && Math.abs(w - measuredHeroWidth) > 2) {
+                  setMeasuredHeroWidth(w);
+                }
               }}
+              {...panResponder.panHandlers}
             >
-              <Ionicons name="chevron-forward" size={20} color="#111827" />
-            </TouchableOpacity>
+              <ScrollView
+                ref={scrollViewRef}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onScroll={(e) => {
+                  const slide = Math.round(e.nativeEvent.contentOffset.x / heroWidth);
+                  if (slide !== activeImageIndex && slide >= 0 && slide < images.length) {
+                    setActiveImageIndex(slide);
+                  }
+                }}
+                scrollEventThrottle={16}
+              >
+                {images.map((img, index) => (
+                  <Image
+                    key={index}
+                    source={{ uri: img }}
+                    style={[
+                      styles.heroImage,
+                      { width: heroWidth },
+                      Platform.OS === 'web'
+                        ? ({ userSelect: 'none', pointerEvents: 'none' } as any)
+                        : null,
+                    ]}
+                  />
+                ))}
+              </ScrollView>
+
+              {/* Previous Arrow Button */}
+              {images.length > 1 && activeImageIndex > 0 && (
+                <TouchableOpacity
+                  style={[styles.arrowButton, styles.arrowButtonLeft]}
+                  activeOpacity={0.85}
+                  onPress={(e) => {
+                    e?.stopPropagation?.();
+                    handlePrevImage();
+                  }}
+                >
+                  <Ionicons name="chevron-back" size={20} color="#111827" />
+                </TouchableOpacity>
+              )}
+
+              {/* Next Arrow Button */}
+              {images.length > 1 && activeImageIndex < images.length - 1 && (
+                <TouchableOpacity
+                  style={[styles.arrowButton, styles.arrowButtonRight]}
+                  activeOpacity={0.85}
+                  onPress={(e) => {
+                    e?.stopPropagation?.();
+                    handleNextImage();
+                  }}
+                >
+                  <Ionicons name="chevron-forward" size={20} color="#111827" />
+                </TouchableOpacity>
+              )}
+
+              {/* Floating Top Bar (Back & Favorite) */}
+              <SafeAreaView style={styles.floatingHeader}>
+                <TouchableOpacity style={styles.circleButton} onPress={onBack}>
+                  <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.circleButton}
+                  onPress={() => onToggleFavorite(stay.id)}
+                >
+                  <Ionicons
+                    name={stay.isFavorite ? 'heart' : 'heart-outline'}
+                    size={22}
+                    color={stay.isFavorite ? '#EF4444' : '#FFFFFF'}
+                  />
+                </TouchableOpacity>
+              </SafeAreaView>
+
+              {/* Photos Counter Badge */}
+              <View style={styles.photoCountBadge}>
+                <Ionicons name="images-outline" size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
+                <Text style={styles.photoCountText}>{`${activeImageIndex + 1}/${images.length}`}</Text>
+              </View>
+            </View>
           )}
 
-          {/* Floating Top Bar (Back & Favorite) */}
-          <SafeAreaView style={styles.floatingHeader}>
-            <TouchableOpacity style={styles.circleButton} onPress={onBack}>
-              <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.circleButton}
-              onPress={() => onToggleFavorite(stay.id)}
-            >
-              <Ionicons
-                name={stay.isFavorite ? 'heart' : 'heart-outline'}
-                size={22}
-                color={stay.isFavorite ? '#EF4444' : '#FFFFFF'}
-              />
-            </TouchableOpacity>
-          </SafeAreaView>
-
-          {/* Photos Counter Badge */}
-          <View style={styles.photoCountBadge}>
-            <Ionicons name="images-outline" size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
-            <Text style={styles.photoCountText}>{`${activeImageIndex + 1}/${images.length}`}</Text>
-          </View>
-        </View>
-
-        {/* DETAILS BODY */}
-        <View style={styles.body}>
+        {/* DETAILS BODY CONTAINER */}
+        <View style={[styles.mainColsRow, isDesktop && styles.desktopColsRow]}>
+          <View style={[styles.body, isDesktop && styles.desktopBodyLeft]}>
           {/* TITLE & LOCATION */}
-          <Text style={styles.title}>{stay.title}</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{stay.title}</Text>
 
           <View style={styles.locationRow}>
             <View style={styles.locationLeft}>
               <Ionicons name="location-sharp" size={18} color="#00BDD6" style={{ marginRight: 6 }} />
-              <Text style={styles.locationText}>{stay.location}</Text>
+              <Text style={[styles.locationText, { color: colors.textSecondary }]}>{stay.location}</Text>
             </View>
-            <TouchableOpacity onPress={handleOpenGoogleMaps} style={styles.viewMapButton}>
+            <TouchableOpacity onPress={handleOpenGoogleMaps} style={[styles.viewMapButton, { backgroundColor: isDarkMode ? colors.surface : '#E0F7FA' }]}>
               <Ionicons name="map-outline" size={16} color="#00BDD6" style={{ marginRight: 4 }} />
-              <Text style={styles.viewMapText}>Xem bản đồ</Text>
+              <Text style={[styles.viewMapText, { color: isDarkMode ? '#22D3EE' : '#00838F' }]}>Xem bản đồ</Text>
             </TouchableOpacity>
           </View>
 
           {/* RATING & REVIEWS */}
-          <TouchableOpacity style={styles.ratingRow} activeOpacity={0.7} onPress={onOpenReviews}>
+          <TouchableOpacity style={[styles.ratingRow, { backgroundColor: colors.surface }]} activeOpacity={0.7} onPress={onOpenReviews}>
             <View style={styles.ratingLeft}>
               <Ionicons
                 name={currentReviewCount > 0 ? 'star' : 'sparkles'}
                 size={18}
                 color={currentReviewCount > 0 ? '#F59E0B' : '#00BDD6'}
               />
-              <Text style={styles.ratingNumber}>
+              <Text style={[styles.ratingNumber, { color: colors.text }]}>
                 {currentReviewCount > 0
                   ? ` ${Number(currentRating).toFixed(1)}/5`
                   : ' Mới (Chưa có đánh giá)'}
               </Text>
             </View>
             <View style={styles.reviewsRight}>
-              <Text style={styles.reviewCountText}>
+              <Text style={[styles.reviewCountText, { color: colors.textSecondary }]}>
                 {currentReviewCount > 0 ? `${currentReviewCount} đánh giá` : '0 đánh giá'}
               </Text>
               <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
             </View>
           </TouchableOpacity>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           {/* FACILITIES & SERVICES (Đặc thù riêng cho từng chỗ nghỉ) */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Tiện ích & dịch vụ</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Tiện ích & dịch vụ</Text>
 
-            <Text style={styles.facilitiesSub}>
+            <Text style={[styles.facilitiesSub, { color: colors.textSecondary }]}>
               {stay.maxGuests || 2} Khách • {stay.bedrooms || 1} phòng ngủ • {stay.beds || 1} giường • {stay.bathrooms || 1} phòng tắm
             </Text>
 
@@ -378,24 +490,24 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
               {(stay.amenities || []).slice(0, 4).map((amenity, idx) => (
                 <View key={idx} style={styles.facilityItem}>
                   <Ionicons name={getAmenityIcon(amenity)} size={22} color="#00BDD6" />
-                  <Text style={styles.facilityName} numberOfLines={1}>
+                  <Text style={[styles.facilityName, { color: colors.text }]} numberOfLines={1}>
                     {amenity}
                   </Text>
                 </View>
               ))}
             </View>
 
-            <TouchableOpacity style={styles.outlineButton} onPress={onOpenFacilities}>
-              <Text style={styles.outlineButtonText}>Xem tất cả tiện ích &gt;</Text>
+            <TouchableOpacity style={[styles.outlineButton, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={onOpenFacilities}>
+              <Text style={[styles.outlineButtonText, { color: colors.text }]}>Xem tất cả tiện ích &gt;</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           {/* REVIEWS PREVIEW & CHỈNH SỬA ĐÁNH GIÁ */}
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Đánh giá ({currentReviewCount})</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Đánh giá ({currentReviewCount})</Text>
               <TouchableOpacity onPress={onOpenReviews}>
                 <Text style={styles.seeAllText}>Xem tất cả &gt;</Text>
               </TouchableOpacity>
@@ -403,20 +515,20 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
 
             {reviewsList && reviewsList.length > 0 ? (
               <>
-                <Text style={styles.bigScore}>
+                <Text style={[styles.bigScore, { color: colors.text }]}>
                   {Number(currentRating).toFixed(1)}
-                  <Text style={styles.scoreDenominator}>/5</Text>
+                  <Text style={[styles.scoreDenominator, { color: colors.textSecondary }]}>/5</Text>
                 </Text>
 
-                <View style={styles.reviewCard}>
+                <View style={[styles.reviewCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                   <View style={styles.reviewAuthorRow}>
                     <Image
                       source={{ uri: reviewsList[0].avatar }}
                       style={styles.authorAvatar}
                     />
                     <View style={{ flex: 1, marginLeft: 10 }}>
-                      <Text style={styles.authorName}>{reviewsList[0].author}</Text>
-                      <Text style={styles.reviewDate}>{reviewsList[0].date}</Text>
+                      <Text style={[styles.authorName, { color: colors.text }]}>{reviewsList[0].author}</Text>
+                      <Text style={[styles.reviewDate, { color: colors.textSecondary }]}>{reviewsList[0].date}</Text>
                     </View>
 
                     {/* Cột hiển thị số sao + ICON CHỈNH SỬA ĐÁNH GIÁ */}
@@ -439,21 +551,21 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
                         activeOpacity={0.7}
                       >
                         <Ionicons name="create-outline" size={15} color="#00BDD6" />
-                        <Text style={styles.editReviewActionText}>Sửa</Text>
+                        <Text style={[styles.editReviewActionText, { color: isDarkMode ? '#22D3EE' : '#00838F' }]}>Sửa</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
 
-                  <Text style={styles.reviewComment} numberOfLines={4}>
+                  <Text style={[styles.reviewComment, { color: colors.text }]} numberOfLines={4}>
                     {reviewsList[0].comment}
                   </Text>
                 </View>
               </>
             ) : (
-              <View style={styles.emptyReviewBox}>
+              <View style={[styles.emptyReviewBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <Ionicons name="chatbubble-ellipses-outline" size={36} color="#00BDD6" />
-                <Text style={styles.emptyReviewTitle}>Chưa có đánh giá nào</Text>
-                <Text style={styles.emptyReviewSub}>
+                <Text style={[styles.emptyReviewTitle, { color: colors.text }]}>Chưa có đánh giá nào</Text>
+                <Text style={[styles.emptyReviewSub, { color: colors.textSecondary }]}>
                   Hãy là người đầu tiên trải nghiệm và chia sẻ cảm nhận về chỗ ở này!
                 </Text>
                 <TouchableOpacity style={styles.writeFirstReviewBtn} onPress={onOpenReviews}>
@@ -464,12 +576,12 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
             )}
           </View>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           {/* VỊ TRÍ TRÊN BẢN ĐỒ GOOGLE MAPS */}
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Vị trí chỗ ở</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Vị trí chỗ ở</Text>
               <TouchableOpacity onPress={handleOpenGoogleMaps}>
                 <Text style={styles.seeAllText}>Mở Google Maps &gt;</Text>
               </TouchableOpacity>
@@ -497,12 +609,12 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
                 </View>
               </View>
 
-              <View style={styles.mapInfoRow}>
+              <View style={[styles.mapInfoRow, { backgroundColor: colors.card }]}>
                 <View style={{ flex: 1, marginRight: 12 }}>
-                  <Text style={styles.mapAddressTitle} numberOfLines={1}>
+                  <Text style={[styles.mapAddressTitle, { color: colors.text }]} numberOfLines={1}>
                     {stay.title}
                   </Text>
-                  <Text style={styles.mapAddressSub}>{stay.location}</Text>
+                  <Text style={[styles.mapAddressSub, { color: colors.textSecondary }]}>{stay.location}</Text>
                 </View>
                 <View style={styles.mapActionPill}>
                   <Ionicons name="navigate" size={15} color="#FFFFFF" style={{ marginRight: 5 }} />
@@ -512,35 +624,35 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
             </TouchableOpacity>
           </View>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           {/* CHÍNH SÁCH & QUY ĐỊNH CHỖ Ở (RIÊNG BIỆT CHO TỪNG ĐỊA ĐIỂM) */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Chính sách</Text>
-            <Text style={styles.policySubHeader}>Quy định chỗ ở</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Chính sách</Text>
+            <Text style={[styles.policySubHeader, { color: colors.text }]}>Quy định chỗ ở</Text>
 
             <View style={styles.ruleItem}>
               <Ionicons name="time-outline" size={20} color="#00BDD6" />
-              <Text style={styles.ruleText}>Giờ nhận phòng: từ {stay.rules?.checkIn || '14:00'}</Text>
+              <Text style={[styles.ruleText, { color: colors.textSecondary }]}>Giờ nhận phòng: từ {stay.rules?.checkIn || '14:00'}</Text>
             </View>
             <View style={styles.ruleItem}>
               <Ionicons name="time-outline" size={20} color="#00BDD6" />
-              <Text style={styles.ruleText}>Giờ trả phòng: trước {stay.rules?.checkOut || '12:00'}</Text>
+              <Text style={[styles.ruleText, { color: colors.textSecondary }]}>Giờ trả phòng: trước {stay.rules?.checkOut || '12:00'}</Text>
             </View>
 
-            <Text style={[styles.policySubHeader, { marginTop: 14 }]}>Chính sách nhận phòng</Text>
-            <Text style={styles.policyDesc} numberOfLines={4}>
+            <Text style={[styles.policySubHeader, { marginTop: 14, color: colors.text }]}>Chính sách nhận phòng</Text>
+            <Text style={[styles.policyDesc, { color: colors.textSecondary }]} numberOfLines={4}>
               {stay.rules?.policyNote ||
                 'Nên xác nhận trực tiếp chính sách nhận phòng với chủ nhà/quản lý trước khi đến để sắp xếp di chuyển thuận lợi.'}
             </Text>
           </View>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           {/* LỰA CHỌN THỜI GIAN LƯU TRÚ */}
           <View style={styles.section}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <Text style={styles.sectionTitle}>Thời gian lưu trú</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Thời gian lưu trú</Text>
               <TouchableOpacity
                 style={styles.changeDatesBtn}
                 onPress={() => setIsCalendarModalOpen(true)}
@@ -558,8 +670,8 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                 <View style={styles.dateCol}>
-                  <Text style={styles.dateLabel}>Nhận phòng</Text>
-                  <Text style={styles.dateValue}>{formatDateStr(startDate)}</Text>
+                  <Text style={[styles.dateLabel, { color: colors.textSecondary }]}>Nhận phòng</Text>
+                  <Text style={[styles.dateValue, { color: colors.text }]}>{formatDateStr(startDate)}</Text>
                   <Text style={styles.dateTime}>Từ {stay.rules?.checkIn || '14:00'}</Text>
                 </View>
 
@@ -569,62 +681,178 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
                 </View>
 
                 <View style={styles.dateCol}>
-                  <Text style={styles.dateLabel}>Trả phòng</Text>
-                  <Text style={styles.dateValue}>{formatDateStr(endDate)}</Text>
+                  <Text style={[styles.dateLabel, { color: colors.textSecondary }]}>Trả phòng</Text>
+                  <Text style={[styles.dateValue, { color: colors.text }]}>{formatDateStr(endDate)}</Text>
                   <Text style={styles.dateTime}>Trước {stay.rules?.checkOut || '12:00'}</Text>
                 </View>
               </View>
 
-              <View style={styles.cardDivider} />
+              <View style={[styles.cardDivider, { backgroundColor: colors.border }]} />
 
               <View style={styles.guestRow}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Ionicons name="people-outline" size={18} color="#00BDD6" style={{ marginRight: 8 }} />
                   <View>
-                    <Text style={styles.dateLabel}>Số lượng khách</Text>
-                    <Text style={styles.guestValueText}>
+                    <Text style={[styles.dateLabel, { color: colors.textSecondary }]}>Số lượng khách</Text>
+                    <Text style={[styles.guestValueText, { color: colors.text }]}>
                       {totalGuests} khách ({adults} người lớn{children > 0 ? `, ${children} trẻ em` : ''})
                     </Text>
                   </View>
                 </View>
-                <View style={styles.guestBadgePill}>
+                <View style={[styles.guestBadgePill, { backgroundColor: isDarkMode ? colors.card : '#F0FDFA', borderColor: isDarkMode ? colors.border : '#CCFBF1' }]}>
                   <Text style={styles.guestBadgePillText}>Đổi khách</Text>
                 </View>
               </View>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           {/* MÔ TẢ CHI TIẾT */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Mô tả</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Mô tả</Text>
 
             <Image
               source={{ uri: stay.images?.[1] || stay.images?.[0] }}
               style={styles.descThumbnail}
             />
 
-            <Text style={styles.descParagraph} numberOfLines={4}>
+            <Text style={[styles.descParagraph, { color: colors.textSecondary }]} numberOfLines={4}>
               {stay.description || stay.fullDescription}
             </Text>
 
-            <TouchableOpacity style={styles.outlineButton} onPress={onOpenDescription}>
-              <Text style={styles.outlineButtonText}>Xem chi tiết mô tả &gt;</Text>
+            <TouchableOpacity style={[styles.outlineButton, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={onOpenDescription}>
+              <Text style={[styles.outlineButtonText, { color: colors.text }]}>Xem chi tiết mô tả &gt;</Text>
             </TouchableOpacity>
           </View>
+          </View>
+
+          {/* DESKTOP RIGHT COLUMN: STICKY BOOKING CARD */}
+          {isDesktop && (
+            <View style={styles.desktopStickyCardCol}>
+              <View style={[styles.desktopStickyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                {/* Header: Price & Rating */}
+                <View style={styles.desktopCardHeader}>
+                  <View>
+                    <Text style={[styles.desktopCardPriceAmount, { color: colors.text }]}>
+                      {formatPrice(stay.pricePerNight)}
+                      <Text style={[styles.desktopCardPriceUnit, { color: colors.textSecondary }]}> /đêm</Text>
+                    </Text>
+                  </View>
+                  <View style={styles.desktopCardRatingRow}>
+                    <Ionicons name="star" size={15} color="#F59E0B" style={{ marginRight: 4 }} />
+                    <Text style={[styles.desktopCardRatingNumber, { color: colors.text }]}>
+                      {currentReviewCount > 0 ? Number(currentRating).toFixed(1) : 'Mới'}
+                    </Text>
+                    <Text style={[styles.desktopCardReviewCount, { color: colors.textSecondary }]}>
+                      ({currentReviewCount} đánh giá)
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Date & Guests Box */}
+                <TouchableOpacity
+                  style={styles.desktopDateBox}
+                  activeOpacity={0.85}
+                  onPress={() => setIsCalendarModalOpen(true)}
+                >
+                  <View style={[styles.desktopDateRow, { borderBottomColor: colors.border }]}>
+                    <View style={styles.desktopDateCol}>
+                      <Text style={[styles.desktopDateLabel, { color: colors.textSecondary }]}>NHẬN PHÒNG</Text>
+                      <Text style={[styles.desktopDateVal, { color: colors.text }]}>{formatDateStr(startDate)}</Text>
+                    </View>
+                    <View style={[styles.desktopDateCol, { borderLeftWidth: 1, borderLeftColor: '#E5E7EB', paddingLeft: 12 }]}>
+                      <Text style={[styles.desktopDateLabel, { color: colors.textSecondary }]}>TRẢ PHÒNG</Text>
+                      <Text style={[styles.desktopDateVal, { color: colors.text }]}>{formatDateStr(endDate)}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.desktopGuestsRow}>
+                    <View>
+                      <Text style={[styles.desktopDateLabel, { color: colors.textSecondary }]}>KHÁCH</Text>
+                      <Text style={[styles.desktopGuestsVal, { color: colors.text }]}>
+                        {totalGuests} khách {totalExtraGuests > 0 ? `(${totalExtraGuests} phụ thu)` : ''}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-down" size={18} color="#6B7280" />
+                  </View>
+                </TouchableOpacity>
+
+                {/* Primary CTA */}
+                <TouchableOpacity
+                  style={styles.desktopBookBtn}
+                  activeOpacity={0.88}
+                  onPress={() => onBookNow({ startDate, endDate, nights, adults, children })}
+                >
+                  <Text style={styles.desktopBookBtnText}>Đặt phòng ngay</Text>
+                </TouchableOpacity>
+
+                <Text style={[styles.desktopNoticeText, { color: colors.textSecondary }]}>
+                  Bạn chưa bị trừ tiền lúc này • Giữ phòng linh hoạt
+                </Text>
+
+                {/* Price Breakdown */}
+                <View style={[styles.desktopBreakdown, { borderTopColor: colors.border }]}>
+                  <View style={styles.desktopBreakdownRow}>
+                    <Text style={[styles.desktopBreakdownLabel, { color: colors.textSecondary }]}>
+                      {formatPrice(stay.pricePerNight)} x {nights} đêm
+                    </Text>
+                    <Text style={[styles.desktopBreakdownVal, { color: colors.text }]}>
+                      {formatPrice(roomBaseTotal)}
+                    </Text>
+                  </View>
+
+                  {totalExtraGuests > 0 && (
+                    <View style={styles.desktopBreakdownRow}>
+                      <Text style={[styles.desktopBreakdownLabel, { color: colors.textSecondary }]}>
+                        Phụ phí khách thêm ({totalExtraGuests} người)
+                      </Text>
+                      <Text style={[styles.desktopBreakdownVal, { color: '#0D9488' }]}>
+                        +{formatPrice(extraGuestFeeTotal)}
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={styles.desktopBreakdownRow}>
+                    <Text style={[styles.desktopBreakdownLabel, { color: colors.textSecondary }]}>Phí dọn dẹp & vệ sinh</Text>
+                    <Text style={[styles.desktopBreakdownVal, { color: '#10B981' }]}>Miễn phí</Text>
+                  </View>
+
+                  <View style={[styles.desktopDivider, { backgroundColor: colors.border }]} />
+
+                  <View style={styles.desktopTotalRow}>
+                    <Text style={[styles.desktopTotalLabel, { color: colors.text }]}>Tổng thanh toán:</Text>
+                    <Text style={styles.desktopTotalVal}>{formatPrice(roomTotalWithGuests)}</Text>
+                  </View>
+                </View>
+
+                {/* Trust Badges */}
+                <View style={[styles.desktopTrustList, { borderTopColor: colors.border }]}>
+                  <View style={styles.desktopTrustItem}>
+                    <Ionicons name="shield-checkmark" size={16} color="#0D9488" style={{ marginRight: 8 }} />
+                    <Text style={[styles.desktopTrustText, { color: colors.textSecondary }]}>Đảm bảo giá tốt nhất trên ứng dụng</Text>
+                  </View>
+                  <View style={styles.desktopTrustItem}>
+                    <Ionicons name="flash" size={16} color="#00BDD6" style={{ marginRight: 8 }} />
+                    <Text style={[styles.desktopTrustText, { color: colors.textSecondary }]}>Xác nhận đặt phòng tức thì</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
+        </View>
         </View>
       </ScrollView>
 
       {/* FIXED BOTTOM BAR */}
-      <View style={styles.bottomBar}>
+      {!isDesktop && (
+      <View style={[styles.bottomBar, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
         <View style={{ flex: 1, paddingRight: 10 }}>
-          <Text style={styles.fromPriceLabel}>
+          <Text style={[styles.fromPriceLabel, { color: colors.textSecondary }]}>
             {totalExtraGuests > 0 
               ? `${formatPrice(stay.pricePerNight)} x ${nights}đ + ${totalExtraGuests} khách thêm:`
               : `${formatPrice(stay.pricePerNight)} x ${nights} đêm:`}
           </Text>
-          <Text style={styles.bottomPrice}>
+          <Text style={[styles.bottomPrice, { color: colors.text }]}>
             {formatPrice(roomTotalWithGuests)}
           </Text>
           <Text style={styles.guestSummarySub}>
@@ -640,6 +868,7 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
           <Text style={styles.bookNowText}>Đặt phòng ngay</Text>
         </TouchableOpacity>
       </View>
+      )}
 
       {/* MODAL CHỌN LỊCH NGÀY NHẬN / TRẢ PHÒNG */}
       <Modal
@@ -649,10 +878,10 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
         onRequestClose={() => setIsCalendarModalOpen(false)}
       >
         <View style={styles.calendarModalOverlay}>
-          <View style={styles.calendarModalBox}>
+          <View style={[styles.calendarModalBox, { backgroundColor: colors.card, borderColor: isDarkMode ? colors.border : 'transparent', borderWidth: isDarkMode ? 1 : 0 }]}>
             <View style={styles.modalHeader}>
               <View>
-                <Text style={styles.modalTitle}>Chọn ngày lưu trú</Text>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>Chọn ngày lưu trú</Text>
                 <Text style={styles.calendarModalSubtitle}>
                   Nhận phòng từ {stay.rules?.checkIn || '14:00'} • Trả phòng trước {stay.rules?.checkOut || '12:00'}
                 </Text>
@@ -674,24 +903,24 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
               />
 
               {/* SỐ LƯỢNG KHÁCH */}
-              <View style={styles.modalSectionDivider} />
-              <Text style={styles.modalSectionTitle}>Số lượng khách</Text>
+              <View style={[styles.modalSectionDivider, { backgroundColor: colors.border }]} />
+              <Text style={[styles.modalSectionTitle, { color: colors.text }]}>Số lượng khách</Text>
 
               <View style={styles.guestCounterRow}>
                 <View>
-                  <Text style={styles.guestCounterLabel}>Người lớn</Text>
-                  <Text style={styles.guestCounterSub}>Từ 13 tuổi trở lên</Text>
+                  <Text style={[styles.guestCounterLabel, { color: colors.text }]}>Người lớn</Text>
+                  <Text style={[styles.guestCounterSub, { color: colors.textSecondary }]}>Từ 13 tuổi trở lên</Text>
                 </View>
                 <View style={styles.counterControl}>
                   <TouchableOpacity
-                    style={styles.counterBtn}
+                    style={[styles.counterBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
                     onPress={() => setAdults((prev) => Math.max(1, prev - 1))}
                   >
                     <Ionicons name="remove" size={16} color="#111827" />
                   </TouchableOpacity>
-                  <Text style={styles.counterNum}>{adults}</Text>
+                  <Text style={[styles.counterNum, { color: colors.text }]}>{adults}</Text>
                   <TouchableOpacity
-                    style={styles.counterBtn}
+                    style={[styles.counterBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
                     onPress={() => setAdults((prev) => Math.min(10, prev + 1))}
                   >
                     <Ionicons name="add" size={16} color="#111827" />
@@ -701,19 +930,19 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
 
               <View style={styles.guestCounterRow}>
                 <View>
-                  <Text style={styles.guestCounterLabel}>Trẻ em</Text>
-                  <Text style={styles.guestCounterSub}>Dưới 13 tuổi</Text>
+                  <Text style={[styles.guestCounterLabel, { color: colors.text }]}>Trẻ em</Text>
+                  <Text style={[styles.guestCounterSub, { color: colors.textSecondary }]}>Dưới 13 tuổi</Text>
                 </View>
                 <View style={styles.counterControl}>
                   <TouchableOpacity
-                    style={styles.counterBtn}
+                    style={[styles.counterBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
                     onPress={() => setChildren((prev) => Math.max(0, prev - 1))}
                   >
                     <Ionicons name="remove" size={16} color="#111827" />
                   </TouchableOpacity>
-                  <Text style={styles.counterNum}>{children}</Text>
+                  <Text style={[styles.counterNum, { color: colors.text }]}>{children}</Text>
                   <TouchableOpacity
-                    style={styles.counterBtn}
+                    style={[styles.counterBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
                     onPress={() => setChildren((prev) => Math.min(6, prev + 1))}
                   >
                     <Ionicons name="add" size={16} color="#111827" />
@@ -722,10 +951,10 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
               </View>
 
               {/* TẠM TÍNH TIỀN */}
-              <View style={styles.priceEstimateBox}>
+              <View style={[styles.priceEstimateBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <Ionicons name="calculator-outline" size={18} color="#00BDD6" style={{ marginRight: 8 }} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.priceEstimateText}>
+                  <Text style={[styles.priceEstimateText, { color: colors.text }]}>
                     {formatPrice(stay.pricePerNight)} x {nights} đêm
                     {totalExtraGuests > 0 ? ` + Phụ thu (${formatPrice(extraGuestFeeTotal)})` : ''}
                     {' = '}
@@ -761,16 +990,16 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
         onRequestClose={() => setIsEditModalOpen(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
+          <View style={[styles.modalBox, { backgroundColor: colors.card, borderColor: isDarkMode ? colors.border : 'transparent', borderWidth: isDarkMode ? 1 : 0 }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Chỉnh sửa đánh giá</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Chỉnh sửa đánh giá</Text>
               <TouchableOpacity onPress={() => setIsEditModalOpen(false)}>
                 <Ionicons name="close" size={24} color="#374151" />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalContent}>
-              <Text style={styles.ratingLabel}>Đánh giá số sao:</Text>
+              <Text style={[styles.ratingLabel, { color: colors.text }]}>Đánh giá số sao:</Text>
               <View style={styles.starPickerRow}>
                 {[1, 2, 3, 4, 5].map((s) => (
                   <TouchableOpacity
@@ -787,7 +1016,7 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
                 ))}
               </View>
 
-              <Text style={styles.inputLabel}>Nội dung nhận xét</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>Nội dung nhận xét</Text>
               <TextInput
                 style={styles.reviewInput}
                 placeholder="Nhập nội dung đánh giá của bạn..."
@@ -803,7 +1032,7 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
                   style={styles.cancelBtn}
                   onPress={() => setIsEditModalOpen(false)}
                 >
-                  <Text style={styles.cancelBtnText}>Hủy</Text>
+                  <Text style={[styles.cancelBtnText, { color: colors.textSecondary }]}>Hủy</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -822,12 +1051,238 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
 };
 
 const styles = StyleSheet.create({
+  mainColsRow: {
+    width: '100%',
+  },
+  desktopColsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 32,
+    marginTop: 10,
+  },
+  desktopBodyLeft: {
+    flex: 1,
+    paddingHorizontal: 0,
+    paddingTop: 0,
+  },
+  desktopStickyCardCol: {
+    width: 380,
+  },
+  desktopStickyCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  desktopCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    marginBottom: 20,
+  },
+  desktopCardPriceAmount: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  desktopCardPriceUnit: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '400',
+  },
+  desktopCardRatingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  desktopCardRatingNumber: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111827',
+    marginRight: 4,
+  },
+  desktopCardReviewCount: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  desktopDateBox: {
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginBottom: 16,
+    backgroundColor: '#FAFAFA',
+  },
+  desktopDateRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  desktopDateCol: {
+    flex: 1,
+  },
+  desktopDateLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#4B5563',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  desktopDateVal: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  desktopGuestsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  desktopGuestsVal: {
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  desktopBookBtn: {
+    backgroundColor: '#00BDD6',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#00BDD6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  desktopBookBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  desktopNoticeText: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 10,
+    marginBottom: 16,
+  },
+  desktopBreakdown: {
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    paddingTop: 16,
+    marginBottom: 16,
+  },
+  desktopBreakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  desktopBreakdownLabel: {
+    fontSize: 14,
+    color: '#4B5563',
+  },
+  desktopBreakdownVal: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  desktopDivider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 10,
+  },
+  desktopTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  desktopTotalLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  desktopTotalVal: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#00BDD6',
+  },
+  desktopTrustList: {
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    paddingTop: 14,
+    gap: 8,
+  },
+  desktopTrustItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  desktopTrustText: {
+    fontSize: 12.5,
+    color: '#4B5563',
+    fontWeight: '500',
+  },
+
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    maxWidth: 480,
     width: '100%',
-    alignSelf: 'center',
+  },
+  mainDetailWrapper: {
+    width: '100%',
+  },
+  desktopTopNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+    marginBottom: 8,
+  },
+  desktopBackBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+  },
+  desktopBackText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  desktopNavActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  desktopActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+  },
+  desktopActionText: {
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: '#374151',
   },
   scrollContent: {
     paddingBottom: 110,
@@ -864,11 +1319,72 @@ const styles = StyleSheet.create({
   },
   floatingHeader: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 44 : 24,
+    top: Platform.OS === 'ios' ? 44 : (Platform.OS === 'android' ? (RNStatusBar.currentHeight || 28) + 8 : 24),
     left: 16,
     right: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    zIndex: 20,
+  },
+  desktopHeroContainer: {
+    flexDirection: 'row',
+    height: 440,
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginTop: 12,
+    marginBottom: 20,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  desktopMainImageCol: {
+    flex: 1.6,
+    height: 440,
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 16,
+  },
+  desktopMainImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  desktopSideImagesCol: {
+    flex: 1,
+    height: 440,
+    gap: 10,
+  },
+  desktopSideImageWrap: {
+    flex: 1,
+    height: 215,
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 16,
+  },
+  desktopSideImageWrapActive: {
+    borderWidth: 3,
+    borderColor: '#00BDD6',
+  },
+  desktopSideImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  activeSideIndicator: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 14,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   circleButton: {
     width: 40,
@@ -1460,13 +1976,14 @@ const styles = StyleSheet.create({
   },
   calendarModalBox: {
     width: '100%',
-    maxWidth: 480,
+    maxWidth: 540,
     alignSelf: 'center',
     backgroundColor: '#FFFFFF',
+    borderRadius: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    paddingHorizontal: 18,
-    paddingTop: 16,
+    paddingHorizontal: 20,
+    paddingTop: 18,
     paddingBottom: 24,
   },
   calendarModalSubtitle: {

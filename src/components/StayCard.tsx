@@ -32,9 +32,13 @@ export const StayCard: React.FC<StayCardProps> = ({
   const { formatPrice } = useCurrency();
   const { isDarkMode, colors } = useTheme();
   const { width: windowWidth } = useWindowDimensions();
-  // Clamped to 440px inside the 480px mobile frame (480 - 40 margin)
-  const initialWidth = Math.max(windowWidth > 480 ? 440 : windowWidth - 40, 200);
-  const [cardWidth, setCardWidth] = useState<number>(initialWidth);
+  const isMobile = windowWidth < 768;
+  const gridCols = windowWidth >= 1280 ? 4 : windowWidth >= 1024 ? 3 : windowWidth >= 768 ? 2 : 1;
+  const calculatedInitialWidth = isMobile
+    ? Math.max(windowWidth - 32, 200)
+    : Math.max((Math.min(windowWidth, 1320) - 48) / gridCols - 20, 220);
+
+  const [cardWidth, setCardWidth] = useState<number>(calculatedInitialWidth);
   const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
   const scrollViewRef = useRef<any>(null);
 
@@ -43,8 +47,8 @@ export const StayCard: React.FC<StayCardProps> = ({
       ? stay.images
       : ['https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=1000&q=80'];
 
-  // Height proportional to width (aspect ratio ~ 1.15 : 1)
-  const imageHeight = Math.round(cardWidth * 0.82);
+  // Chiều cao ảnh tỉ lệ vàng ~ 1.35 : 1 (0.72) chuẩn hiện đại
+  const imageHeight = Math.round(cardWidth * 0.72);
 
   // Refs to avoid stale closures in PanResponder
   const activeIndexRef = useRef(activeImageIndex);
@@ -142,7 +146,17 @@ export const StayCard: React.FC<StayCardProps> = ({
   ).current;
 
   return (
-    <View style={styles.cardContainer} onLayout={handleLayout}>
+    <View
+      style={[
+        styles.cardContainer,
+        {
+          marginHorizontal: isMobile ? 16 : 10,
+          flex: isMobile ? undefined : 1,
+          maxWidth: isMobile ? undefined : 420,
+        },
+      ]}
+      onLayout={handleLayout}
+    >
       {/* Image Carousel Wrapper */}
       <View
         style={[styles.imageWrapper, { height: imageHeight }]}

@@ -16,6 +16,7 @@ import { SearchFilterState } from '../types';
 import { CalendarPicker, DateRange } from './CalendarPicker';
 import { VoiceSearchModal } from './VoiceSearchModal';
 import { aiService } from '../services/aiService';
+import { useTheme } from '../context/ThemeContext';
 
 const PRICE_PRESETS = [
   { id: 'all', label: 'Tất cả giá', min: 0, max: 10000000 },
@@ -90,6 +91,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
   onSearch,
   initialFilters,
 }) => {
+  const { isDarkMode, colors } = useTheme();
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState<boolean>(false);
 
@@ -190,12 +192,12 @@ export const SearchModal: React.FC<SearchModalProps> = ({
       transparent={Platform.OS === 'web'}
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.phoneContainer}>
+      <View style={[styles.modalOverlay, { backgroundColor: Platform.OS === 'web' ? (isDarkMode ? 'rgba(0, 0, 0, 0.75)' : 'rgba(0, 0, 0, 0.45)') : (isDarkMode ? colors.background : '#FFFFFF') }]}>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: isDarkMode ? colors.card : '#FFFFFF', borderColor: isDarkMode ? colors.border : 'transparent', borderWidth: Platform.OS === 'web' && isDarkMode ? 1 : 0 }]}>
+          <View style={[styles.phoneContainer, { backgroundColor: isDarkMode ? colors.card : '#FFFFFF' }]}>
             <View style={styles.header}>
               <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <Ionicons name="close" size={24} color="#374151" />
+                <Ionicons name="close" size={24} color={isDarkMode ? colors.text : '#374151'} />
               </TouchableOpacity>
             </View>
 
@@ -203,10 +205,10 @@ export const SearchModal: React.FC<SearchModalProps> = ({
               {/* STEP 1: WHERE TO? */}
               {currentStep === 1 && (
                 <View style={styles.stepContainer}>
-                  <Text style={styles.title}>Bạn muốn đi đâu?</Text>
+                  <Text style={[styles.title, { color: isDarkMode ? colors.text : '#111827' }]}>Bạn muốn đi đâu?</Text>
 
-                  <View style={styles.searchBar}>
-                    <Ionicons name="search-outline" size={20} color="#374151" style={{ marginRight: 8 }} />
+                  <View style={[styles.searchBar, { backgroundColor: isDarkMode ? '#1E293B' : '#FAFAFA', borderColor: isDarkMode ? '#475569' : '#E5E7EB', borderWidth: isDarkMode ? 1.5 : 1 }]}>
+                    <Ionicons name="search-outline" size={20} color={isDarkMode ? '#94A3B8' : '#374151'} style={{ marginRight: 8 }} />
                     <TextInput
                       style={styles.input}
                       placeholder="Tìm kiếm điểm đến (Đà Lạt, Phú Quốc...)"
@@ -227,7 +229,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                     </TouchableOpacity>
                   </View>
 
-                  <Text style={styles.sectionSubHeader}>Điểm đến phổ biến tại Việt Nam</Text>
+                  <Text style={[styles.sectionSubHeader, { color: isDarkMode ? colors.textSecondary : '#6B7280' }]}>Điểm đến phổ biến tại Việt Nam</Text>
                   <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
@@ -238,14 +240,14 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                       return (
                         <TouchableOpacity
                           key={dest.id}
-                          style={[styles.destCard, isSelected && styles.destCardSelected]}
+                          style={[styles.destCard, { backgroundColor: isDarkMode ? colors.surface : '#FFFFFF', borderColor: isDarkMode ? colors.border : '#E5E7EB' }, isSelected && { borderColor: '#00BDD6', backgroundColor: isDarkMode ? '#134E5E' : '#F0FDFA' }]}
                           onPress={() => {
                             setDestination(dest.id);
                             setSearchQuery(dest.query);
                           }}
                         >
                           <Image source={{ uri: dest.image }} style={styles.destImage} />
-                          <Text style={[styles.destLabel, isSelected && styles.destLabelSelected]}>
+                          <Text style={[styles.destLabel, { color: isDarkMode ? '#F8FAFC' : '#374151', fontWeight: '600' }, isSelected && { color: '#00BDD6', fontWeight: '800' }]}>
                             {dest.name}
                           </Text>
                         </TouchableOpacity>
@@ -255,24 +257,24 @@ export const SearchModal: React.FC<SearchModalProps> = ({
             </ScrollView>
 
                   {/* Collapsible Rows */}
-                  <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(2)}>
-                    <Text style={styles.summaryLabel}>Thời gian</Text>
-                    <Text style={styles.summaryValueAction}>{dateSummaryText}</Text>
+                  <TouchableOpacity style={[styles.summaryRow, { borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]} onPress={() => setCurrentStep(2)}>
+                    <Text style={[styles.summaryLabel, { color: isDarkMode ? '#E2E8F0' : '#4B5563', fontWeight: '600' }]}>Thời gian</Text>
+                    <Text style={[styles.summaryValueAction, { color: '#00BDD6', fontWeight: '700' }]}>{dateSummaryText}</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(3)}>
-                    <Text style={styles.summaryLabel}>Khách</Text>
-                    <Text style={styles.summaryValueAction}>{adults + children} khách</Text>
+                  <TouchableOpacity style={[styles.summaryRow, { borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]} onPress={() => setCurrentStep(3)}>
+                    <Text style={[styles.summaryLabel, { color: isDarkMode ? '#E2E8F0' : '#4B5563', fontWeight: '600' }]}>Khách</Text>
+                    <Text style={[styles.summaryValueAction, { color: '#00BDD6', fontWeight: '700' }]}>{adults + children} khách</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(4)}>
-                    <Text style={styles.summaryLabel}>Khoảng giá</Text>
-                    <Text style={styles.summaryValueAction}>{priceSummaryText}</Text>
+                  <TouchableOpacity style={[styles.summaryRow, { borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]} onPress={() => setCurrentStep(4)}>
+                    <Text style={[styles.summaryLabel, { color: isDarkMode ? '#E2E8F0' : '#4B5563', fontWeight: '600' }]}>Khoảng giá</Text>
+                    <Text style={[styles.summaryValueAction, { color: '#00BDD6', fontWeight: '700' }]}>{priceSummaryText}</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(4)}>
-                    <Text style={styles.summaryLabel}>Đánh giá sao</Text>
-                    <Text style={styles.summaryValueAction}>{ratingSummaryText}</Text>
+                  <TouchableOpacity style={[styles.summaryRow, { borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]} onPress={() => setCurrentStep(4)}>
+                    <Text style={[styles.summaryLabel, { color: isDarkMode ? '#E2E8F0' : '#4B5563', fontWeight: '600' }]}>Đánh giá sao</Text>
+                    <Text style={[styles.summaryValueAction, { color: '#00BDD6', fontWeight: '700' }]}>{ratingSummaryText}</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -280,20 +282,20 @@ export const SearchModal: React.FC<SearchModalProps> = ({
               {/* STEP 2: WHEN STAYING */}
               {currentStep === 2 && (
                 <View style={styles.stepContainer}>
-                  <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(1)}>
-                    <Text style={styles.summaryLabel}>Địa điểm</Text>
-                    <Text style={styles.summaryValueBold}>{destination === 'Anywhere' ? 'Bất kỳ đâu' : destination}</Text>
+                  <TouchableOpacity style={[styles.summaryRow, { borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]} onPress={() => setCurrentStep(1)}>
+                    <Text style={[styles.summaryLabel, { color: isDarkMode ? '#E2E8F0' : '#4B5563', fontWeight: '600' }]}>Địa điểm</Text>
+                    <Text style={[styles.summaryValueBold, { color: isDarkMode ? colors.text : '#111827' }]}>{destination === 'Anywhere' ? 'Bất kỳ đâu' : destination}</Text>
                   </TouchableOpacity>
 
-                  <Text style={styles.title}>Thời gian lưu trú</Text>
+                  <Text style={[styles.title, { color: isDarkMode ? colors.text : '#111827' }]}>Thời gian lưu trú</Text>
 
                   {/* Segmented Buttons */}
-                  <View style={styles.segmentedContainer}>
+                  <View style={[styles.segmentedContainer, { backgroundColor: isDarkMode ? colors.surface : '#F3F4F6' }]}>
                     <TouchableOpacity
                       style={[styles.segmentButton, whenMode === 'anytime' && styles.segmentButtonActive]}
                       onPress={() => setWhenMode('anytime')}
                     >
-                      <Text style={[styles.segmentText, whenMode === 'anytime' && styles.segmentTextActive]}>
+                      <Text style={[styles.segmentText, { color: isDarkMode ? colors.textSecondary : '#4B5563' }, whenMode === 'anytime' && styles.segmentTextActive]}>
                         Bất kỳ lúc nào
                       </Text>
                     </TouchableOpacity>
@@ -301,7 +303,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                       style={[styles.segmentButton, whenMode === 'choose' && styles.segmentButtonActive]}
                       onPress={() => setWhenMode('choose')}
                     >
-                      <Text style={[styles.segmentText, whenMode === 'choose' && styles.segmentTextActive]}>
+                      <Text style={[styles.segmentText, { color: isDarkMode ? colors.textSecondary : '#4B5563' }, whenMode === 'choose' && styles.segmentTextActive]}>
                         Chọn ngày
                       </Text>
                     </TouchableOpacity>
@@ -319,10 +321,10 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                       />
                     </View>
                   ) : (
-                    <View style={styles.anytimeCard}>
+                    <View style={[styles.anytimeCard, { backgroundColor: isDarkMode ? colors.surface : '#F0FDFA', borderColor: isDarkMode ? colors.border : '#CCFBF1' }]}>
                       <Ionicons name="infinite-outline" size={32} color="#00BDD6" />
-                      <Text style={styles.anytimeTitle}>Linh hoạt thời gian</Text>
-                      <Text style={styles.anytimeDesc}>
+                      <Text style={[styles.anytimeTitle, { color: isDarkMode ? '#2DD4BF' : '#0F766E' }]}>Linh hoạt thời gian</Text>
+                      <Text style={[styles.anytimeDesc, { color: isDarkMode ? colors.textSecondary : '#475569' }]}>
                         Khám phá tất cả các chuyến đi phù hợp mà không bị giới hạn bởi ngày cụ thể. Giá sẽ được hiển thị theo từng đêm.
                       </Text>
                     </View>
@@ -331,7 +333,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                   {/* Actions */}
                   <View style={styles.stepActionsRow}>
                     <TouchableOpacity onPress={() => setCurrentStep(3)}>
-                      <Text style={styles.skipText}>Bỏ qua</Text>
+                      <Text style={[styles.skipText, { color: isDarkMode ? colors.textSecondary : '#4B5563' }]}>Bỏ qua</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.nextButton}
@@ -346,35 +348,35 @@ export const SearchModal: React.FC<SearchModalProps> = ({
               {/* STEP 3: HOW MANY GUESTS? */}
               {currentStep === 3 && (
                 <View style={styles.stepContainer}>
-                  <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(1)}>
-                    <Text style={styles.summaryLabel}>Địa điểm</Text>
-                    <Text style={styles.summaryValueBold}>{destination === 'Anywhere' ? 'Bất kỳ đâu' : destination}</Text>
+                  <TouchableOpacity style={[styles.summaryRow, { borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]} onPress={() => setCurrentStep(1)}>
+                    <Text style={[styles.summaryLabel, { color: isDarkMode ? '#E2E8F0' : '#4B5563', fontWeight: '600' }]}>Địa điểm</Text>
+                    <Text style={[styles.summaryValueBold, { color: isDarkMode ? colors.text : '#111827' }]}>{destination === 'Anywhere' ? 'Bất kỳ đâu' : destination}</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(2)}>
-                    <Text style={styles.summaryLabel}>Thời gian</Text>
-                    <Text style={styles.summaryValueBold}>{dateSummaryText}</Text>
+                  <TouchableOpacity style={[styles.summaryRow, { borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]} onPress={() => setCurrentStep(2)}>
+                    <Text style={[styles.summaryLabel, { color: isDarkMode ? '#E2E8F0' : '#4B5563', fontWeight: '600' }]}>Thời gian</Text>
+                    <Text style={[styles.summaryValueBold, { color: isDarkMode ? colors.text : '#111827' }]}>{dateSummaryText}</Text>
                   </TouchableOpacity>
 
                   {/* Guests Card */}
-                  <View style={styles.guestsCard}>
-                    <Text style={styles.title}>Có bao nhiêu khách?</Text>
+                  <View style={[styles.guestsCard, { borderColor: isDarkMode ? colors.border : '#E5E7EB', backgroundColor: isDarkMode ? colors.surface : '#FFFFFF' }]}>
+                    <Text style={[styles.title, { color: isDarkMode ? colors.text : '#111827' }]}>Có bao nhiêu khách?</Text>
 
-                    <View style={styles.guestRow}>
+                    <View style={[styles.guestRow, { borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]}>
                       <View>
-                        <Text style={styles.guestType}>Người lớn</Text>
-                        <Text style={styles.guestSubtitle}>Từ 13 tuổi trở lên</Text>
+                        <Text style={[styles.guestType, { color: isDarkMode ? colors.text : '#111827' }]}>Người lớn</Text>
+                        <Text style={[styles.guestSubtitle, { color: isDarkMode ? colors.textSecondary : '#9CA3AF' }]}>Từ 13 tuổi trở lên</Text>
                       </View>
                       <View style={styles.counterRow}>
                         <TouchableOpacity
-                          style={styles.counterCircle}
+                          style={[styles.counterCircle, { borderColor: isDarkMode ? colors.border : '#D1D5DB', backgroundColor: isDarkMode ? colors.card : '#FFFFFF' }]}
                           onPress={() => setAdults((prev) => Math.max(1, prev - 1))}
                         >
                           <Ionicons name="remove" size={18} color="#9CA3AF" />
                         </TouchableOpacity>
-                        <Text style={styles.counterValue}>{adults}</Text>
+                        <Text style={[styles.counterValue, { color: isDarkMode ? colors.text : '#111827' }]}>{adults}</Text>
                         <TouchableOpacity
-                          style={styles.counterCircle}
+                          style={[styles.counterCircle, { borderColor: isDarkMode ? colors.border : '#D1D5DB', backgroundColor: isDarkMode ? colors.card : '#FFFFFF' }]}
                           onPress={() => setAdults((prev) => prev + 1)}
                         >
                           <Ionicons name="add" size={18} color="#1F2937" />
@@ -382,21 +384,21 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                       </View>
                     </View>
 
-                    <View style={[styles.guestRow, { borderBottomWidth: 0 }]}>
+                    <View style={[styles.guestRow, { borderBottomWidth: 0, borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]}>
                       <View>
-                        <Text style={styles.guestType}>Trẻ em</Text>
-                        <Text style={styles.guestSubtitle}>Dưới 13 tuổi</Text>
+                        <Text style={[styles.guestType, { color: isDarkMode ? colors.text : '#111827' }]}>Trẻ em</Text>
+                        <Text style={[styles.guestSubtitle, { color: isDarkMode ? colors.textSecondary : '#9CA3AF' }]}>Dưới 13 tuổi</Text>
                       </View>
                       <View style={styles.counterRow}>
                         <TouchableOpacity
-                          style={styles.counterCircle}
+                          style={[styles.counterCircle, { borderColor: isDarkMode ? colors.border : '#D1D5DB', backgroundColor: isDarkMode ? colors.card : '#FFFFFF' }]}
                           onPress={() => setChildren((prev) => Math.max(0, prev - 1))}
                         >
                           <Ionicons name="remove" size={18} color="#9CA3AF" />
                         </TouchableOpacity>
-                        <Text style={styles.counterValue}>{children}</Text>
+                        <Text style={[styles.counterValue, { color: isDarkMode ? colors.text : '#111827' }]}>{children}</Text>
                         <TouchableOpacity
-                          style={styles.counterCircle}
+                          style={[styles.counterCircle, { borderColor: isDarkMode ? colors.border : '#D1D5DB', backgroundColor: isDarkMode ? colors.card : '#FFFFFF' }]}
                           onPress={() => setChildren((prev) => prev + 1)}
                         >
                           <Ionicons name="add" size={18} color="#1F2937" />
@@ -407,7 +409,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                     {/* Step 3 to Step 4 Actions */}
                     <View style={styles.stepActionsRow}>
                       <TouchableOpacity onPress={() => setCurrentStep(4)}>
-                        <Text style={styles.skipText}>Bỏ qua</Text>
+                        <Text style={[styles.skipText, { color: isDarkMode ? colors.textSecondary : '#4B5563' }]}>Bỏ qua</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={styles.nextButton}
@@ -423,33 +425,33 @@ export const SearchModal: React.FC<SearchModalProps> = ({
               {/* STEP 4: PRICE & RATING FILTER */}
               {currentStep === 4 && (
                 <View style={styles.stepContainer}>
-                  <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(1)}>
-                    <Text style={styles.summaryLabel}>Địa điểm</Text>
-                    <Text style={styles.summaryValueBold}>{destination === 'Anywhere' ? 'Bất kỳ đâu' : destination}</Text>
+                  <TouchableOpacity style={[styles.summaryRow, { borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]} onPress={() => setCurrentStep(1)}>
+                    <Text style={[styles.summaryLabel, { color: isDarkMode ? '#E2E8F0' : '#4B5563', fontWeight: '600' }]}>Địa điểm</Text>
+                    <Text style={[styles.summaryValueBold, { color: isDarkMode ? colors.text : '#111827' }]}>{destination === 'Anywhere' ? 'Bất kỳ đâu' : destination}</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(2)}>
-                    <Text style={styles.summaryLabel}>Thời gian</Text>
-                    <Text style={styles.summaryValueBold}>{dateSummaryText}</Text>
+                  <TouchableOpacity style={[styles.summaryRow, { borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]} onPress={() => setCurrentStep(2)}>
+                    <Text style={[styles.summaryLabel, { color: isDarkMode ? '#E2E8F0' : '#4B5563', fontWeight: '600' }]}>Thời gian</Text>
+                    <Text style={[styles.summaryValueBold, { color: isDarkMode ? colors.text : '#111827' }]}>{dateSummaryText}</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(3)}>
-                    <Text style={styles.summaryLabel}>Khách</Text>
-                    <Text style={styles.summaryValueBold}>{adults + children} khách</Text>
+                  <TouchableOpacity style={[styles.summaryRow, { borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]} onPress={() => setCurrentStep(3)}>
+                    <Text style={[styles.summaryLabel, { color: isDarkMode ? '#E2E8F0' : '#4B5563', fontWeight: '600' }]}>Khách</Text>
+                    <Text style={[styles.summaryValueBold, { color: isDarkMode ? colors.text : '#111827' }]}>{adults + children} khách</Text>
                   </TouchableOpacity>
 
-                  <View style={styles.filterCard}>
-                    <Text style={styles.title}>Giá tiền & Đánh giá</Text>
+                  <View style={[styles.filterCard, { backgroundColor: isDarkMode ? colors.surface : '#FFFFFF', borderColor: isDarkMode ? colors.border : '#E5E7EB' }]}>
+                    <Text style={[styles.title, { color: isDarkMode ? colors.text : '#111827' }]}>Giá tiền & Đánh giá</Text>
 
                     {/* 1. KHOẢNG GIÁ */}
-                    <Text style={styles.filterSectionTitle}>Khoảng giá mỗi đêm</Text>
+                    <Text style={[styles.filterSectionTitle, { color: isDarkMode ? colors.text : '#1F2937' }]}>Khoảng giá mỗi đêm</Text>
                     <View style={styles.presetsGrid}>
                       {PRICE_PRESETS.map((p) => {
                         const isSel = selectedPricePreset === p.id;
                         return (
                           <TouchableOpacity
                             key={p.id}
-                            style={[styles.presetChip, isSel && styles.presetChipActive]}
+                            style={[styles.presetChip, { backgroundColor: isDarkMode ? colors.card : '#F3F4F6', borderColor: isDarkMode ? colors.border : '#E5E7EB' }, isSel && { backgroundColor: isDarkMode ? '#134E5E' : '#E0F7FA', borderColor: '#00BDD6' }]}
                             onPress={() => {
                               setSelectedPricePreset(p.id);
                               setMinPrice(p.min);
@@ -457,7 +459,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                             }}
                             activeOpacity={0.7}
                           >
-                            <Text style={[styles.presetChipText, isSel && styles.presetChipTextActive]}>
+                            <Text style={[styles.presetChipText, { color: isDarkMode ? colors.textSecondary : '#4B5563' }, isSel && { color: '#00BDD6', fontWeight: '700' }]}>
                               {p.label}
                             </Text>
                           </TouchableOpacity>
@@ -465,26 +467,26 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                       })}
                     </View>
 
-                    <View style={styles.priceDisplayBox}>
+                    <View style={[styles.priceDisplayBox, { backgroundColor: isDarkMode ? colors.card : '#F0FDFA', borderColor: isDarkMode ? colors.border : '#CCFBF1' }]}>
                       <Ionicons name="pricetag" size={17} color="#00BDD6" style={{ marginRight: 8 }} />
-                      <Text style={styles.priceDisplayText}>
+                      <Text style={[styles.priceDisplayText, { color: isDarkMode ? colors.text : '#0F766E' }]}>
                         {selectedPricePreset === 'all'
                           ? 'Tất cả các mức giá (0đ - 10.000.000đ+)'
                           : `${minPrice.toLocaleString('vi-VN')}₫  ➔  ${maxPrice >= 20000000 ? 'Không giới hạn' : `${maxPrice.toLocaleString('vi-VN')}₫`}`}
                       </Text>
                     </View>
 
-                    <View style={styles.filterDivider} />
+                    <View style={[styles.filterDivider, { backgroundColor: isDarkMode ? colors.border : '#F3F4F6' }]} />
 
                     {/* 2. ĐÁNH GIÁ SAO */}
-                    <Text style={styles.filterSectionTitle}>Tiêu chuẩn đánh giá sao</Text>
+                    <Text style={[styles.filterSectionTitle, { color: isDarkMode ? colors.text : '#1F2937' }]}>Tiêu chuẩn đánh giá sao</Text>
                     <View style={styles.ratingGrid}>
                       {RATING_OPTIONS.map((r) => {
                         const isSel = selectedRating === r.value;
                         return (
                           <TouchableOpacity
                             key={r.value}
-                            style={[styles.ratingCard, isSel && styles.ratingCardActive]}
+                            style={[styles.ratingCard, { backgroundColor: isDarkMode ? colors.card : '#FAFAFA', borderColor: isDarkMode ? colors.border : '#E5E7EB' }, isSel && { borderColor: '#00BDD6', backgroundColor: isDarkMode ? '#134E5E' : '#F0FDFA' }]}
                             onPress={() => setSelectedRating(r.value)}
                             activeOpacity={0.7}
                           >
@@ -495,11 +497,11 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                                 color={r.value === 0 ? '#9CA3AF' : '#F59E0B'}
                                 style={{ marginRight: 4 }}
                               />
-                              <Text style={[styles.ratingCardLabel, isSel && styles.ratingCardLabelActive]}>
+                              <Text style={[styles.ratingCardLabel, { color: isDarkMode ? colors.text : '#374151' }, isSel && { color: '#00BDD6' }]}>
                                 {r.label}
                               </Text>
                             </View>
-                            <Text style={[styles.ratingCardSub, isSel && styles.ratingCardSubActive]}>
+                            <Text style={[styles.ratingCardSub, { color: isDarkMode ? colors.textSecondary : '#6B7280' }, isSel && { color: isDarkMode ? '#A5F3FC' : '#0D9488' }]}>
                               {r.sub}
                             </Text>
                           </TouchableOpacity>
@@ -510,7 +512,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                     {/* Back to overview link */}
                     <View style={{ marginTop: 14, alignItems: 'center' }}>
                       <TouchableOpacity onPress={() => setCurrentStep(1)} style={{ paddingVertical: 6 }}>
-                        <Text style={styles.skipText}>➔ Xem lại tổng quan các bước</Text>
+                        <Text style={[styles.skipText, { color: isDarkMode ? colors.textSecondary : '#4B5563' }]}>➔ Xem lại tổng quan các bước</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -519,9 +521,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({
             </ScrollView>
 
             {/* FOOTER BAR */}
-            <View style={styles.footerBar}>
+            <View style={[styles.footerBar, { backgroundColor: isDarkMode ? colors.card : '#FFFFFF', borderTopColor: isDarkMode ? colors.border : '#F3F4F6' }]}>
               <TouchableOpacity onPress={resetFilters}>
-                <Text style={styles.clearAllText}>Xóa tất cả</Text>
+                <Text style={[styles.clearAllText, { color: isDarkMode ? colors.textSecondary : '#6B7280' }]}>Xóa tất cả</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.searchButton} onPress={handleExecuteSearch}>
@@ -564,21 +566,24 @@ export const SearchModal: React.FC<SearchModalProps> = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: Platform.OS === 'web' ? '#F3F4F6' : '#FFFFFF',
+    backgroundColor: Platform.OS === 'web' ? 'rgba(0, 0, 0, 0.45)' : '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
   safeArea: {
     flex: 1,
     width: '100%',
-    maxWidth: 480,
+    maxWidth: Platform.OS === 'web' ? 680 : '100%',
+    maxHeight: Platform.OS === 'web' ? '92%' : '100%',
+    borderRadius: Platform.OS === 'web' ? 20 : 0,
+    overflow: 'hidden',
     backgroundColor: '#FFFFFF',
     alignSelf: 'center',
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 8,
   },
   phoneContainer: {
     flex: 1,

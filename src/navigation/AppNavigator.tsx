@@ -21,7 +21,9 @@ import { BookingsScreen } from '../screens/BookingsScreen';
 import { InboxScreen } from '../screens/InboxScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { AiSupportScreen } from '../screens/AiSupportScreen';
-import { SearchModal } from '../components/SearchModal';
+import { SearchModal } from '../components/SearchModal';
+import { SidebarNav } from '../components/SidebarNav';
+import { useResponsive } from '../hooks/useResponsive';
 
 export type ScreenName =
   | 'SPLASH'
@@ -48,6 +50,39 @@ export const AppNavigator: React.FC = () => {
 
   // Search State & Modal
   const [isSearchModalVisible, setIsSearchModalVisible] = useState<boolean>(false);
+  const { isMobile } = useResponsive();
+  const [favoritesCount, setFavoritesCount] = useState<number>(0);
+
+  const refreshFavorites = async () => {
+    try {
+      const stored = await mockApi.getStoredFavorites();
+      setFavoritesCount(stored.length);
+    } catch {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    refreshFavorites();
+  }, [user, currentScreen]);
+
+  const getActiveTab = (): BottomTabType => {
+    switch (currentScreen) {
+      case 'FAVORITES':
+        return 'Favorites';
+      case 'BOOKINGS':
+        return 'Bookings';
+      case 'INBOX':
+        return 'Inbox';
+      case 'PROFILE':
+        return 'Profile';
+      case 'HOME':
+      case 'SEARCH_RESULTS':
+      default:
+        return 'Search';
+    }
+  };
+
   const [searchFilters, setSearchFilters] = useState<SearchFilterState>({
     destination: 'Anywhere',
     startDate: '23 May',
@@ -166,6 +201,7 @@ export const AppNavigator: React.FC = () => {
   // Toggle favorite helper
   const handleToggleFavorite = async (id: string) => {
     await mockApi.toggleFavorite(id);
+    refreshFavorites();
     if (activeStay.id === id) {
       setActiveStay((prev) => ({ ...prev, isFavorite: !prev.isFavorite }));
     }
@@ -173,7 +209,20 @@ export const AppNavigator: React.FC = () => {
 
   // Render current screen
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, !isMobile && styles.desktopLayoutRow]}>
+      {/* 🖥️ THANH ĐIỀU HƯỚNG BÊN TRÁI CHO WEB / DESKTOP (Sidebar Navigation) */}
+      {!isMobile && (
+        <SidebarNav
+          activeTab={currentScreen === 'AI_SUPPORT' ? 'AI_SUPPORT' : getActiveTab()}
+          onTabChange={handleTabChange}
+          favoritesCount={favoritesCount}
+          onOpenSearch={() => setIsSearchModalVisible(true)}
+          onOpenAiSupport={() => navigateTo('AI_SUPPORT')}
+        />
+      )}
+
+      {/* KHÔNG GIAN NỘI DUNG MÀN HÌNH CHÍNH */}
+      <View style={[styles.screenArea, !isMobile && styles.desktopScreenArea]}>
       {currentScreen === 'HOME' && (
         <HomeScreen
           onOpenSearch={() => setIsSearchModalVisible(true)}
@@ -376,6 +425,7 @@ export const AppNavigator: React.FC = () => {
           navigateTo('SEARCH_RESULTS');
         }}
       />
+      </View>
     </View>
   );
 };
@@ -384,5 +434,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    width: '100%',
+    height: '100%',
+  },
+  desktopLayoutRow: {
+    flexDirection: 'row',
+    width: '100%',
+    height: '100%',
+    overflow: 'hidden',
+  },
+  screenArea: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  desktopScreenArea: {
+    flex: 1,
+    height: '100%',
+    overflow: 'hidden',
   },
 });
