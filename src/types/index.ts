@@ -119,3 +119,14 @@ export interface BookingDetails {
   cancellationReason?: string;
   cancelledAt?: string;
 }
+
+export interface AppNotification {
+  id: string;
+  type: 'booking_success' | 'booking_cancelled' | 'payment_refund' | 'trip_reminder' | 'system_promo';
+  title: string;
+  message: string;
+  time: string;
+  read: boolean;
+  bookingId?: string;
+  actionText?: string;
+}

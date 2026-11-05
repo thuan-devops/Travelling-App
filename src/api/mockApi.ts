@@ -1,3 +1,4 @@
+import { notificationService } from '../services/notificationService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Accommodation,

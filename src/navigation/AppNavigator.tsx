@@ -263,7 +263,18 @@ export const AppNavigator: React.FC = () => {
       )}
 
       {currentScreen === 'INBOX' && (
-        <InboxScreen onTabChange={handleTabChange} />
+        <InboxScreen
+          onTabChange={handleTabChange}
+          onViewBooking={(bookingId) => {
+            const found = bookings.find((b) => b.bookingId === bookingId);
+            if (found) {
+              setLastBooking(found);
+              setCurrentScreen('PAYMENT_SUCCESS');
+            } else {
+              setCurrentScreen('BOOKINGS');
+            }
+          }}
+        />
       )}
 
       {currentScreen === 'PROFILE' && (
