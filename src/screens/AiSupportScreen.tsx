@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { Accommodation, BottomTabType } from '../types';
 import { BottomTabBar } from '../components/BottomTabBar';
+import { VoiceSearchModal } from '../components/VoiceSearchModal';
 import { aiService, AiChatMessage, AiFilterCriteria } from '../services/aiService';
 import { useCurrency } from '../context/CurrencyContext';
 
@@ -57,6 +58,7 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
   const [inputMessage, setInputMessage] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [messages, setMessages] = useState<AiChatMessage[]>([DEFAULT_WELCOME_MSG]);
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState<boolean>(false);
 
   // Load chat history from AsyncStorage on startup
   useEffect(() => {
@@ -369,6 +371,15 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
 
         {/* Input Bar */}
         <View style={styles.inputContainer}>
+          <TouchableOpacity
+            style={styles.voiceButton}
+            onPress={() => setIsVoiceModalOpen(true)}
+            activeOpacity={0.7}
+            disabled={isLoading}
+          >
+            <Ionicons name="mic" size={20} color="#00BDD6" />
+          </TouchableOpacity>
+
           <TextInput
             style={styles.textInput}
             placeholder="Hỏi AI tìm phòng, tư vấn du lịch, hủy chuyến..."
@@ -396,6 +407,17 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Voice Input Modal */}
+      <VoiceSearchModal
+        visible={isVoiceModalOpen}
+        onClose={() => setIsVoiceModalOpen(false)}
+        title="Nhập giọng nói cho Trợ lý AI"
+        placeholderPrompt="Hãy nói câu hỏi hoặc yêu cầu lập lịch trình của bạn:"
+        onResult={(text) => {
+          handleSend(text);
+        }}
+      />
 
       {/* Optional Bottom Tab Bar */}
       {onTabChange && <BottomTabBar activeTab="Profile" onTabChange={onTabChange} />}
@@ -755,6 +777,16 @@ const styles = StyleSheet.create({
     color: '#111827',
     borderWidth: 1,
     borderColor: '#E5E7EB',
+  },
+  voiceButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sendButton: {
     width: 40,

@@ -16,6 +16,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Accommodation, BookingDetails, BottomTabType } from '../types';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { mockApi } from '../api/mockApi';
+import { notificationService } from '../services/notificationService';
 import { useCurrency } from '../context/CurrencyContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -64,9 +65,13 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
 
   const handleShareBooking = async (booking: BookingDetails) => {
     try {
+      const checkInHour = booking.accommodation.rules?.checkIn || '14:00';
+      const checkOutHour = booking.accommodation.rules?.checkOut || '12:00';
       const shareMsg = `✈️ Thông tin chuyến đi tại "${booking.accommodation.title}"!\n\n` +
         `📍 Nơi lưu trú: ${booking.accommodation.location}\n` +
-        `📅 Nhận phòng: ${booking.checkIn} ➔ Trả phòng: ${booking.checkOut} (${booking.nights} đêm)\n` +
+        `📅 Nhận phòng: ${booking.checkIn} (${booking.estimatedCheckInTime ? `Giờ đến: ${booking.estimatedCheckInTime}` : `từ ${checkInHour}`})\n` +
+        `📅 Trả phòng: ${booking.checkOut} (trước ${checkOutHour})\n` +
+        `⏳ Thời gian: ${booking.nights} đêm\n` +
         `👥 Số lượng: ${booking.guests} khách\n` +
         `🔖 Mã đặt chỗ: #${booking.bookingId.slice(-8)}\n` +
         `💳 Đã thanh toán: ${formatPrice(booking.paidAmount)}\n\n` +
@@ -90,11 +95,25 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
   const handleConfirmCancel = async () => {
     if (!cancellingBooking) return;
 
-    const updated = await mockApi.cancelBooking(cancellingBooking.bookingId, selectedReason);
+    const cancelledItem = cancellingBooking;
+    const updated = await mockApi.cancelBooking(cancelledItem.bookingId, selectedReason);
     setLocalBookings(updated);
     if (onBookingsUpdated) {
       onBookingsUpdated(updated);
     }
+
+    try {
+      await notificationService.addNotification({
+        type: 'trip_reminder',
+        title: 'Hủy chuyến thành công ℹ️',
+        message: `Chuyến đi tại "${cancelledItem.accommodation.title}" (mã #${cancelledItem.bookingId.slice(-8)}) đã được hủy. Tiền hoàn trả (${formatPrice(cancelledItem.paidAmount)}) sẽ được hoàn về trong 3-5 ngày làm việc.`,
+        bookingId: cancelledItem.bookingId,
+        actionText: 'Xem chi tiết',
+      });
+    } catch (e) {
+      console.warn('Lỗi khi thêm thông báo hủy:', e);
+    }
+
     setCancelModalVisible(false);
     setCancellingBooking(null);
     setActiveTab('cancelled');
@@ -135,10 +154,16 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
             <View style={styles.detailCol}>
               <Text style={[styles.detailLabel, { color: isDarkMode ? '#94A3B8' : '#64748B' }]}>Nhận phòng</Text>
               <Text style={[styles.detailVal, { color: isDarkMode ? '#F8FAFC' : '#0F172A' }]}>{item.checkIn}</Text>
+              <Text style={[styles.timeDetailVal, { color: isDarkMode ? '#38BDF8' : '#0D9488' }]}>
+                {item.estimatedCheckInTime ? `Đến: ${item.estimatedCheckInTime.split(' ')[0]}` : `Từ ${item.accommodation.rules?.checkIn || '14:00'}`}
+              </Text>
             </View>
             <View style={styles.detailCol}>
               <Text style={[styles.detailLabel, { color: isDarkMode ? '#94A3B8' : '#64748B' }]}>Trả phòng</Text>
               <Text style={[styles.detailVal, { color: isDarkMode ? '#F8FAFC' : '#0F172A' }]}>{item.checkOut}</Text>
+              <Text style={[styles.timeDetailVal, { color: isDarkMode ? '#F59E0B' : '#D97706' }]}>
+                Trước {item.accommodation.rules?.checkOut || '12:00'}
+              </Text>
             </View>
             <View style={styles.detailCol}>
               <Text style={[styles.detailLabel, { color: isDarkMode ? '#94A3B8' : '#64748B' }]}>Thời gian & Khách</Text>
@@ -273,7 +298,7 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
                   {cancellingBooking.accommodation.title}
                 </Text>
                 <Text style={[modalStyles.bookingDates, { color: isDarkMode ? "#94A3B8" : "#64748B" }]}>
-                  {cancellingBooking.checkIn} → {cancellingBooking.checkOut} ({cancellingBooking.nights} đêm)
+                  {cancellingBooking.checkIn} (từ {cancellingBooking.accommodation.rules?.checkIn || '14:00'}) → {cancellingBooking.checkOut} (trước {cancellingBooking.accommodation.rules?.checkOut || '12:00'}) • {cancellingBooking.nights} đêm
                 </Text>
 
                 <View style={modalStyles.refundRow}>
@@ -442,8 +467,12 @@ const modalStyles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.55)',
     justifyContent: 'flex-end',
+    alignItems: 'center',
   },
   container: {
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
@@ -755,6 +784,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#0F172A',
+  },
+  timeDetailVal: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 2,
   },
   cancelledInfoBox: {
     backgroundColor: '#FEF2F2',

@@ -18,22 +18,33 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { Accommodation, ReviewItem } from '../types';
+import { Accommodation, ReviewItem, SearchFilterState } from '../types';
+import { CalendarPicker } from '../components/CalendarPicker';
 import { getAmenityIcon, mockApi } from '../api/mockApi';
 import { useCurrency } from '../context/CurrencyContext';
 
+export interface SelectedStayDates {
+  startDate: Date;
+  endDate: Date;
+  nights: number;
+  adults?: number;
+  children?: number;
+}
+
 interface RoomDetailScreenProps {
   stay: Accommodation;
+  initialFilters?: SearchFilterState;
   onBack: () => void;
   onToggleFavorite: (id: string) => void;
   onOpenFacilities: () => void;
   onOpenReviews: () => void;
   onOpenDescription: () => void;
-  onBookNow: () => void;
+  onBookNow: (dates?: SelectedStayDates) => void;
 }
 
 export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
   stay,
+  initialFilters,
   onBack,
   onToggleFavorite,
   onOpenFacilities,
@@ -43,6 +54,40 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
 }) => {
   const { formatPrice } = useCurrency();
   const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
+
+  // Date selection state
+  const defaultToday = new Date();
+  defaultToday.setHours(0, 0, 0, 0);
+  const defaultEnd = new Date(defaultToday.getTime() + 2 * 24 * 60 * 60 * 1000);
+
+  const [startDate, setStartDate] = useState<Date>(defaultToday);
+  const [endDate, setEndDate] = useState<Date>(defaultEnd);
+  const [nights, setNights] = useState<number>(2);
+  const [adults, setAdults] = useState<number>(initialFilters?.adults || 2);
+  const [children, setChildren] = useState<number>(initialFilters?.children || 0);
+  const totalGuests = adults + children;
+
+  // Tính phụ phí khách phát sinh: Tiêu chuẩn 2 khách
+  // Người lớn thêm (từ khách thứ 3): +30% giá phòng/đêm
+  // Trẻ em thêm: +15% giá phòng/đêm
+  const baseCapacity = 2;
+  const extraAdults = Math.max(0, adults - baseCapacity);
+  const remainingBaseCapacity = Math.max(0, baseCapacity - adults);
+  const extraChildren = Math.max(0, children - remainingBaseCapacity);
+
+  const extraAdultsFeePerNight = Math.round(stay.pricePerNight * 0.30 * extraAdults);
+  const extraChildrenFeePerNight = Math.round(stay.pricePerNight * 0.15 * extraChildren);
+  const extraGuestFeePerNight = extraAdultsFeePerNight + extraChildrenFeePerNight;
+  const extraGuestFeeTotal = extraGuestFeePerNight * nights;
+  const totalExtraGuests = extraAdults + extraChildren;
+
+  const roomBaseTotal = stay.pricePerNight * nights;
+  const roomTotalWithGuests = roomBaseTotal + extraGuestFeeTotal;
+  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState<boolean>(false);
+
+  const formatDateStr = (d: Date) => {
+    return `${d.getDate()} Thg ${d.getMonth() + 1}, ${d.getFullYear()}`;
+  };
   const scrollViewRef = useRef<any>(null);
   const heroWidth = Math.min(Dimensions.get('window').width, 480);
 
@@ -60,7 +105,9 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
     setReviewsList(stay.reviewsList || []);
     setCurrentRating(stay.rating || 0);
     setCurrentReviewCount(stay.reviewCount || 0);
-  }, [stay.reviewsList, stay.rating, stay.reviewCount]);
+    setAdults(initialFilters?.adults || 2);
+    setChildren(initialFilters?.children || 0);
+  }, [stay.id, stay.reviewsList, stay.rating, stay.reviewCount, initialFilters?.adults, initialFilters?.children]);
 
   const handleOpenEditModal = (review: ReviewItem) => {
     setEditingReview(review);
@@ -490,6 +537,65 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
 
           <View style={styles.divider} />
 
+          {/* LỰA CHỌN THỜI GIAN LƯU TRÚ */}
+          <View style={styles.section}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={styles.sectionTitle}>Thời gian lưu trú</Text>
+              <TouchableOpacity
+                style={styles.changeDatesBtn}
+                onPress={() => setIsCalendarModalOpen(true)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="calendar-outline" size={15} color="#00BDD6" style={{ marginRight: 4 }} />
+                <Text style={styles.changeDatesBtnText}>Chọn / Đổi ngày</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={styles.datesDisplayCard}
+              onPress={() => setIsCalendarModalOpen(true)}
+              activeOpacity={0.8}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <View style={styles.dateCol}>
+                  <Text style={styles.dateLabel}>Nhận phòng</Text>
+                  <Text style={styles.dateValue}>{formatDateStr(startDate)}</Text>
+                  <Text style={styles.dateTime}>Từ {stay.rules?.checkIn || '14:00'}</Text>
+                </View>
+
+                <View style={styles.dateArrowCol}>
+                  <Ionicons name="arrow-forward" size={18} color="#00BDD6" />
+                  <Text style={styles.nightsBadge}>{nights} đêm</Text>
+                </View>
+
+                <View style={styles.dateCol}>
+                  <Text style={styles.dateLabel}>Trả phòng</Text>
+                  <Text style={styles.dateValue}>{formatDateStr(endDate)}</Text>
+                  <Text style={styles.dateTime}>Trước {stay.rules?.checkOut || '12:00'}</Text>
+                </View>
+              </View>
+
+              <View style={styles.cardDivider} />
+
+              <View style={styles.guestRow}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Ionicons name="people-outline" size={18} color="#00BDD6" style={{ marginRight: 8 }} />
+                  <View>
+                    <Text style={styles.dateLabel}>Số lượng khách</Text>
+                    <Text style={styles.guestValueText}>
+                      {totalGuests} khách ({adults} người lớn{children > 0 ? `, ${children} trẻ em` : ''})
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.guestBadgePill}>
+                  <Text style={styles.guestBadgePillText}>Đổi khách</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.divider} />
+
           {/* MÔ TẢ CHI TIẾT */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Mô tả</Text>
@@ -512,18 +618,140 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
 
       {/* FIXED BOTTOM BAR */}
       <View style={styles.bottomBar}>
-        <View>
-          <Text style={styles.fromPriceLabel}>Giá từ</Text>
+        <View style={{ flex: 1, paddingRight: 10 }}>
+          <Text style={styles.fromPriceLabel}>
+            {totalExtraGuests > 0 
+              ? `${formatPrice(stay.pricePerNight)} x ${nights}đ + ${totalExtraGuests} khách thêm:`
+              : `${formatPrice(stay.pricePerNight)} x ${nights} đêm:`}
+          </Text>
           <Text style={styles.bottomPrice}>
-            {formatPrice(stay.pricePerNight)}
-            <Text style={styles.fromPriceLabel}> /đêm</Text>
+            {formatPrice(roomTotalWithGuests)}
+          </Text>
+          <Text style={styles.guestSummarySub}>
+            {totalGuests} khách {totalExtraGuests > 0 ? `(phụ thu +${formatPrice(extraGuestFeeTotal)})` : ''} • {formatDateStr(startDate).slice(0, -6)} ➔ {formatDateStr(endDate).slice(0, -6)}
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.bookNowButton} activeOpacity={0.85} onPress={onBookNow}>
+        <TouchableOpacity
+          style={styles.bookNowButton}
+          activeOpacity={0.85}
+          onPress={() => onBookNow({ startDate, endDate, nights, adults, children })}
+        >
           <Text style={styles.bookNowText}>Đặt phòng ngay</Text>
         </TouchableOpacity>
       </View>
+
+      {/* MODAL CHỌN LỊCH NGÀY NHẬN / TRẢ PHÒNG */}
+      <Modal
+        visible={isCalendarModalOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsCalendarModalOpen(false)}
+      >
+        <View style={styles.calendarModalOverlay}>
+          <View style={styles.calendarModalBox}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>Chọn ngày lưu trú</Text>
+                <Text style={styles.calendarModalSubtitle}>
+                  Nhận phòng từ {stay.rules?.checkIn || '14:00'} • Trả phòng trước {stay.rules?.checkOut || '12:00'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsCalendarModalOpen(false)}>
+                <Ionicons name="close" size={24} color="#374151" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 520 }} showsVerticalScrollIndicator={false}>
+              <CalendarPicker
+                initialStartDate={startDate}
+                initialEndDate={endDate}
+                onSelectRange={(range) => {
+                  if (range.startDate) setStartDate(range.startDate);
+                  if (range.endDate) setEndDate(range.endDate);
+                  setNights(range.nights);
+                }}
+              />
+
+              {/* SỐ LƯỢNG KHÁCH */}
+              <View style={styles.modalSectionDivider} />
+              <Text style={styles.modalSectionTitle}>Số lượng khách</Text>
+
+              <View style={styles.guestCounterRow}>
+                <View>
+                  <Text style={styles.guestCounterLabel}>Người lớn</Text>
+                  <Text style={styles.guestCounterSub}>Từ 13 tuổi trở lên</Text>
+                </View>
+                <View style={styles.counterControl}>
+                  <TouchableOpacity
+                    style={styles.counterBtn}
+                    onPress={() => setAdults((prev) => Math.max(1, prev - 1))}
+                  >
+                    <Ionicons name="remove" size={16} color="#111827" />
+                  </TouchableOpacity>
+                  <Text style={styles.counterNum}>{adults}</Text>
+                  <TouchableOpacity
+                    style={styles.counterBtn}
+                    onPress={() => setAdults((prev) => Math.min(10, prev + 1))}
+                  >
+                    <Ionicons name="add" size={16} color="#111827" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.guestCounterRow}>
+                <View>
+                  <Text style={styles.guestCounterLabel}>Trẻ em</Text>
+                  <Text style={styles.guestCounterSub}>Dưới 13 tuổi</Text>
+                </View>
+                <View style={styles.counterControl}>
+                  <TouchableOpacity
+                    style={styles.counterBtn}
+                    onPress={() => setChildren((prev) => Math.max(0, prev - 1))}
+                  >
+                    <Ionicons name="remove" size={16} color="#111827" />
+                  </TouchableOpacity>
+                  <Text style={styles.counterNum}>{children}</Text>
+                  <TouchableOpacity
+                    style={styles.counterBtn}
+                    onPress={() => setChildren((prev) => Math.min(6, prev + 1))}
+                  >
+                    <Ionicons name="add" size={16} color="#111827" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* TẠM TÍNH TIỀN */}
+              <View style={styles.priceEstimateBox}>
+                <Ionicons name="calculator-outline" size={18} color="#00BDD6" style={{ marginRight: 8 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.priceEstimateText}>
+                    {formatPrice(stay.pricePerNight)} x {nights} đêm
+                    {totalExtraGuests > 0 ? ` + Phụ thu (${formatPrice(extraGuestFeeTotal)})` : ''}
+                    {' = '}
+                    <Text style={{ fontWeight: '800', color: '#00BDD6' }}>{formatPrice(roomTotalWithGuests)}</Text>
+                  </Text>
+                  {totalExtraGuests > 0 && (
+                    <Text style={{ fontSize: 11.5, color: '#0D9488', marginTop: 2 }}>
+                      * Tiêu chuẩn 2 khách. Phụ thu ${extraAdults > 0 ? `${extraAdults} người lớn (+30%/đêm)` : ''}${extraAdults > 0 && extraChildren > 0 ? ', ' : ''}${extraChildren > 0 ? `${extraChildren} trẻ em (+15%/đêm)` : ''}
+                    </Text>
+                  )}
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={styles.confirmDatesBtn}
+                onPress={() => setIsCalendarModalOpen(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.confirmDatesBtnText}>
+                  Xác nhận ({nights} đêm • {totalGuests} khách • {formatPrice(roomTotalWithGuests)})
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* MODAL CHỈNH SỬA ĐÁNH GIÁ */}
       <Modal
@@ -1164,5 +1392,201 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '700',
+  },
+  changeDatesBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  changeDatesBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#00BDD6',
+  },
+  datesDisplayCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 14,
+  },
+  dateCol: {
+    flex: 1,
+  },
+  dateLabel: {
+    fontSize: 11.5,
+    color: '#64748B',
+    fontWeight: '600',
+    marginBottom: 3,
+  },
+  dateValue: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 2,
+  },
+  dateTime: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#0D9488',
+  },
+  dateArrowCol: {
+    alignItems: 'center',
+    paddingHorizontal: 10,
+  },
+  nightsBadge: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#00BDD6',
+    backgroundColor: '#ECFEFF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  calendarModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  calendarModalBox: {
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    paddingBottom: 24,
+  },
+  calendarModalSubtitle: {
+    fontSize: 12,
+    color: '#0D9488',
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  confirmDatesBtn: {
+    backgroundColor: '#00BDD6',
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 14,
+    marginBottom: 8,
+  },
+  confirmDatesBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
+    marginVertical: 10,
+    width: '100%',
+  },
+  guestRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  guestValueText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginTop: 2,
+  },
+  guestBadgePill: {
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  guestBadgePillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#00BDD6',
+  },
+  guestSummarySub: {
+    fontSize: 11,
+    color: '#0D9488',
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  modalSectionDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 14,
+  },
+  modalSectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 10,
+  },
+  guestCounterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  guestCounterLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  guestCounterSub: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  counterControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  counterBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  counterNum: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#111827',
+    marginHorizontal: 12,
+    minWidth: 16,
+    textAlign: 'center',
+  },
+  priceEstimateBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 14,
+  },
+  priceEstimateText: {
+    fontSize: 13,
+    color: '#0F766E',
+    fontWeight: '500',
   },
 });

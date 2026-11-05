@@ -15,10 +15,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { Accommodation, BottomTabType, CategoryItem, StayCategory } from '../types';
 import { mockApi } from '../api/mockApi';
+import { aiService } from '../services/aiService';
 import { SearchHeader } from '../components/SearchHeader';
 import { CategorySelector } from '../components/CategorySelector';
 import { StayCard } from '../components/StayCard';
 import { BottomTabBar } from '../components/BottomTabBar';
+import { VoiceSearchModal } from '../components/VoiceSearchModal';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -26,22 +28,26 @@ interface HomeScreenProps {
   onOpenSearch: () => void;
   onSelectStay: (stay: Accommodation) => void;
   onTabChange: (tab: BottomTabType) => void;
+  onOpenAiSupport?: (prompt?: string) => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   onOpenSearch,
   onSelectStay,
   onTabChange,
+  onOpenAiSupport,
 }) => {
   const { user, logout } = useAuth();
   const { colors, isDark } = useTheme();
   const [categories, setCategories] = useState<CategoryItem[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<StayCategory | 'All'>('Beach');
+  const [selectedCategory, setSelectedCategory] = useState<StayCategory | 'All'>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [stays, setStays] = useState<Accommodation[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState<boolean>(false);
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState<boolean>(false);
+  const [aiNotice, setAiNotice] = useState<string | null>(null);
 
   useEffect(() => {
     loadCategories();
@@ -72,6 +78,40 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   useEffect(() => {
     loadStays();
   }, [loadStays]);
+
+  const handleVoiceSearchResult = async (spokenText: string) => {
+    setIsLoading(true);
+    try {
+      const result = await aiService.processVoiceQuery(spokenText);
+
+      // Nếu là câu hỏi lập lịch trình hoặc FAQ, tự động chuyển sang Trợ lý AI chat
+      if (result.isItineraryOrFaq && onOpenAiSupport) {
+        onOpenAiSupport(spokenText);
+        return;
+      }
+
+      // Cập nhật tìm kiếm theo từ khóa thông minh
+      if (result.destination) {
+        setSearchQuery(result.destination);
+      } else {
+        setSearchQuery('');
+      }
+
+      if (result.category && result.category !== 'All') {
+        setSelectedCategory(result.category);
+      } else {
+        setSelectedCategory('All');
+      }
+
+      setStays(result.matchingStays);
+      setAiNotice(result.aiMessage);
+    } catch (err) {
+      console.warn('Lỗi xử lý tìm kiếm giọng nói AI:', err);
+      loadStays();
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -137,14 +177,39 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           onSearchChange={setSearchQuery}
           onClear={() => setSearchQuery('')}
           onPress={onOpenSearch}
+          onVoicePress={() => setIsVoiceModalOpen(true)}
         />
 
         {/* CATEGORY TABS (Beach, Mountain, Camping) */}
         <CategorySelector
           categories={categories}
           selectedCategory={selectedCategory}
-          onSelectCategory={(cat) => setSelectedCategory(cat)}
+          onSelectCategory={(cat) => {
+            setAiNotice(null);
+            setSelectedCategory((prev) => (prev === cat ? 'All' : cat));
+          }}
         />
+
+        {/* AI VOICE SEARCH NOTICE */}
+        {!!aiNotice && (
+          <View style={styles.aiNoticeBanner}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 8 }}>
+              <Ionicons name="sparkles" size={17} color="#00BDD6" style={{ marginRight: 8 }} />
+              <Text style={styles.aiNoticeText}>{aiNotice}</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => {
+                setAiNotice(null);
+                setSearchQuery('');
+                setSelectedCategory('All');
+                loadStays();
+              }}
+              style={{ padding: 4 }}
+            >
+              <Ionicons name="close-circle" size={18} color="#94A3B8" />
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* STAYS LIST */}
         {isLoading && !isRefreshing ? (
@@ -183,6 +248,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           />
         )}
       </View>
+
+      {/* VOICE SEARCH MODAL */}
+      <VoiceSearchModal
+        visible={isVoiceModalOpen}
+        onClose={() => setIsVoiceModalOpen(false)}
+        onResult={handleVoiceSearchResult}
+      />
 
       {/* LOGOUT CONFIRMATION MODAL */}
       <Modal
@@ -402,5 +474,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  aiNoticeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    shadowColor: '#00BDD6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  aiNoticeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#0F766E',
+    lineHeight: 18,
+    flex: 1,
   },
 });

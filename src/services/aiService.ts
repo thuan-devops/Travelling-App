@@ -10,6 +10,16 @@ export interface AiFilterCriteria {
   category?: 'Beach' | 'Mountain' | 'Camping' | 'City' | 'Villa';
 }
 
+export interface VoiceSearchResult {
+  rawQuery: string;
+  isItineraryOrFaq: boolean;
+  destination?: string;
+  category?: 'Beach' | 'Mountain' | 'Camping' | 'City' | 'Villa' | 'All';
+  amenities?: string[];
+  matchingStays: Accommodation[];
+  aiMessage: string;
+}
+
 export interface AiChatMessage {
   id: string;
   sender: 'user' | 'ai';
@@ -37,10 +47,9 @@ const GEMINI_API_KEY =
 
 // Primary & Fallback models
 const GEMINI_MODELS = [
-  'gemini-3.5-flash-lite',
-  'gemini-3.8-flash',
-  'gemini-3.5-flash',
-  'gemini-2.5-flash',
+  'gemini-1.5-flash',
+  'gemini-2.0-flash',
+  'gemini-1.5-pro',
 ];
 
 class AiService {
@@ -532,6 +541,195 @@ QUAN TRỌNG: Bạn PHẢI trả về duy nhất một chuỗi JSON hợp lệ (
       recommendedStays: allStays.slice(0, 3),
       intent: 'general_chat',
       followUps: this.generateFollowUps('general_chat'),
+    };
+  }
+
+  /**
+   * AI Voice Search Processor:
+   * Semantically analyzes spoken Vietnamese queries, extracts destination,
+   * category, amenities, detects itinerary/FAQ requests, and finds matching stays.
+   * GUARANTEES non-empty fallback so users never see an error or blank screen.
+   */
+  async processVoiceQuery(spokenText: string): Promise<VoiceSearchResult> {
+    const raw = (spokenText || '').trim();
+    const q = raw.toLowerCase();
+
+    // 1. Fetch available accommodations
+    let allStays: Accommodation[] = [];
+    try {
+      allStays = await mockApi.getAccommodations();
+    } catch {
+      allStays = INITIAL_ACCOMMODATIONS;
+    }
+
+    // Always sort by rating descending
+    allStays.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+
+    // 2. Check if this is an Itinerary / FAQ question
+    const isItineraryOrFaq =
+      q.includes('lịch trình') ||
+      q.includes('kế hoạch') ||
+      q.includes('3n2đ') ||
+      q.includes('2n1đ') ||
+      q.includes('tour') ||
+      q.includes('ăn gì') ||
+      q.includes('chơi gì') ||
+      q.includes('chính sách') ||
+      q.includes('hoàn tiền') ||
+      q.includes('hủy chuyến') ||
+      q.includes('hủy phòng');
+
+    if (isItineraryOrFaq) {
+      return {
+        rawQuery: raw,
+        isItineraryOrFaq: true,
+        matchingStays: allStays.slice(0, 4),
+        aiMessage: `✨ AI đang hỗ trợ tư vấn: "${raw}"`,
+      };
+    }
+
+    // 3. Extract Destination
+    let destination: string | undefined = undefined;
+    const destMap: [string[], string][] = [
+      [['đà lạt', 'da lat'], 'Đà Lạt'],
+      [['phú quốc', 'phu quoc'], 'Phú Quốc'],
+      [['vũng tàu', 'vung tau'], 'Vũng Tàu'],
+      [['đà nẵng', 'da nang'], 'Đà Nẵng'],
+      [['nha trang'], 'Nha Trang'],
+      [['hà nội', 'ha noi'], 'Hà Nội'],
+      [['hội an', 'hoi an'], 'Hội An'],
+      [['sa pa', 'sapa'], 'Sa Pa'],
+      [['hạ long', 'ha long'], 'Hạ Long'],
+      [['hồ chí minh', 'sài gòn', 'sai gon', 'tphcm'], 'Hồ Chí Minh'],
+      [['quy nhơn', 'quy nhon'], 'Quy Nhơn'],
+      [['côn đảo', 'con dao'], 'Côn Đảo'],
+      [['mũi né', 'mui ne', 'phan thiết', 'phan thiet'], 'Mũi Né'],
+      [['huế', 'hue'], 'Huế'],
+      [['tam đảo', 'tam dao'], 'Tam Đảo'],
+      [['hà giang', 'ha giang'], 'Hà Giang'],
+      [['mù cang chải', 'mu cang chai'], 'Mù Cang Chải'],
+      [['pù luông', 'pu luong'], 'Pù Luông'],
+      [['phong nha', 'quảng bình'], 'Phong Nha'],
+      [['bali'], 'Bali'],
+    ];
+
+    for (const [aliases, standardName] of destMap) {
+      if (aliases.some((alias) => q.includes(alias))) {
+        destination = standardName;
+        break;
+      }
+    }
+
+    // 4. Extract Category
+    let category: 'Beach' | 'Mountain' | 'Camping' | 'City' | 'Villa' | undefined = undefined;
+    if (
+      q.includes('bãi biển') ||
+      q.includes('sát biển') ||
+      q.includes('biển') ||
+      q.includes('beach') ||
+      q.includes('đảo')
+    ) {
+      category = 'Beach';
+    } else if (
+      q.includes('núi') ||
+      q.includes('view đồi') ||
+      q.includes('đồi') ||
+      q.includes('săn mây') ||
+      q.includes('rừng') ||
+      q.includes('thung lũng')
+    ) {
+      category = 'Mountain';
+    } else if (
+      q.includes('cắm trại') ||
+      q.includes('lều') ||
+      q.includes('camping') ||
+      q.includes('glamping') ||
+      q.includes('bờ suối')
+    ) {
+      category = 'Camping';
+    } else if (
+      q.includes('thành phố') ||
+      q.includes('trung tâm') ||
+      q.includes('phố cổ') ||
+      q.includes('city')
+    ) {
+      category = 'City';
+    } else if (q.includes('villa') || q.includes('biệt thự')) {
+      category = 'Villa';
+    }
+
+    // 5. Extract Amenities
+    const amenities: string[] = [];
+    if (q.includes('hồ bơi') || q.includes('bể bơi') || q.includes('pool')) {
+      amenities.push('Hồ bơi');
+    }
+    if (q.includes('bữa sáng') || q.includes('buffet') || q.includes('ăn sáng')) {
+      amenities.push('Bao gồm bữa sáng');
+    }
+    if (q.includes('view biển') || q.includes('ngắm hoàng hôn')) {
+      amenities.push('Tầm nhìn');
+    }
+    if (q.includes('bbq') || q.includes('nướng')) {
+      amenities.push('BBQ');
+    }
+
+    // 6. Smart Multi-tier Filtering
+    let matched = allStays;
+
+    // Filter by destination if identified
+    if (destination) {
+      const destLower = destination.toLowerCase();
+      const destMatches = matched.filter((s) => {
+        const full = `${s.title} ${s.location} ${s.city} ${s.country}`.toLowerCase();
+        return full.includes(destLower);
+      });
+      if (destMatches.length > 0) {
+        matched = destMatches;
+      }
+    }
+
+    // Filter by category if identified
+    if (category) {
+      const catMatches = matched.filter((s) => s.category?.toLowerCase() === category?.toLowerCase());
+      if (catMatches.length > 0) {
+        matched = catMatches;
+      }
+    }
+
+    // Filter by amenities if identified
+    if (amenities.length > 0) {
+      const amenityMatches = matched.filter((s) =>
+        amenities.some((req) =>
+          s.amenities.some((a) => a.toLowerCase().includes(req.toLowerCase()))
+        )
+      );
+      if (amenityMatches.length > 0) {
+        matched = amenityMatches;
+      }
+    }
+
+    // 7. Compose friendly AI message
+    let aiMessage = '';
+    if (destination && category) {
+      aiMessage = `✨ AI đã lọc ${matched.length} chỗ nghỉ ${category === 'Beach' ? 'ven biển' : category === 'Mountain' ? 'ngắm cảnh núi/đồi' : category === 'Villa' ? 'biệt thự' : 'chất lượng'} tại ${destination}`;
+    } else if (destination) {
+      aiMessage = `✨ AI đã tìm thấy ${matched.length} chuyến đi xuất sắc nhất tại ${destination}`;
+    } else if (category) {
+      aiMessage = `✨ AI đã lọc ${matched.length} chuyến đi thuộc danh mục ${category === 'Beach' ? 'Bãi biển' : category === 'Mountain' ? 'Núi non' : category === 'Camping' ? 'Cắm trại' : category === 'Villa' ? 'Biệt thự' : 'Thành phố'}`;
+    } else if (amenities.length > 0) {
+      aiMessage = `✨ AI đã tìm thấy ${matched.length} chuyến đi có tiện ích ${amenities.join(', ')}`;
+    } else {
+      aiMessage = `✨ AI đã nhận diện: "${raw}". Đang đề xuất các chuyến đi được đánh giá cao nhất:`;
+    }
+
+    return {
+      rawQuery: raw,
+      isItineraryOrFaq: false,
+      destination,
+      category,
+      amenities,
+      matchingStays: matched,
+      aiMessage,
     };
   }
 

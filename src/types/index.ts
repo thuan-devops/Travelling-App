@@ -66,17 +66,18 @@ export interface Accommodation {
 }
 
 export interface CategoryItem {
-  id: StayCategory;
+  id: StayCategory | 'All';
   name: string;
   iconName: string;
 }
 
 export const CATEGORIES: CategoryItem[] = [
-  { id: 'Beach', name: 'Bãi biển', iconName: 'umbrella-outline' },
-  { id: 'Mountain', name: 'Núi non', iconName: 'triangle-outline' },
-  { id: 'Camping', name: 'Cắm trại', iconName: 'bonfire-outline' },
-  { id: 'City', name: 'Thành phố', iconName: 'business-outline' },
-  { id: 'Villa', name: 'Biệt thự', iconName: 'home-outline' },
+  { id: 'All', name: 'Tất cả', iconName: 'apps' },
+  { id: 'Beach', name: 'Bãi biển', iconName: 'beach' },
+  { id: 'Mountain', name: 'Núi non', iconName: 'image-filter-hdr' },
+  { id: 'Camping', name: 'Cắm trại', iconName: 'tent' },
+  { id: 'City', name: 'Thành phố', iconName: 'city-variant-outline' },
+  { id: 'Villa', name: 'Biệt thự', iconName: 'home-modern' },
 ];
 
 export type BottomTabType = 'Search' | 'Favorites' | 'Bookings' | 'Inbox' | 'Profile';
@@ -115,6 +116,14 @@ export interface BookingDetails {
   paymentDate: string;
   paymentTime: string;
   paymentMethod: string;
+  estimatedCheckInTime?: string;
+  servicePackage?: 'standard' | 'vip' | 'luxury';
+  servicePackageName?: string;
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  specialRequest?: string;
+  addons?: { id: string; name: string; price: number }[];
   status?: 'confirmed' | 'cancelled';
   cancellationReason?: string;
   cancelledAt?: string;
