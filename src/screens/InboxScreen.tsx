@@ -1,10 +1,10 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
-  TouchableOpacity,
+TouchableOpacity,
   Image,
   ScrollView,
   Modal,
@@ -997,7 +997,7 @@ const styles = StyleSheet.create({
   chatSafeArea: {
     flex: 1,
     width: '100%',
-    maxWidth: 480,
+    maxWidth: 840,
     backgroundColor: '#FFFFFF',
     alignSelf: 'center',
   },

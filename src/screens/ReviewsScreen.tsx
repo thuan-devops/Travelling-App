@@ -1,10 +1,10 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
-  FlatList,
+FlatList,
   Image,
   TouchableOpacity,
   Modal,
@@ -534,7 +534,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: '100%',
-    maxWidth: 480,
+    maxWidth: 840,
+    alignSelf: 'center',
     backgroundColor: '#FFFFFF',
   },
   header: {

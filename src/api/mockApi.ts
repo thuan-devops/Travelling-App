@@ -19,6 +19,40 @@ const REVIEWS_STORAGE_KEY = '@travelling_app_all_reviews_v2';
 const BOOKINGS_STORAGE_KEY = '@travelling_app_bookings';
 const REMOTE_CACHE_KEY = '@travelling_app_remote_cache';
 
+export const isPastCheckout = (checkOutDateStr: string): boolean => {
+  if (!checkOutDateStr) return false;
+  try {
+    const parts = checkOutDateStr.split(/[-/]/);
+    if (parts.length === 3) {
+      let d: number, m: number, y: number;
+      if (parts[0].length === 4) {
+        y = parseInt(parts[0], 10);
+        m = parseInt(parts[1], 10) - 1;
+        d = parseInt(parts[2], 10);
+      } else {
+        d = parseInt(parts[0], 10);
+        m = parseInt(parts[1], 10) - 1;
+        y = parseInt(parts[2], 10);
+      }
+      const checkout = new Date(y, m, d, 23, 59, 59);
+      return checkout < new Date();
+    }
+  } catch {}
+  return false;
+};
+
+// Helper loại bỏ dấu tiếng Việt để tìm kiếm không dấu (accent-insensitive)
+export const removeVietnameseTones = (str: string): string => {
+  if (!str) return '';
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .trim();
+};
+
 // Helper ánh xạ tên tiện ích sang Icon của Ionicons
 export const getAmenityIcon = (name: string): any => {
   const n = (name || '').toLowerCase();
@@ -380,17 +414,60 @@ class MockApiService {
       );
     }
 
-    // Lọc theo từ khóa tìm kiếm
-    if (searchQuery && searchQuery.trim() !== '') {
-      const q = searchQuery.toLowerCase().trim();
-      list = list.filter(
-        (item) =>
-          item.title?.toLowerCase().includes(q) ||
-          item.location?.toLowerCase().includes(q) ||
-          item.city?.toLowerCase().includes(q) ||
-          item.country?.toLowerCase().includes(q) ||
-          item.category?.toLowerCase().includes(q)
-      );
+    // Lọc theo từ khóa tìm kiếm (hỗ trợ có dấu, không dấu và từng từ khóa)
+    if (searchQuery && searchQuery.trim() !== '' && searchQuery !== 'Anywhere' && searchQuery !== 'Bất kỳ đâu') {
+      const rawQ = searchQuery.toLowerCase().trim();
+      const cleanQ = removeVietnameseTones(searchQuery);
+      const queryTokens = cleanQ.split(/\s+/).filter(Boolean);
+
+      list = list.filter((item) => {
+        const rawTitle = (item.title || '').toLowerCase();
+        const rawLoc = (item.location || '').toLowerCase();
+        const rawCity = (item.city || '').toLowerCase();
+        const rawCountry = (item.country || '').toLowerCase();
+        const rawCat = (item.category || '').toLowerCase();
+        const rawDesc = (item.description || '').toLowerCase();
+
+        // 1. Khớp chuỗi có dấu
+        if (
+          rawTitle.includes(rawQ) ||
+          rawLoc.includes(rawQ) ||
+          rawCity.includes(rawQ) ||
+          rawCountry.includes(rawQ) ||
+          rawCat.includes(rawQ) ||
+          rawDesc.includes(rawQ)
+        ) {
+          return true;
+        }
+
+        // 2. Khớp chuỗi không dấu
+        const cleanTitle = removeVietnameseTones(item.title || '');
+        const cleanLoc = removeVietnameseTones(item.location || '');
+        const cleanCity = removeVietnameseTones(item.city || '');
+        const cleanCountry = removeVietnameseTones(item.country || '');
+        const cleanCat = removeVietnameseTones(item.category || '');
+        const cleanDesc = removeVietnameseTones(item.description || '');
+
+        if (
+          cleanTitle.includes(cleanQ) ||
+          cleanLoc.includes(cleanQ) ||
+          cleanCity.includes(cleanQ) ||
+          cleanCountry.includes(cleanQ) ||
+          cleanCat.includes(cleanQ) ||
+          cleanDesc.includes(cleanQ)
+        ) {
+          return true;
+        }
+
+        // 3. Khớp từng từ khóa token
+        if (queryTokens.length > 1) {
+          const combinedClean = cleanTitle + " " + cleanLoc + " " + cleanCity + " " + cleanCountry + " " + cleanCat + " " + cleanDesc;
+          const allTokensMatch = queryTokens.every((token) => combinedClean.includes(token));
+          if (allTokensMatch) return true;
+        }
+
+        return false;
+      });
     }
 
     // Lọc theo bộ lọc nâng cao
@@ -409,9 +486,24 @@ class MockApiService {
       if (filters.placeTypes && filters.placeTypes.length > 0 && filters.placeTypes.length < 3) {
         list = list.filter((item) => {
           const cat = (item.category || '').toLowerCase();
-          const title = (item.title || '').toLowerCase();
-          const isEntire = cat === 'villa' || cat === 'camping' || title.includes('căn hộ') || title.includes('villa') || title.includes('bungalow') || title.includes('nhà');
-          const isDorm = title.includes('ký túc') || title.includes('dorm') || cat === 'camping';
+          const cleanT = removeVietnameseTones(item.title || '');
+          const isEntire =
+            cat === 'villa' ||
+            cat === 'camping' ||
+            cleanT.includes('can ho') ||
+            cleanT.includes('villa') ||
+            cleanT.includes('bungalow') ||
+            cleanT.includes('nha') ||
+            cleanT.includes('biet thu') ||
+            cleanT.includes('chalet') ||
+            cleanT.includes('nguyen can') ||
+            cleanT.includes('penthouse') ||
+            cleanT.includes('resort');
+          const isDorm =
+            cleanT.includes('ky tuc') ||
+            cleanT.includes('dorm') ||
+            cleanT.includes('tap the') ||
+            cat === 'camping';
           const isPrivate = !isEntire && !isDorm;
 
           if (filters.placeTypes!.includes('entire') && isEntire) return true;
@@ -559,12 +651,61 @@ class MockApiService {
     try {
       const key = await this.getBookingsKey();
       const raw = await AsyncStorage.getItem(key);
+      let list: BookingDetails[] = [];
       if (raw !== null) {
-        return JSON.parse(raw);
+        list = JSON.parse(raw);
       }
-      // Người dùng mới: bắt đầu với danh sách chuyến đi rỗng
-      await AsyncStorage.setItem(key, JSON.stringify([]));
-      return [];
+
+      // Tự động phân loại: nếu chuyến đã qua ngày checkout thì chuyển status thành completed
+      let hasChanges = false;
+      list = list.map((b) => {
+        if (b.status !== 'cancelled' && b.status !== 'completed' && isPastCheckout(b.checkOut)) {
+          hasChanges = true;
+          return {
+            ...b,
+            status: 'completed' as const,
+            completedAt: b.checkOut,
+          };
+        }
+        return b;
+      });
+
+      // Nếu người dùng đã có chuyến đi nhưng chưa có chuyến nào hoàn thành,
+      // tự động thêm 1 chuyến mẫu đã hoàn thành trong quá khứ để trải nghiệm tính năng Đánh giá
+      const hasCompleted = list.some((b) => b.status === 'completed');
+      if (list.length > 0 && !hasCompleted) {
+        const sampleCompleted: BookingDetails = {
+          bookingId: '00000088921456',
+          accommodation: INITIAL_ACCOMMODATIONS[1] || INITIAL_ACCOMMODATIONS[0],
+          checkIn: '18-10-2026',
+          checkOut: '21-10-2026',
+          nights: 3,
+          guests: 2,
+          paymentType: 'full',
+          roomTotal: 3375000,
+          fees: [
+            { label: 'Phí dịch vụ & dọn dẹp', amount: 150000 },
+            { label: 'Thuế GTGT (VAT)', amount: 120000 },
+          ],
+          totalPrice: 3645000,
+          paidAmount: 3645000,
+          paymentDate: '15/10/2026',
+          paymentTime: '14:20',
+          paymentMethod: 'VietQR Chuyển khoản',
+          estimatedCheckInTime: '14:00 - 15:00 (Tiêu chuẩn)',
+          status: 'completed',
+          completedAt: '21/10/2026',
+          hasReviewed: false,
+        };
+        list.push(sampleCompleted);
+        hasChanges = true;
+      }
+
+      if (hasChanges || raw === null) {
+        await AsyncStorage.setItem(key, JSON.stringify(list));
+      }
+
+      return list;
     } catch {
       return [];
     }
@@ -587,12 +728,89 @@ class MockApiService {
       const key = await this.getBookingsKey();
       const existing = await this.getBookings();
       const updated = existing.map((b) =>
-        b.bookingId === bookingId ? { ...b, status: 'cancelled' as const, cancellationReason: reason || 'Thay đổi lịch trình cá nhân', cancelledAt: new Date().toLocaleDateString('vi-VN') } : b
+        b.bookingId === bookingId
+          ? {
+              ...b,
+              status: 'cancelled' as const,
+              cancellationReason: reason || 'Thay đổi lịch trình cá nhân',
+              cancelledAt: new Date().toLocaleDateString('vi-VN'),
+            }
+          : b
       );
       await AsyncStorage.setItem(key, JSON.stringify(updated));
       return updated;
     } catch {
       return [];
+    }
+  }
+
+  async completeBooking(bookingId: string): Promise<BookingDetails[]> {
+    try {
+      const key = await this.getBookingsKey();
+      const existing = await this.getBookings();
+      const updated = existing.map((b) =>
+        b.bookingId === bookingId
+          ? {
+              ...b,
+              status: 'completed' as const,
+              completedAt: new Date().toLocaleDateString('vi-VN'),
+            }
+          : b
+      );
+      await AsyncStorage.setItem(key, JSON.stringify(updated));
+      return updated;
+    } catch {
+      return [];
+    }
+  }
+
+  async addBookingReview(
+    bookingId: string,
+    review: { rating: number; comment: string; author: string; avatar: string }
+  ): Promise<{ updatedBookings: BookingDetails[]; newReview: ReviewItem; updatedStay?: Accommodation }> {
+    try {
+      const key = await this.getBookingsKey();
+      const existing = await this.getBookings();
+      const targetBooking = existing.find((b) => b.bookingId === bookingId);
+      if (!targetBooking) {
+        return {
+          updatedBookings: existing,
+          newReview: {
+            id: `rev-${Date.now()}`,
+            author: review.author,
+            avatar: review.avatar,
+            rating: review.rating,
+            date: 'Vừa xong',
+            comment: review.comment,
+          },
+        };
+      }
+
+      // Add review to accommodation
+      const { newReview, updatedStay } = await this.addReview(targetBooking.accommodation.id, {
+        author: review.author,
+        avatar: review.avatar,
+        rating: review.rating,
+        comment: review.comment,
+      });
+
+      // Update booking
+      const updated = existing.map((b) =>
+        b.bookingId === bookingId
+          ? {
+              ...b,
+              hasReviewed: true,
+              review: newReview,
+              status: 'completed' as const,
+            }
+          : b
+      );
+
+      await AsyncStorage.setItem(key, JSON.stringify(updated));
+      return { updatedBookings: updated, newReview, updatedStay };
+    } catch (e) {
+      console.warn('Lỗi khi lưu đánh giá chuyến đi:', e);
+      return { updatedBookings: [], newReview: {} as any };
     }
   }
 }

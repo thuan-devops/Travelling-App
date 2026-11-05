@@ -124,9 +124,12 @@ export interface BookingDetails {
   contactEmail?: string;
   specialRequest?: string;
   addons?: { id: string; name: string; price: number }[];
-  status?: 'confirmed' | 'cancelled';
+  status?: 'confirmed' | 'cancelled' | 'completed';
   cancellationReason?: string;
   cancelledAt?: string;
+  completedAt?: string;
+  hasReviewed?: boolean;
+  review?: ReviewItem;
 }
 
 export interface AppNotification {

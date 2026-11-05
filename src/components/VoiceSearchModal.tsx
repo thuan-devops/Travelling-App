@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
 interface VoiceSearchModalProps {
   visible: boolean;
@@ -36,6 +37,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
   title = 'AI Tìm kiếm bằng giọng nói',
   placeholderPrompt = 'Nói điều bạn muốn tìm hoặc chọn câu mẫu bên dưới:',
 }) => {
+  const { isDarkMode, colors } = useTheme();
   const [isListening, setIsListening] = useState<boolean>(false);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [spokenText, setSpokenText] = useState<string>('');
@@ -199,15 +201,15 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={styles.modalBox}>
+        <View style={[styles.modalBox, { backgroundColor: colors.card, borderColor: isDarkMode ? colors.border : 'transparent', borderWidth: isDarkMode ? 1 : 0 }]}>
           {/* Header */}
           <View style={styles.header}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Ionicons name="sparkles" size={24} color="#00BDD6" style={{ marginRight: 8 }} />
-              <Text style={styles.headerTitle}>{title}</Text>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>{title}</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={22} color="#6B7280" />
+              <Ionicons name="close" size={22} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -244,7 +246,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
                 )}
               </TouchableOpacity>
 
-              <Text style={styles.statusText}>
+              <Text style={[styles.statusText, { color: colors.textSecondary }]}>
                 {isAnalyzing
                   ? '✨ AI đang phân tích & tự động tìm kiếm...'
                   : isListening
@@ -256,16 +258,16 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
             </View>
 
             {/* Recognized Text Display */}
-            <View style={styles.transcriptBox}>
+            <View style={[styles.transcriptBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.transcriptTopRow}>
-                <Text style={styles.transcriptLabel}>Nội dung nhận diện:</Text>
+                <Text style={[styles.transcriptLabel, { color: colors.textSecondary }]}>Nội dung nhận diện:</Text>
                 {isAnalyzing && (
                   <View style={styles.aiBadge}>
                     <Text style={styles.aiBadgeText}>AI ĐANG XỬ LÝ</Text>
                   </View>
                 )}
               </View>
-              <Text style={styles.transcriptText}>
+              <Text style={[styles.transcriptText, { color: colors.text }]}>
                 {spokenText ? `"${spokenText}"` : 'Đang chờ bạn nói...'}
               </Text>
             </View>
@@ -279,7 +281,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
             </View>
 
             {/* Quick Prompts */}
-            <Text style={styles.promptsSectionTitle}>
+            <Text style={[styles.promptsSectionTitle, { color: colors.text }]}>
               Hoặc chạm vào câu lệnh gợi ý:
             </Text>
 
@@ -287,21 +289,21 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
               {VOICE_PROMPTS.map((prompt, index) => (
                 <TouchableOpacity
                   key={index}
-                  style={styles.promptChip}
+                  style={[styles.promptChip, { backgroundColor: colors.surface, borderColor: colors.border }]}
                   onPress={() => handleSelectPrompt(prompt)}
                   activeOpacity={0.7}
                 >
                   <Ionicons name="sparkles-outline" size={14} color="#00BDD6" style={{ marginRight: 6 }} />
-                  <Text style={styles.promptChipText}>{prompt}</Text>
+                  <Text style={[styles.promptChipText, { color: colors.text }]}>{prompt}</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
             {/* Action Buttons */}
             <View style={styles.actionRow}>
-              <TouchableOpacity style={styles.retryBtn} onPress={handleRetry} activeOpacity={0.7}>
-                <Ionicons name="refresh-outline" size={18} color="#4B5563" style={{ marginRight: 4 }} />
-                <Text style={styles.retryBtnText}>Nói lại</Text>
+              <TouchableOpacity style={[styles.retryBtn, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={handleRetry} activeOpacity={0.7}>
+                <Ionicons name="refresh-outline" size={18} color={colors.text} style={{ marginRight: 4 }} />
+                <Text style={[styles.retryBtnText, { color: colors.text }]}>Nói lại</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -331,19 +333,26 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    justifyContent: 'flex-end',
+    justifyContent: Platform.OS === 'web' ? 'center' : 'flex-end',
     alignItems: 'center',
+    padding: Platform.OS === 'web' ? 20 : 0,
   },
   modalBox: {
     width: '100%',
-    maxWidth: 480,
+    maxWidth: 540,
     backgroundColor: '#FFFFFF',
+    borderRadius: Platform.OS === 'web' ? 24 : 0,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: 28,
     maxHeight: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 8,
   },
   header: {
     flexDirection: 'row',

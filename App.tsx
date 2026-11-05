@@ -37,18 +37,12 @@ export default function App() {
 const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F8FAFC',
+    width: '100%',
   },
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    maxWidth: 480,
     width: '100%',
-    alignSelf: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
   },
 });

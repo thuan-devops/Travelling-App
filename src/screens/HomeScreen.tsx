@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Image,
   Modal,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -23,6 +24,9 @@ import { BottomTabBar } from '../components/BottomTabBar';
 import { VoiceSearchModal } from '../components/VoiceSearchModal';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useResponsive, formatGridData } from '../hooks/useResponsive';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar as RNStatusBar } from 'react-native';
 
 interface HomeScreenProps {
   onOpenSearch: () => void;
@@ -39,6 +43,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 }) => {
   const { user, logout } = useAuth();
   const { colors, isDark } = useTheme();
+  const { isMobile, isTablet, isDesktop, gridColumns, contentMaxWidth, horizontalPadding } = useResponsive();
+  const insets = useSafeAreaInsets();
+  const mobileTopInset = isMobile ? Math.max(insets.top, Platform.OS === "android" ? (RNStatusBar.currentHeight || 28) : 0) : 0;
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<StayCategory | 'All'>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -134,80 +141,89 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const favoritesCount = stays.filter((s) => s.isFavorite).length;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <View style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
       <View style={styles.container}>
         {/* TOP GREETING & LOGOUT BAR */}
-        <View style={[styles.topBar, { backgroundColor: isDark ? colors.card : '#EDF9FA', borderBottomColor: colors.border, borderBottomWidth: isDark ? 1 : 0 }]}>
-          <TouchableOpacity
-            style={styles.userInfoRow}
-            activeOpacity={0.7}
-            onPress={() => onTabChange('Profile')}
-          >
-            <Image
-              source={{
-                uri:
-                  user?.avatarUrl ||
-                  'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
-              }}
-              style={styles.avatar}
-            />
-            <View>
-              <Text style={[styles.greetingSub, { color: colors.subText }]}>Xin chào 👋</Text>
-              <Text style={[styles.greetingName, { color: colors.text }]} numberOfLines={1}>
-                {user?.name || 'Du khách'}
-              </Text>
-            </View>
-          </TouchableOpacity>
+        <View style={[styles.topBarWrapper, { backgroundColor: isDark ? colors.background : '#EDF9FA', borderBottomColor: isDark ? colors.border : '#E2E8F0', borderBottomWidth: isDark ? 1 : 0, paddingTop: mobileTopInset }]}>
+          <View style={[styles.topBar, { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%', paddingHorizontal: horizontalPadding, backgroundColor: 'transparent' }]}>
+            <TouchableOpacity
+              style={styles.userInfoRow}
+              activeOpacity={0.7}
+              onPress={() => onTabChange('Profile')}
+            >
+              <Image
+                source={{
+                  uri:
+                    user?.avatarUrl ||
+                    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
+                }}
+                style={styles.avatar}
+              />
+              <View>
+                <Text style={[styles.greetingSub, { color: isDark ? '#94A3B8' : '#6B7280', fontWeight: '500' }]}>Xin chào 👋</Text>
+                <Text style={[styles.greetingName, { color: isDark ? '#FFFFFF' : '#111827', fontWeight: '800' }]} numberOfLines={1}>
+                  {user?.name || 'Du khách'}
+                </Text>
+              </View>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.quickLogoutBtn, { backgroundColor: isDark ? colors.card : '#FFFFFF', borderColor: isDark ? '#7F1D1D' : '#FEE2E2' }]}
-            activeOpacity={0.7}
-            onPress={() => setIsLogoutModalOpen(true)}
-          >
-            <Ionicons name="log-out-outline" size={17} color="#EF4444" style={{ marginRight: 4 }} />
-            <Text style={styles.quickLogoutText}>Đăng xuất</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.quickLogoutBtn, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FFFFFF', borderColor: isDark ? 'rgba(239, 68, 68, 0.35)' : '#FEE2E2' }]}
+              activeOpacity={0.7}
+              onPress={() => setIsLogoutModalOpen(true)}
+            >
+              <Ionicons name="log-out-outline" size={17} color="#EF4444" style={{ marginRight: 4 }} />
+              <Text style={styles.quickLogoutText}>Đăng xuất</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* TOP SEARCH BAR (Page 3) */}
-        <SearchHeader
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onClear={() => setSearchQuery('')}
-          onPress={onOpenSearch}
-          onVoicePress={() => setIsVoiceModalOpen(true)}
-        />
+        {/* TOP SEARCH BAR & CATEGORY TABS */}
+        <View style={[styles.headerSectionWrapper, { backgroundColor: isDark ? colors.background : '#EDF9FA' }]}>
+          <View style={{ maxWidth: isDesktop ? 960 : contentMaxWidth, alignSelf: 'center', width: '100%' }}>
+            <SearchHeader
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onClear={() => setSearchQuery('')}
+              onPress={onOpenSearch}
+              onVoicePress={() => setIsVoiceModalOpen(true)}
+            />
+          </View>
 
-        {/* CATEGORY TABS (Beach, Mountain, Camping) */}
-        <CategorySelector
-          categories={categories}
-          selectedCategory={selectedCategory}
-          onSelectCategory={(cat) => {
-            setAiNotice(null);
-            setSelectedCategory((prev) => (prev === cat ? 'All' : cat));
-          }}
-        />
+          <View style={{ maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' }}>
+            <CategorySelector
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onSelectCategory={(cat) => {
+                setAiNotice(null);
+                setSelectedCategory((prev) => (prev === cat ? 'All' : cat));
+              }}
+            />
+          </View>
+        </View>
 
         {/* AI VOICE SEARCH NOTICE */}
         {!!aiNotice && (
-          <View style={styles.aiNoticeBanner}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 8 }}>
-              <Ionicons name="sparkles" size={17} color="#00BDD6" style={{ marginRight: 8 }} />
-              <Text style={styles.aiNoticeText}>{aiNotice}</Text>
+          <View style={{ maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%', paddingHorizontal: horizontalPadding }}>
+            <View style={styles.aiNoticeBanner}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 8 }}>
+                <Ionicons name="sparkles" size={17} color="#00BDD6" style={{ marginRight: 8 }} />
+                <Text style={styles.aiNoticeText}>{aiNotice}</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  setAiNotice(null);
+                  setSearchQuery('');
+                  setSelectedCategory('All');
+                  loadStays();
+                }}
+                style={{ padding: 4 }}
+              >
+                <Ionicons name="close-circle" size={18} color="#94A3B8" />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              onPress={() => {
-                setAiNotice(null);
-                setSearchQuery('');
-                setSelectedCategory('All');
-                loadStays();
-              }}
-              style={{ padding: 4 }}
-            >
-              <Ionicons name="close-circle" size={18} color="#94A3B8" />
-            </TouchableOpacity>
           </View>
         )}
 
@@ -219,16 +235,40 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </View>
         ) : (
           <FlatList
-            data={stays}
+            key={`home-grid-${gridColumns}`}
+            data={formatGridData(stays, gridColumns)}
+            numColumns={gridColumns}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <StayCard
-                stay={item}
-                onToggleFavorite={handleToggleFavorite}
-                onPress={onSelectStay}
-              />
-            )}
-            contentContainerStyle={styles.listContent}
+            columnWrapperStyle={gridColumns > 1 ? { paddingHorizontal: isDesktop ? 16 : 8, justifyContent: 'flex-start' } : undefined}
+            renderItem={({ item }) => {
+              if ((item as any).empty) {
+                return (
+                  <View
+                    style={{
+                      flex: 1,
+                      marginHorizontal: isMobile ? 16 : 10,
+                      maxWidth: isMobile ? undefined : 420,
+                    }}
+                  />
+                );
+              }
+              return (
+                <StayCard
+                  stay={item as Accommodation}
+                  onToggleFavorite={handleToggleFavorite}
+                  onPress={onSelectStay}
+                />
+              );
+            }}
+            contentContainerStyle={[
+              styles.listContent,
+              {
+                maxWidth: contentMaxWidth,
+                alignSelf: 'center',
+                width: '100%',
+                paddingHorizontal: gridColumns > 1 ? 8 : 0,
+              },
+            ]}
             showsVerticalScrollIndicator={false}
             refreshControl={
               <RefreshControl
@@ -304,7 +344,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         onTabChange={onTabChange}
         favoritesCount={favoritesCount}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -315,6 +355,13 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  topBarWrapper: {
+    width: '100%',
+    backgroundColor: '#EDF9FA',
+  },
+  headerSectionWrapper: {
+    width: '100%',
   },
   topBar: {
     flexDirection: 'row',

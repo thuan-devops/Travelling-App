@@ -29,7 +29,7 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
       >
         <Ionicons name="search-outline" size={20} color={isDarkMode ? colors.text : "#374151"} style={styles.searchIcon} />
         {onPress ? (
-          <Text style={[styles.searchInput, { color: searchQuery ? colors.text : colors.textSecondary }]}>
+          <Text style={[styles.searchInput, { color: searchQuery ? (isDarkMode ? '#FFFFFF' : colors.text) : (isDarkMode ? '#94A3B8' : colors.textSecondary), fontWeight: '600' }]}>
             {searchQuery || 'Bạn muốn nghỉ ngơi ở đâu?'}
           </Text>
         ) : (
@@ -57,7 +57,7 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
               onVoicePress();
             }}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            style={styles.micBtn}
+            style={[styles.micBtn, { backgroundColor: isDarkMode ? 'rgba(0, 189, 214, 0.18)' : '#F0FDFA' }]}
           >
             <Ionicons name="mic" size={19} color="#00BDD6" />
           </TouchableOpacity>

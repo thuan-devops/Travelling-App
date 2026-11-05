@@ -1,10 +1,10 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
-  FlatList,
+FlatList,
   TouchableOpacity,
   Image,
   Switch,
@@ -17,6 +17,8 @@ import { mockApi } from '../api/mockApi';
 import { FilterModal } from '../components/FilterModal';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { useCurrency } from '../context/CurrencyContext';
+import { useTheme } from '../context/ThemeContext';
+import { useResponsive, formatGridData } from '../hooks/useResponsive';
 
 interface SearchResultsScreenProps {
   filters: SearchFilterState;
@@ -34,6 +36,8 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
   onBackToHome,
 }) => {
   const { formatPrice } = useCurrency();
+  const { isDarkMode, colors } = useTheme();
+  const { isMobile, isTablet, isDesktop, gridColumns, contentMaxWidth, horizontalPadding } = useResponsive();
   const [stays, setStays] = useState<Accommodation[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [presentTotalPrice, setPresentTotalPrice] = useState<boolean>(true);
@@ -85,7 +89,17 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
   const ratingBadge = currentFilters.minRating ? ` • ⭐ ${currentFilters.minRating}+` : '';
   const headerSummaryText = `${destSummary}, ${dateSummary}, ${guestCount} khách${ratingBadge}`;
 
-  const renderStayCard = ({ item }: { item: Accommodation }) => {
+  const renderStayCard = ({ item }: { item: any }) => {
+    if (item.empty) {
+      return (
+        <View
+          style={{
+            flex: gridColumns > 1 ? 1 : undefined,
+            marginHorizontal: gridColumns > 1 ? 8 : 20,
+          }}
+        />
+      );
+    }
     const hasSpecificNights = !!(
       currentFilters.startDate &&
       currentFilters.endDate &&
@@ -99,7 +113,14 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
 
     return (
       <TouchableOpacity
-        style={styles.cardContainer}
+        style={[
+          styles.cardContainer,
+          {
+            flex: gridColumns > 1 ? 1 : undefined,
+            marginHorizontal: gridColumns > 1 ? 8 : 20,
+            marginBottom: 20,
+          },
+        ]}
         activeOpacity={0.9}
         onPress={() => onSelectStay(item)}
       >
@@ -123,22 +144,22 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
 
         <View style={styles.cardContent}>
           <View style={styles.cardTitleRow}>
-            <Text style={styles.cardTitle} numberOfLines={1}>
+            <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
               {item.title}
             </Text>
             <View style={styles.ratingRow}>
               <Ionicons name="star" size={14} color="#F59E0B" />
-              <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
+              <Text style={[styles.ratingText, { color: colors.text }]}>{item.rating.toFixed(1)}</Text>
             </View>
           </View>
 
           <View style={styles.cardInfoRow}>
             <View style={styles.bedroomInfo}>
               <Ionicons name="bed-outline" size={14} color="#6B7280" style={{ marginRight: 4 }} />
-              <Text style={styles.bedroomText}>{item.bedrooms || 1} phòng ngủ</Text>
+              <Text style={[styles.bedroomText, { color: colors.textSecondary }]}>{item.bedrooms || 1} phòng ngủ</Text>
             </View>
-            <Text style={styles.priceText}>
-              <Text style={styles.priceBold}>{formatPrice(displayPrice)}</Text>
+            <Text style={[styles.priceText, { color: colors.textSecondary }]}>
+              <Text style={[styles.priceBold, { color: colors.text }]}>{formatPrice(displayPrice)}</Text>
               {presentTotalPrice && hasSpecificNights ? '/' + currentFilters.daysCount + ' đêm' : '/đêm'}
             </Text>
           </View>
@@ -148,75 +169,78 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <StatusBar style={isDarkMode ? "light" : "dark"} />
 
       {/* SEARCH HEADER BAR (Page 7) */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.searchPill} activeOpacity={0.8} onPress={onOpenSearch}>
-          <Ionicons name="search" size={18} color="#111827" style={{ marginRight: 8 }} />
-          <Text style={styles.searchSummaryText} numberOfLines={1}>
-            {headerSummaryText}
-          </Text>
-          <TouchableOpacity
-            style={styles.filterIconButton}
-            onPress={() => setIsFilterModalOpen(true)}
-          >
-            <Ionicons name="options-outline" size={20} color="#111827" />
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </View>
-
-      {/* ACTIVE FILTER CHIPS */}
-      {(currentFilters.minRating || (currentFilters.minPrice > 0 || (currentFilters.maxPrice && currentFilters.maxPrice < 10000000))) ? (
-        <View style={styles.activeChipsRow}>
-          {!!currentFilters.minRating && (
+      <View style={{ width: '100%', backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+        <View style={[styles.header, { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%', paddingHorizontal: horizontalPadding }]}>
+          <TouchableOpacity style={[styles.searchPill, { backgroundColor: colors.surface, borderColor: colors.border }]} activeOpacity={0.8} onPress={onOpenSearch}>
+            <Ionicons name="search" size={18} color={colors.text} style={{ marginRight: 8 }} />
+            <Text style={[styles.searchSummaryText, { color: colors.text }]} numberOfLines={1}>
+              {headerSummaryText}
+            </Text>
             <TouchableOpacity
-              style={styles.activeChipPill}
-              onPress={() => setCurrentFilters((prev) => ({ ...prev, minRating: undefined }))}
+              style={styles.filterIconButton}
+              onPress={() => setIsFilterModalOpen(true)}
             >
-              <Ionicons name="star" size={13} color="#F59E0B" style={{ marginRight: 4 }} />
-              <Text style={styles.activeChipText}>Từ {currentFilters.minRating}★</Text>
-              <Ionicons name="close-circle" size={14} color="#6B7280" style={{ marginLeft: 4 }} />
+              <Ionicons name="options-outline" size={20} color={colors.text} />
             </TouchableOpacity>
-          )}
-
-          {(currentFilters.minPrice > 0 || (currentFilters.maxPrice && currentFilters.maxPrice < 10000000)) && (
-            <TouchableOpacity
-              style={styles.activeChipPill}
-              onPress={() => setCurrentFilters((prev) => ({ ...prev, minPrice: 0, maxPrice: 10000000 }))}
-            >
-              <Ionicons name="pricetag" size={12} color="#00BDD6" style={{ marginRight: 4 }} />
-              <Text style={styles.activeChipText}>
-                {currentFilters.minPrice > 0 ? `${(currentFilters.minPrice / 1000000).toFixed(1)}Tr` : '0đ'} - {currentFilters.maxPrice && currentFilters.maxPrice < 10000000 ? `${(currentFilters.maxPrice / 1000000).toFixed(1)}Tr` : 'Max'}
-              </Text>
-              <Ionicons name="close-circle" size={14} color="#6B7280" style={{ marginLeft: 4 }} />
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            onPress={() => setCurrentFilters((prev) => ({ ...prev, minRating: undefined, minPrice: 0, maxPrice: 10000000 }))}
-            style={{ paddingHorizontal: 6, justifyContent: 'center' }}
-          >
-            <Text style={{ fontSize: 12, color: '#EF4444', fontWeight: '600' }}>Xóa lọc</Text>
           </TouchableOpacity>
         </View>
-      ) : null}
-
-      {/* TOGGLE ROW: Present total price (Page 7) */}
-      <View style={styles.totalPriceToggleRow}>
-        <View>
-          <Text style={styles.toggleTitle}>Hiển thị tổng giá</Text>
-          <Text style={styles.toggleSubtitle}>Trọn gói, trước thuế</Text>
-        </View>
-        <TouchableOpacity
-          style={[styles.checkbox, presentTotalPrice && styles.checkboxActive]}
-          onPress={() => setPresentTotalPrice(!presentTotalPrice)}
-        >
-          {presentTotalPrice && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
-        </TouchableOpacity>
       </View>
 
+      <View style={{ maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%', paddingHorizontal: horizontalPadding }}>
+        {/* ACTIVE FILTER CHIPS */}
+        {(currentFilters.minRating || (currentFilters.minPrice > 0 || (currentFilters.maxPrice && currentFilters.maxPrice < 10000000))) ? (
+          <View style={styles.activeChipsRow}>
+            {!!currentFilters.minRating && (
+              <TouchableOpacity
+                style={styles.activeChipPill}
+                onPress={() => setCurrentFilters((prev) => ({ ...prev, minRating: undefined }))}
+              >
+                <Ionicons name="star" size={13} color="#F59E0B" style={{ marginRight: 4 }} />
+                <Text style={styles.activeChipText}>Từ {currentFilters.minRating}★</Text>
+                <Ionicons name="close-circle" size={14} color="#6B7280" style={{ marginLeft: 4 }} />
+              </TouchableOpacity>
+            )}
+
+            {(currentFilters.minPrice > 0 || (currentFilters.maxPrice && currentFilters.maxPrice < 10000000)) && (
+              <TouchableOpacity
+                style={styles.activeChipPill}
+                onPress={() => setCurrentFilters((prev) => ({ ...prev, minPrice: 0, maxPrice: 10000000 }))}
+              >
+                <Ionicons name="pricetag" size={12} color="#00BDD6" style={{ marginRight: 4 }} />
+                <Text style={styles.activeChipText}>
+                  {currentFilters.minPrice > 0 ? `${(currentFilters.minPrice / 1000000).toFixed(1)}Tr` : '0đ'} - {currentFilters.maxPrice && currentFilters.maxPrice < 10000000 ? `${(currentFilters.maxPrice / 1000000).toFixed(1)}Tr` : 'Max'}
+                </Text>
+                <Ionicons name="close-circle" size={14} color="#6B7280" style={{ marginLeft: 4 }} />
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              onPress={() => setCurrentFilters((prev) => ({ ...prev, minRating: undefined, minPrice: 0, maxPrice: 10000000 }))}
+              style={{ paddingHorizontal: 6, justifyContent: 'center' }}
+            >
+              <Text style={{ fontSize: 12, color: '#EF4444', fontWeight: '600' }}>Xóa lọc</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {/* TOGGLE ROW: Present total price (Page 7) */}
+        <View style={styles.totalPriceToggleRow}>
+          <View>
+            <Text style={styles.toggleTitle}>Hiển thị tổng giá</Text>
+            <Text style={styles.toggleSubtitle}>Trọn gói, trước thuế</Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.checkbox, presentTotalPrice && styles.checkboxActive]}
+            onPress={() => setPresentTotalPrice(!presentTotalPrice)}
+          >
+            {presentTotalPrice && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
+          </TouchableOpacity>
+        </View>
+      </View>
 
       {/* LIST OF HOMES */}
       {isLoading ? (
@@ -225,16 +249,27 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
         </View>
       ) : (
         <FlatList
-          data={stays}
+          key={`search-grid-${gridColumns}`}
+          data={formatGridData(stays, gridColumns)}
+          numColumns={gridColumns}
           keyExtractor={(item) => item.id}
+          columnWrapperStyle={gridColumns > 1 ? { paddingHorizontal: isDesktop ? 16 : 8, justifyContent: 'flex-start' } : undefined}
           renderItem={renderStayCard}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            {
+              maxWidth: contentMaxWidth,
+              alignSelf: 'center',
+              width: '100%',
+              paddingHorizontal: gridColumns > 1 ? 8 : 0,
+            },
+          ]}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="search-outline" size={56} color="#D1D5DB" />
               <Text style={styles.emptyTitle}>Không tìm thấy chuyến đi</Text>
-              <Text style={styles.emptySubtitle}>
+              <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
                 Không có chỗ ở nào phù hợp với tìm kiếm của bạn.{'\n'}Hãy thử điều chỉnh điểm đến hoặc ngày khác nhé!
               </Text>
             </View>

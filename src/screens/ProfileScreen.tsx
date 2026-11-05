@@ -1,11 +1,11 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import {
   Platform,
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
-  TouchableOpacity,
+TouchableOpacity,
   Image,
   ScrollView,
   Alert,
@@ -129,19 +129,21 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange, onOpe
       <StatusBar style={colors.statusBar} />
 
       {/* Header with Quick Logout */}
-      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Hồ sơ cá nhân</Text>
-        <TouchableOpacity
-          style={[styles.headerLogoutBtn, isDarkMode && { backgroundColor: '#450A0A', borderColor: '#7F1D1D' }]}
-          onPress={() => setIsLogoutModalOpen(true)}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="log-out-outline" size={18} color="#EF4444" style={{ marginRight: 4 }} />
-          <Text style={styles.headerLogoutText}>Đăng xuất</Text>
-        </TouchableOpacity>
+      <View style={{ width: '100%', backgroundColor: colors.card, borderBottomColor: colors.border, borderBottomWidth: 1 }}>
+        <View style={[styles.header, { maxWidth: 760, alignSelf: 'center', width: '100%' }]}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Hồ sơ cá nhân</Text>
+          <TouchableOpacity
+            style={[styles.headerLogoutBtn, isDarkMode && { backgroundColor: '#450A0A', borderColor: '#7F1D1D' }]}
+            onPress={() => setIsLogoutModalOpen(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="log-out-outline" size={18} color="#EF4444" style={{ marginRight: 4 }} />
+            <Text style={styles.headerLogoutText}>Đăng xuất</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { maxWidth: 760, alignSelf: 'center', width: '100%' }]} showsVerticalScrollIndicator={false}>
         {/* User Card */}
         <View style={[styles.userCard, { backgroundColor: isDarkMode ? colors.card : '#F9FAFB', borderColor: colors.border }]}>
           <Image
@@ -1007,13 +1009,13 @@ const styles = StyleSheet.create({
   termsModalSafeArea: {
     flex: 1,
     width: '100%',
-    maxWidth: 480,
+    maxWidth: 680,
     alignSelf: 'center',
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 6,
   },
   termsModalHeader: {
     flexDirection: 'row',

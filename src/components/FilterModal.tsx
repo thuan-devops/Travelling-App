@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { SearchFilterState } from '../types';
 import { useCurrency } from '../context/CurrencyContext';
+import { useTheme } from '../context/ThemeContext';
 
 interface FilterModalProps {
   visible: boolean;
@@ -27,6 +28,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   initialFilters,
 }) => {
   const { formatPrice, currency } = useCurrency();
+  const { isDarkMode, colors } = useTheme();
   const isVnd = currency === 'VND';
 
   // Normalize initial min/max prices (support VND & USD)
@@ -140,22 +142,22 @@ export const FilterModal: React.FC<FilterModalProps> = ({
       transparent={Platform.OS === 'web'}
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.phoneContainer}>
+      <View style={[styles.modalOverlay, { backgroundColor: Platform.OS === 'web' ? (isDarkMode ? 'rgba(0,0,0,0.75)' : 'rgba(0,0,0,0.45)') : (isDarkMode ? colors.background : '#FFFFFF') }]}>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: isDarkMode ? colors.card : '#FFFFFF', borderColor: isDarkMode ? colors.border : 'transparent', borderWidth: Platform.OS === 'web' && isDarkMode ? 1 : 0 }]}>
+          <View style={[styles.phoneContainer, { backgroundColor: isDarkMode ? colors.card : '#FFFFFF' }]}>
             {/* Header */}
             <View style={styles.header}>
               <View style={{ width: 24 }} />
-              <Text style={styles.headerTitle}>Bộ lọc nâng cao</Text>
+              <Text style={[styles.headerTitle, { color: isDarkMode ? colors.text : '#111827' }]}>Bộ lọc nâng cao</Text>
               <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-                <Ionicons name="close" size={24} color="#374151" />
+                <Ionicons name="close" size={24} color={isDarkMode ? colors.text : '#374151'} />
               </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
               {/* 1. PRICE RANGE */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Khoảng giá mỗi đêm</Text>
+                <Text style={[styles.sectionTitle, { color: isDarkMode ? colors.text : '#111827' }]}>Khoảng giá mỗi đêm</Text>
 
                 {/* Quick Presets */}
                 <View style={styles.presetsRow}>
@@ -170,13 +172,13 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     return (
                       <TouchableOpacity
                         key={idx}
-                        style={[styles.presetChip, isSel && styles.presetChipActive]}
+                        style={[styles.presetChip, { backgroundColor: isDarkMode ? colors.surface : '#F8FAFC', borderColor: isDarkMode ? colors.border : '#E2E8F0' }, isSel && { backgroundColor: isDarkMode ? '#134E5E' : '#E0F7FA', borderColor: '#00BDD6' }]}
                         onPress={() => {
                           setMinPrice(p.min);
                           setMaxPrice(p.max);
                         }}
                       >
-                        <Text style={[styles.presetChipText, isSel && styles.presetChipTextActive]}>
+                        <Text style={[styles.presetChipText, { color: isDarkMode ? colors.textSecondary : '#475569' }, isSel && { color: '#00BDD6' }]}>
                           {p.label}
                         </Text>
                       </TouchableOpacity>
@@ -187,19 +189,19 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 {/* Interactive Stepper Boxes */}
                 <View style={styles.priceBoxesRow}>
                   {/* Min Price Box */}
-                  <View style={styles.priceBox}>
-                    <Text style={styles.priceLabel}>Tối thiểu</Text>
-                    <Text style={styles.priceValue}>{formatPrice(minPrice)}</Text>
+                  <View style={[styles.priceBox, { backgroundColor: isDarkMode ? colors.surface : '#F8FAFC', borderColor: isDarkMode ? colors.border : '#E2E8F0' }]}>
+                    <Text style={[styles.priceLabel, { color: isDarkMode ? colors.textSecondary : '#64748B' }]}>Tối thiểu</Text>
+                    <Text style={[styles.priceValue, { color: isDarkMode ? colors.text : '#0F172A' }]}>{formatPrice(minPrice)}</Text>
                     <View style={styles.stepperRow}>
                       <TouchableOpacity
-                        style={styles.stepperBtn}
+                        style={[styles.stepperBtn, { backgroundColor: isDarkMode ? colors.card : '#FFFFFF', borderColor: isDarkMode ? colors.border : '#CBD5E1' }]}
                         onPress={() => handleAdjustMin(-stepAmount)}
                         disabled={minPrice <= 0}
                       >
                         <Ionicons name="remove" size={14} color={minPrice <= 0 ? '#CBD5E1' : '#00BDD6'} />
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={styles.stepperBtn}
+                        style={[styles.stepperBtn, { backgroundColor: isDarkMode ? colors.card : '#FFFFFF', borderColor: isDarkMode ? colors.border : '#CBD5E1' }]}
                         onPress={() => handleAdjustMin(stepAmount)}
                       >
                         <Ionicons name="add" size={14} color="#00BDD6" />
@@ -207,22 +209,22 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     </View>
                   </View>
 
-                  <Text style={styles.priceDivider}>➔</Text>
+                  <Text style={[styles.priceDivider, { color: isDarkMode ? colors.textSecondary : '#94A3B8' }]}>➔</Text>
 
                   {/* Max Price Box */}
-                  <View style={styles.priceBox}>
-                    <Text style={styles.priceLabel}>Tối đa</Text>
-                    <Text style={styles.priceValue}>{formatPrice(maxPrice)}</Text>
+                  <View style={[styles.priceBox, { backgroundColor: isDarkMode ? colors.surface : '#F8FAFC', borderColor: isDarkMode ? colors.border : '#E2E8F0' }]}>
+                    <Text style={[styles.priceLabel, { color: isDarkMode ? colors.textSecondary : '#64748B' }]}>Tối đa</Text>
+                    <Text style={[styles.priceValue, { color: isDarkMode ? colors.text : '#0F172A' }]}>{formatPrice(maxPrice)}</Text>
                     <View style={styles.stepperRow}>
                       <TouchableOpacity
-                        style={styles.stepperBtn}
+                        style={[styles.stepperBtn, { backgroundColor: isDarkMode ? colors.card : '#FFFFFF', borderColor: isDarkMode ? colors.border : '#CBD5E1' }]}
                         onPress={() => handleAdjustMax(-stepAmount)}
                         disabled={maxPrice <= minPrice + stepAmount}
                       >
                         <Ionicons name="remove" size={14} color={maxPrice <= minPrice + stepAmount ? '#CBD5E1' : '#00BDD6'} />
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={styles.stepperBtn}
+                        style={[styles.stepperBtn, { backgroundColor: isDarkMode ? colors.card : '#FFFFFF', borderColor: isDarkMode ? colors.border : '#CBD5E1' }]}
                         onPress={() => handleAdjustMax(stepAmount)}
                       >
                         <Ionicons name="add" size={14} color="#00BDD6" />
@@ -234,7 +236,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
               {/* 2. STAR RATING FILTER */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Đánh giá sao chất lượng</Text>
+                <Text style={[styles.sectionTitle, { color: isDarkMode ? colors.text : '#111827' }]}>Đánh giá sao chất lượng</Text>
                 <View style={styles.ratingChipsRow}>
                   {[
                     { value: 0, label: 'Tất cả' },
@@ -246,7 +248,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     return (
                       <TouchableOpacity
                         key={rate.value}
-                        style={[styles.ratingChip, isSel && styles.ratingChipActive]}
+                        style={[styles.ratingChip, { backgroundColor: isDarkMode ? colors.surface : '#F8FAFC', borderColor: isDarkMode ? colors.border : '#E2E8F0' }, isSel && { backgroundColor: '#00BDD6', borderColor: '#00BDD6' }]}
                         onPress={() => setMinRating(rate.value)}
                         activeOpacity={0.7}
                       >
@@ -256,7 +258,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                           color={isSel ? '#FFFFFF' : rate.value === 0 ? '#9CA3AF' : '#F59E0B'}
                           style={{ marginRight: 4 }}
                         />
-                        <Text style={[styles.ratingChipText, isSel && styles.ratingChipTextActive]}>
+                        <Text style={[styles.ratingChipText, { color: isDarkMode ? colors.text : '#334155' }, isSel && { color: '#FFFFFF' }]}>
                           {rate.label}
                         </Text>
                       </TouchableOpacity>
@@ -267,7 +269,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
               {/* 3. TYPE OF PLACE */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Loại chỗ ở</Text>
+                <Text style={[styles.sectionTitle, { color: isDarkMode ? colors.text : '#111827' }]}>Loại chỗ ở</Text>
 
                 <TouchableOpacity
                   style={styles.checkboxRow}
@@ -275,10 +277,10 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   onPress={() => setEntirePlace(!entirePlace)}
                 >
                   <View style={styles.checkboxInfo}>
-                    <Text style={styles.optionTitle}>Toàn bộ nhà</Text>
-                    <Text style={styles.optionSubtitle}>Toàn bộ căn hộ, biệt thự villa, nhà riêng</Text>
+                    <Text style={[styles.optionTitle, { color: isDarkMode ? colors.text : '#1E293B' }]}>Toàn bộ nhà</Text>
+                    <Text style={[styles.optionSubtitle, { color: isDarkMode ? colors.textSecondary : '#64748B' }]}>Toàn bộ căn hộ, biệt thự villa, nhà riêng</Text>
                   </View>
-                  <View style={[styles.checkbox, entirePlace && styles.checkboxActive]}>
+                  <View style={[styles.checkbox, { borderColor: isDarkMode ? colors.border : '#CBD5E1', backgroundColor: isDarkMode ? colors.surface : '#FFFFFF' }, entirePlace && styles.checkboxActive]}>
                     {entirePlace && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
                   </View>
                 </TouchableOpacity>
@@ -289,10 +291,10 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   onPress={() => setPrivateRoom(!privateRoom)}
                 >
                   <View style={styles.checkboxInfo}>
-                    <Text style={styles.optionTitle}>Phòng riêng</Text>
-                    <Text style={styles.optionSubtitle}>Phòng nghỉ cao cấp có phòng tắm riêng</Text>
+                    <Text style={[styles.optionTitle, { color: isDarkMode ? colors.text : '#1E293B' }]}>Phòng riêng</Text>
+                    <Text style={[styles.optionSubtitle, { color: isDarkMode ? colors.textSecondary : '#64748B' }]}>Phòng nghỉ cao cấp có phòng tắm riêng</Text>
                   </View>
-                  <View style={[styles.checkbox, privateRoom && styles.checkboxActive]}>
+                  <View style={[styles.checkbox, { borderColor: isDarkMode ? colors.border : '#CBD5E1', backgroundColor: isDarkMode ? colors.surface : '#FFFFFF' }, privateRoom && styles.checkboxActive]}>
                     {privateRoom && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
                   </View>
                 </TouchableOpacity>
@@ -303,10 +305,10 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   onPress={() => setDormitories(!dormitories)}
                 >
                   <View style={styles.checkboxInfo}>
-                    <Text style={styles.optionTitle}>Phòng tập thể / Cắm trại</Text>
-                    <Text style={styles.optionSubtitle}>Lều cắm trại glamping hoặc phòng chia sẻ</Text>
+                    <Text style={[styles.optionTitle, { color: isDarkMode ? colors.text : '#1E293B' }]}>Phòng tập thể / Cắm trại</Text>
+                    <Text style={[styles.optionSubtitle, { color: isDarkMode ? colors.textSecondary : '#64748B' }]}>Lều cắm trại glamping hoặc phòng chia sẻ</Text>
                   </View>
-                  <View style={[styles.checkbox, dormitories && styles.checkboxActive]}>
+                  <View style={[styles.checkbox, { borderColor: isDarkMode ? colors.border : '#CBD5E1', backgroundColor: isDarkMode ? colors.surface : '#FFFFFF' }, dormitories && styles.checkboxActive]}>
                     {dormitories && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
                   </View>
                 </TouchableOpacity>
@@ -314,18 +316,18 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
               {/* 4. ROOMS AND BEDS */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Phòng ngủ và giường</Text>
+                <Text style={[styles.sectionTitle, { color: isDarkMode ? colors.text : '#111827' }]}>Phòng ngủ và giường</Text>
 
-                <View style={styles.counterItemRow}>
-                  <Text style={styles.counterItemLabel}>Phòng ngủ</Text>
+                <View style={[styles.counterItemRow, { borderBottomColor: isDarkMode ? colors.border : '#F8FAFC' }]}>
+                  <Text style={[styles.counterItemLabel, { color: isDarkMode ? colors.text : '#334155' }]}>Phòng ngủ</Text>
                   <View style={styles.pillSelectorRow}>
                     {[{ val: 0, lbl: 'Bất kỳ' }, { val: 1, lbl: '1+' }, { val: 2, lbl: '2+' }, { val: 3, lbl: '3+' }, { val: 4, lbl: '4+' }].map((item) => (
                       <TouchableOpacity
                         key={item.val}
-                        style={[styles.countPill, bedrooms === item.val && styles.countPillActive]}
+                        style={[styles.countPill, { backgroundColor: isDarkMode ? colors.surface : '#F8FAFC', borderColor: isDarkMode ? colors.border : '#E2E8F0' }, bedrooms === item.val && styles.countPillActive]}
                         onPress={() => setBedrooms(item.val)}
                       >
-                        <Text style={[styles.countPillText, bedrooms === item.val && styles.countPillTextActive]}>
+                        <Text style={[styles.countPillText, { color: isDarkMode ? colors.textSecondary : '#475569' }, bedrooms === item.val && styles.countPillTextActive]}>
                           {item.lbl}
                         </Text>
                       </TouchableOpacity>
@@ -333,16 +335,16 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   </View>
                 </View>
 
-                <View style={styles.counterItemRow}>
-                  <Text style={styles.counterItemLabel}>Giường</Text>
+                <View style={[styles.counterItemRow, { borderBottomColor: isDarkMode ? colors.border : '#F8FAFC' }]}>
+                  <Text style={[styles.counterItemLabel, { color: isDarkMode ? colors.text : '#334155' }]}>Giường</Text>
                   <View style={styles.pillSelectorRow}>
                     {[{ val: 0, lbl: 'Bất kỳ' }, { val: 1, lbl: '1+' }, { val: 2, lbl: '2+' }, { val: 3, lbl: '3+' }, { val: 4, lbl: '4+' }].map((item) => (
                       <TouchableOpacity
                         key={item.val}
-                        style={[styles.countPill, beds === item.val && styles.countPillActive]}
+                        style={[styles.countPill, { backgroundColor: isDarkMode ? colors.surface : '#F8FAFC', borderColor: isDarkMode ? colors.border : '#E2E8F0' }, beds === item.val && styles.countPillActive]}
                         onPress={() => setBeds(item.val)}
                       >
-                        <Text style={[styles.countPillText, beds === item.val && styles.countPillTextActive]}>
+                        <Text style={[styles.countPillText, { color: isDarkMode ? colors.textSecondary : '#475569' }, beds === item.val && styles.countPillTextActive]}>
                           {item.lbl}
                         </Text>
                       </TouchableOpacity>
@@ -350,16 +352,16 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   </View>
                 </View>
 
-                <View style={styles.counterItemRow}>
-                  <Text style={styles.counterItemLabel}>Phòng tắm</Text>
+                <View style={[styles.counterItemRow, { borderBottomColor: isDarkMode ? colors.border : '#F8FAFC' }]}>
+                  <Text style={[styles.counterItemLabel, { color: isDarkMode ? colors.text : '#334155' }]}>Phòng tắm</Text>
                   <View style={styles.pillSelectorRow}>
                     {[{ val: 0, lbl: 'Bất kỳ' }, { val: 1, lbl: '1+' }, { val: 2, lbl: '2+' }, { val: 3, lbl: '3+' }].map((item) => (
                       <TouchableOpacity
                         key={item.val}
-                        style={[styles.countPill, bathrooms === item.val && styles.countPillActive]}
+                        style={[styles.countPill, { backgroundColor: isDarkMode ? colors.surface : '#F8FAFC', borderColor: isDarkMode ? colors.border : '#E2E8F0' }, bathrooms === item.val && styles.countPillActive]}
                         onPress={() => setBathrooms(item.val)}
                       >
-                        <Text style={[styles.countPillText, bathrooms === item.val && styles.countPillTextActive]}>
+                        <Text style={[styles.countPillText, { color: isDarkMode ? colors.textSecondary : '#475569' }, bathrooms === item.val && styles.countPillTextActive]}>
                           {item.lbl}
                         </Text>
                       </TouchableOpacity>
@@ -370,7 +372,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
               {/* 5. FACILITIES */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Tiện nghi yêu cầu</Text>
+                <Text style={[styles.sectionTitle, { color: isDarkMode ? colors.text : '#111827' }]}>Tiện nghi yêu cầu</Text>
 
                 {[
                   { label: 'Bếp nấu ăn', checked: kitchen, setChecked: setKitchen, icon: 'restaurant-outline' },
@@ -387,9 +389,9 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <Ionicons name={fac.icon as any} size={18} color="#00BDD6" style={{ marginRight: 10 }} />
-                      <Text style={styles.facilityLabel}>{fac.label}</Text>
+                      <Text style={[styles.facilityLabel, { color: isDarkMode ? colors.text : '#334155' }]}>{fac.label}</Text>
                     </View>
-                    <View style={[styles.checkbox, fac.checked && styles.checkboxActive]}>
+                    <View style={[styles.checkbox, { borderColor: isDarkMode ? colors.border : '#CBD5E1', backgroundColor: isDarkMode ? colors.surface : '#FFFFFF' }, fac.checked && styles.checkboxActive]}>
                       {fac.checked && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
                     </View>
                   </TouchableOpacity>
@@ -398,9 +400,9 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             </ScrollView>
 
             {/* Footer */}
-            <View style={styles.footer}>
+            <View style={[styles.footer, { backgroundColor: isDarkMode ? colors.card : '#FFFFFF', borderTopColor: isDarkMode ? colors.border : '#F1F5F9' }]}>
               <TouchableOpacity onPress={handleClearAll} style={styles.clearBtn}>
-                <Text style={styles.clearAllText}>Xóa tất cả</Text>
+                <Text style={[styles.clearAllText, { color: isDarkMode ? colors.textSecondary : '#64748B' }]}>Xóa tất cả</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
                 <Ionicons name="search" size={17} color="#FFFFFF" style={{ marginRight: 6 }} />
@@ -417,16 +419,24 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: Platform.OS === 'web' ? 'rgba(0,0,0,0.5)' : '#FFFFFF',
+    backgroundColor: Platform.OS === 'web' ? 'rgba(0,0,0,0.45)' : '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
   safeArea: {
     flex: 1,
     width: '100%',
-    maxWidth: 480,
+    maxWidth: Platform.OS === 'web' ? 640 : '100%',
+    maxHeight: Platform.OS === 'web' ? '92%' : '100%',
+    borderRadius: Platform.OS === 'web' ? 20 : 0,
+    overflow: 'hidden',
     backgroundColor: '#FFFFFF',
     alignSelf: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 8,
   },
   phoneContainer: {
     flex: 1,

@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabType } from '../types';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
+import { useResponsive } from '../hooks/useResponsive';
 
 interface BottomTabBarProps {
   activeTab: BottomTabType;
@@ -32,10 +33,17 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
   favoritesCount = 0,
 }) => {
   const { isDarkMode, colors } = useTheme();
+  const { isMobile } = useResponsive();
+
+  // Trên Web / Desktop / Tablet (màn hình rộng), thanh điều hướng đã được chuyển sang Sidebar bên trái
+  if (!isMobile) {
+    return null;
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
-      {TABS.map((tab) => {
+      <View style={styles.innerContent}>
+        {TABS.map((tab) => {
         const isActive = activeTab === tab.key;
         const iconColor = isActive ? '#00BDD6' : (isDarkMode ? '#94A3B8' : '#6B7280');
 
@@ -65,27 +73,36 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
             </Text>
           </TouchableOpacity>
         );
-      })}
+        })}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
     height: Platform.OS === 'ios' ? 78 : 64,
     paddingBottom: Platform.OS === 'ios' ? 18 : 6,
     paddingTop: 8,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
-    justifyContent: 'space-around',
+    justifyContent: 'center',
     alignItems: 'center',
+    width: '100%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 8,
+  },
+  innerContent: {
+    flexDirection: 'row',
+    width: '100%',
+    maxWidth: 640,
+    alignSelf: 'center',
+    justifyContent: 'space-around',
+    alignItems: 'center',
   },
   tabButton: {
     alignItems: 'center',
