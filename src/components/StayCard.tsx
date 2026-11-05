@@ -24,6 +24,8 @@ interface StayCardProps {
   onPress?: (stay: Accommodation) => void;
 }
 
+const FALLBACK_CARD_IMAGE = 'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=1200&q=80';
+
 export const StayCard: React.FC<StayCardProps> = ({
   stay,
   onToggleFavorite,
@@ -40,6 +42,7 @@ export const StayCard: React.FC<StayCardProps> = ({
 
   const [cardWidth, setCardWidth] = useState<number>(calculatedInitialWidth);
   const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
+  const [failedImages, setFailedImages] = useState<Record<number, boolean>>({});
   const scrollViewRef = useRef<any>(null);
 
   const images =
@@ -180,7 +183,8 @@ export const StayCard: React.FC<StayCardProps> = ({
               style={{ width: cardWidth, height: imageHeight }}
             >
               <Image
-                source={{ uri: imgUri }}
+                source={{ uri: failedImages[index] ? FALLBACK_CARD_IMAGE : (imgUri || FALLBACK_CARD_IMAGE) }}
+                onError={() => setFailedImages(prev => ({ ...prev, [index]: true }))}
                 style={[
                   styles.cardImage,
                   { width: cardWidth, height: imageHeight },

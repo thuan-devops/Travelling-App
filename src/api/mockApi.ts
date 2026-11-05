@@ -17,7 +17,7 @@ const MOCK_API_URL = 'https://6adf391c8e42963c8d5d9b65.mockapi.io/travelling';
 const FAVORITES_STORAGE_KEY = '@travelling_app_favorite_ids';
 const REVIEWS_STORAGE_KEY = '@travelling_app_all_reviews_v2';
 const BOOKINGS_STORAGE_KEY = '@travelling_app_bookings';
-const REMOTE_CACHE_KEY = '@travelling_app_remote_cache';
+const REMOTE_CACHE_KEY = '@travelling_app_remote_cache_v6';
 
 export const isPastCheckout = (checkOutDateStr: string): boolean => {
   if (!checkOutDateStr) return false;

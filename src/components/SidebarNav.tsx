@@ -31,7 +31,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { key: 'Search', label: 'Khám phá', activeIcon: 'compass', inactiveIcon: 'compass-outline' },
   { key: 'Favorites', label: 'Yêu thích', activeIcon: 'heart', inactiveIcon: 'heart-outline' },
-  { key: 'Bookings', label: 'Chuyến đi', activeIcon: 'grid', inactiveIcon: 'grid-outline' },
+  { key: 'Bookings', label: 'Chuyến đi', activeIcon: 'briefcase', inactiveIcon: 'briefcase-outline' },
   { key: 'Inbox', label: 'Hộp thư', activeIcon: 'chatbubble-ellipses', inactiveIcon: 'chatbubble-ellipses-outline' },
   { key: 'Profile', label: 'Hồ sơ', activeIcon: 'person-circle', inactiveIcon: 'person-circle-outline' },
 ];

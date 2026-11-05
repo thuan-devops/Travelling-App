@@ -44,44 +44,50 @@ const VN_DESTINATIONS = [
   {
     id: 'Anywhere',
     name: 'Bất kỳ đâu',
-    image: 'https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=400&q=80',
+    image: 'https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=500&q=80',
     query: '',
   },
   {
     id: 'Đà Lạt',
     name: 'Đà Lạt',
-    image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=400&q=80',
+    image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=500&q=80',
     query: 'Đà Lạt',
   },
   {
     id: 'Đà Nẵng',
     name: 'Đà Nẵng',
-    image: 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=400&q=80',
+    image: 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=500&q=80',
     query: 'Đà Nẵng',
   },
   {
     id: 'Phú Quốc',
     name: 'Phú Quốc',
-    image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=400&q=80',
+    image: 'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?auto=format&fit=crop&w=500&q=80',
     query: 'Phú Quốc',
   },
   {
     id: 'Sapa',
     name: 'Sapa',
-    image: 'https://images.unsplash.com/photo-1502784444187-359ac186c5bb?auto=format&fit=crop&w=400&q=80',
+    image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=500&q=80',
     query: 'Sapa',
   },
   {
     id: 'Vũng Tàu',
     name: 'Vũng Tàu',
-    image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=400&q=80',
+    image: 'https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?auto=format&fit=crop&w=500&q=80',
     query: 'Vũng Tàu',
   },
   {
     id: 'Nha Trang',
     name: 'Nha Trang',
-    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80',
+    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=500&q=80',
     query: 'Nha Trang',
+  },
+  {
+    id: 'Hội An',
+    name: 'Hội An',
+    image: 'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=500&q=80',
+    query: 'Hội An',
   },
 ];
 
