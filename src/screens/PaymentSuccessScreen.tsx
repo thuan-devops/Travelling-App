@@ -13,6 +13,7 @@ import { StatusBar } from 'expo-status-bar';
 import { BookingDetails } from '../types';
 import { generateAndShareReceiptPdf } from '../utils/pdfGenerator';
 import { useCurrency } from '../context/CurrencyContext';
+import { useTheme } from '../context/ThemeContext';
 
 interface PaymentSuccessScreenProps {
   booking: BookingDetails;
@@ -26,6 +27,7 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
   onExplore,
 }) => {
   const { formatPrice } = useCurrency();
+  const { isDarkMode, colors } = useTheme();
   const [isExporting, setIsExporting] = useState<boolean>(false);
 
   const handleDownloadReceipt = async () => {
@@ -41,8 +43,8 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
 
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <StatusBar style={isDarkMode ? "light" : "dark"} />
 
       <View style={styles.container}>
         {/* CELEBRATION ICON GRAPHIC (Page 15) */}
@@ -63,32 +65,32 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
         </View>
 
         {/* TITLE */}
-        <Text style={styles.title}>Thanh toán thành công!</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Thanh toán thành công!</Text>
 
         {/* RECEIPT CARD */}
-        <View style={styles.receiptCard}>
+        <View style={[styles.receiptCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>Mã tham chiếu</Text>
-            <Text style={styles.receiptValueBold}>{booking.bookingId}</Text>
+            <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Mã tham chiếu</Text>
+            <Text style={[styles.receiptValueBold, { color: colors.text }]}>{booking.bookingId}</Text>
           </View>
 
           <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>Ngày thanh toán</Text>
-            <Text style={styles.receiptValueBold}>{booking.paymentDate}</Text>
+            <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Ngày thanh toán</Text>
+            <Text style={[styles.receiptValueBold, { color: colors.text }]}>{booking.paymentDate}</Text>
           </View>
 
           <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>Thời gian</Text>
-            <Text style={styles.receiptValueBold}>{booking.paymentTime}</Text>
+            <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Thời gian</Text>
+            <Text style={[styles.receiptValueBold, { color: colors.text }]}>{booking.paymentTime}</Text>
           </View>
 
           <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>Phương thức thanh toán</Text>
-            <Text style={styles.receiptValueBold}>{booking.paymentMethod}</Text>
+            <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Phương thức thanh toán</Text>
+            <Text style={[styles.receiptValueBold, { color: colors.text }]}>{booking.paymentMethod}</Text>
           </View>
 
           <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>Giờ nhận / trả phòng</Text>
+            <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Giờ nhận / trả phòng</Text>
             <Text style={[styles.receiptValueBold, { color: '#0F766E' }]}>
               Từ {booking.accommodation.rules?.checkIn || '14:00'} • Trước {booking.accommodation.rules?.checkOut || '12:00'}
             </Text>
@@ -96,7 +98,7 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
 
           {booking.estimatedCheckInTime && (
             <View style={styles.receiptRow}>
-              <Text style={styles.receiptLabel}>Giờ đến dự kiến</Text>
+              <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Giờ đến dự kiến</Text>
               <Text style={[styles.receiptValueBold, { color: '#0F766E' }]}>
                 {booking.estimatedCheckInTime}
               </Text>
@@ -105,7 +107,7 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
 
           {booking.servicePackageName && (
             <View style={styles.receiptRow}>
-              <Text style={styles.receiptLabel}>Gói dịch vụ</Text>
+              <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Gói dịch vụ</Text>
               <Text style={[styles.receiptValueBold, { color: '#D97706' }]}>
                 {booking.servicePackageName}
               </Text>
@@ -114,38 +116,38 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
 
           {booking.contactName && (
             <View style={styles.receiptRow}>
-              <Text style={styles.receiptLabel}>Khách nhận phòng</Text>
-              <Text style={styles.receiptValueBold}>
+              <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Khách nhận phòng</Text>
+              <Text style={[styles.receiptValueBold, { color: colors.text }]}>
                 {booking.contactName} {booking.contactPhone ? `(${booking.contactPhone})` : ''}
               </Text>
             </View>
           )}
 
           <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>
+            <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>
               {booking.paymentType === 'part' ? 'Đã thanh toán trước (50%)' : 'Số tiền đã thanh toán'}
             </Text>
-            <Text style={styles.receiptAmount}>{formatPrice(booking.paidAmount)}</Text>
+            <Text style={[styles.receiptAmount, { color: colors.text }]}>{formatPrice(booking.paidAmount)}</Text>
           </View>
 
           {booking.paymentType === 'part' && (
             <>
               <View style={styles.receiptRow}>
-                <Text style={styles.receiptLabel}>Còn lại khi nhận phòng</Text>
+                <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Còn lại khi nhận phòng</Text>
                 <Text style={[styles.receiptValueBold, { color: '#E11D48' }]}>
                   {formatPrice(booking.dueAmount || booking.totalPrice - booking.paidAmount)}
                 </Text>
               </View>
               <View style={styles.receiptRow}>
-                <Text style={styles.receiptLabel}>Tổng giá trị đơn đặt</Text>
-                <Text style={styles.receiptValueBold}>{formatPrice(booking.totalPrice)}</Text>
+                <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Tổng giá trị đơn đặt</Text>
+                <Text style={[styles.receiptValueBold, { color: colors.text }]}>{formatPrice(booking.totalPrice)}</Text>
               </View>
             </>
           )}
 
           {/* GET PDF RECEIPT BUTTON */}
           <TouchableOpacity
-            style={styles.pdfButton}
+            style={[styles.pdfButton, { borderColor: colors.border, backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF' }]}
             activeOpacity={0.8}
             onPress={handleDownloadReceipt}
             disabled={isExporting}
@@ -154,8 +156,8 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
               <ActivityIndicator size="small" color="#00BDD6" />
             ) : (
               <>
-                <Ionicons name="download-outline" size={18} color="#6B7280" style={{ marginRight: 8 }} />
-                <Text style={styles.pdfButtonText}>Tải biên lai PDF</Text>
+                <Ionicons name="download-outline" size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
+                <Text style={[styles.pdfButtonText, { color: colors.text }]}>Tải biên lai PDF</Text>
               </>
             )}
           </TouchableOpacity>
@@ -174,7 +176,7 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
 
           {onExplore && (
             <TouchableOpacity
-              style={styles.exploreButton}
+              style={[styles.exploreButton, { backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF', borderColor: '#00BDD6' }]}
               activeOpacity={0.8}
               onPress={onExplore}
             >
