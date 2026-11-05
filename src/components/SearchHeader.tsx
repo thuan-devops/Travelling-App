@@ -8,6 +8,7 @@ interface SearchHeaderProps {
   onSearchChange: (text: string) => void;
   onClear: () => void;
   onPress?: () => void;
+  onVoicePress?: () => void;
 }
 
 export const SearchHeader: React.FC<SearchHeaderProps> = ({
@@ -15,6 +16,7 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
   onSearchChange,
   onClear,
   onPress,
+  onVoicePress,
 }) => {
   const { isDarkMode, colors } = useTheme();
 
@@ -43,8 +45,21 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
         )}
 
         {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={onClear} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <TouchableOpacity onPress={onClear} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ marginRight: 6 }}>
             <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+        )}
+
+        {onVoicePress && (
+          <TouchableOpacity
+            onPress={(e) => {
+              e.stopPropagation();
+              onVoicePress();
+            }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={styles.micBtn}
+          >
+            <Ionicons name="mic" size={19} color="#00BDD6" />
           </TouchableOpacity>
         )}
       </TouchableOpacity>
@@ -83,5 +98,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#1F2937',
     fontWeight: '500',
+  },
+  micBtn: {
+    padding: 6,
+    borderRadius: 14,
+    backgroundColor: '#F0FDFA',
+    marginLeft: 6,
   },
 });

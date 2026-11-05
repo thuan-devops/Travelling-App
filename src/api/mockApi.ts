@@ -57,11 +57,19 @@ const formatAccommodation = (
   const id = String(raw.id);
   const translation = ITEM_TRANSLATIONS[id];
   const itemReviews = allReviews[id] || [];
-  const reviewCount = itemReviews.length;
-  // Khi người dùng đánh giá thật -> tính trung bình sao; chưa đánh giá -> 0 (hiển thị Mới)
-  const rating = reviewCount > 0
-    ? Math.round((itemReviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount) * 10) / 10
-    : 0;
+  const rawRating = typeof raw.rating === 'number' && raw.rating > 0 ? raw.rating : 4.85;
+  const rawReviewCount = typeof raw.reviewCount === 'number' && raw.reviewCount > 0 ? raw.reviewCount : 24;
+  const hasUserReviews = itemReviews.length > 0;
+
+  const rating = hasUserReviews
+    ? Math.round(
+        ((itemReviews.reduce((sum, r) => sum + r.rating, 0) + rawRating * rawReviewCount) /
+          (itemReviews.length + rawReviewCount)) *
+          10
+      ) / 10
+    : Math.round(rawRating * 10) / 10;
+
+  const reviewCount = rawReviewCount + itemReviews.length;
 
   const isFavorite = favoriteIds.includes(id);
 
@@ -388,15 +396,55 @@ class MockApiService {
     // Lọc theo bộ lọc nâng cao
     if (filters) {
       if (filters.minPrice !== undefined && filters.maxPrice !== undefined) {
-        list = list.filter(
-          (item) => item.pricePerNight >= filters.minPrice! && item.pricePerNight <= filters.maxPrice!
-        );
+        list = list.filter((item) => {
+          const itemVnd = item.pricePerNight >= 1000 ? item.pricePerNight : item.pricePerNight * 25000;
+          const itemUsd = item.pricePerNight >= 1000 ? item.pricePerNight / 25000 : item.pricePerNight;
+          if (filters.maxPrice! > 1000) {
+            return itemVnd >= filters.minPrice! && itemVnd <= filters.maxPrice!;
+          } else {
+            return itemUsd >= filters.minPrice! && itemUsd <= filters.maxPrice!;
+          }
+        });
       }
+      if (filters.placeTypes && filters.placeTypes.length > 0 && filters.placeTypes.length < 3) {
+        list = list.filter((item) => {
+          const cat = (item.category || '').toLowerCase();
+          const title = (item.title || '').toLowerCase();
+          const isEntire = cat === 'villa' || cat === 'camping' || title.includes('căn hộ') || title.includes('villa') || title.includes('bungalow') || title.includes('nhà');
+          const isDorm = title.includes('ký túc') || title.includes('dorm') || cat === 'camping';
+          const isPrivate = !isEntire && !isDorm;
+
+          if (filters.placeTypes!.includes('entire') && isEntire) return true;
+          if (filters.placeTypes!.includes('private') && isPrivate) return true;
+          if (filters.placeTypes!.includes('dorm') && isDorm) return true;
+          return false;
+        });
+      }
+
       if (filters.facilities && filters.facilities.length > 0) {
         list = list.filter((item) =>
-          filters.facilities!.every((fac) =>
-            item.amenities.some((a) => a.toLowerCase().includes(fac.toLowerCase()))
-          )
+          filters.facilities!.every((fac) => {
+            const fLower = fac.toLowerCase();
+            return item.amenities.some((a) => {
+              const aLower = a.toLowerCase();
+              if (fLower === 'kitchen' || fLower === 'bếp') {
+                return aLower.includes('bếp') || aLower.includes('kitchen');
+              }
+              if (fLower === 'pool' || fLower === 'hồ bơi' || fLower === 'bể bơi') {
+                return aLower.includes('hồ bơi') || aLower.includes('bể bơi') || aLower.includes('pool');
+              }
+              if (fLower === 'gym' || fLower === 'phòng gym') {
+                return aLower.includes('gym') || aLower.includes('thể dục') || aLower.includes('fitness');
+              }
+              if (fLower.includes('outdoor') || fLower.includes('ngoài trời') || fLower.includes('vườn') || fLower.includes('space')) {
+                return aLower.includes('ngoài trời') || aLower.includes('vườn') || aLower.includes('outdoor') || aLower.includes('garden') || aLower.includes('sân');
+              }
+              if (fLower.includes('internet') || fLower.includes('wifi') || fLower.includes('mạng')) {
+                return aLower.includes('wifi') || aLower.includes('internet') || aLower.includes('mạng');
+              }
+              return aLower.includes(fLower);
+            });
+          })
         );
       }
       if (filters.bedrooms && filters.bedrooms > 0) {
@@ -412,6 +460,15 @@ class MockApiService {
         list = list.filter((item) => item.rating >= filters.minRating!);
       }
     }
+
+    // Đưa các sản phẩm được đánh giá cao lên đầu
+    list.sort((a, b) => {
+      const diff = (b.rating || 0) - (a.rating || 0);
+      if (Math.abs(diff) > 0.01) {
+        return diff;
+      }
+      return (b.reviewCount || 0) - (a.reviewCount || 0);
+    });
 
     return list;
   }

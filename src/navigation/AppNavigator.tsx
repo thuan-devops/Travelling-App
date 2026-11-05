@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, BackHandler } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { Accommodation, BookingDetails, BottomTabType, SearchFilterState } from '../types';
 import { INITIAL_ACCOMMODATIONS, mockApi } from '../api/mockApi';
+import { notificationService } from '../services/notificationService';
 
 // Screens
 import { SplashScreen } from '../screens/SplashScreen';
 import { AuthScreen } from '../screens/AuthScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { SearchResultsScreen } from '../screens/SearchResultsScreen';
-import { RoomDetailScreen } from '../screens/RoomDetailScreen';
+import { RoomDetailScreen, SelectedStayDates } from '../screens/RoomDetailScreen';
 import { FacilitiesScreen } from '../screens/FacilitiesScreen';
 import { ReviewsScreen } from '../screens/ReviewsScreen';
 import { DescriptionScreen } from '../screens/DescriptionScreen';
@@ -43,6 +44,7 @@ export const AppNavigator: React.FC = () => {
   const { user } = useAuth();
   const [showSplash, setShowSplash] = useState<boolean>(true);
   const [currentScreen, setCurrentScreen] = useState<ScreenName>('HOME');
+  const [history, setHistory] = useState<ScreenName[]>(['HOME']);
 
   // Search State & Modal
   const [isSearchModalVisible, setIsSearchModalVisible] = useState<boolean>(false);
@@ -67,13 +69,44 @@ export const AppNavigator: React.FC = () => {
   const [activeStay, setActiveStay] = useState<Accommodation>(INITIAL_ACCOMMODATIONS[0]);
   const [bookings, setBookings] = useState<BookingDetails[]>([]);
   const [lastBooking, setLastBooking] = useState<BookingDetails | null>(null);
+  const [selectedBookingDates, setSelectedBookingDates] = useState<SelectedStayDates | undefined>();
 
-  // Track previous screen for AI Support back navigation
-  const [previousScreen, setPreviousScreen] = useState<ScreenName>('PROFILE');
+  // Navigation Stack Helpers
+  const navigateTo = (screen: ScreenName) => {
+    setCurrentScreen(screen);
+    setHistory((prev) => [...prev, screen]);
+  };
+
+  const goBack = () => {
+    setHistory((prev) => {
+      if (prev.length > 1) {
+        const next = prev.slice(0, -1);
+        setCurrentScreen(next[next.length - 1]);
+        return next;
+      }
+      setCurrentScreen('HOME');
+      return ['HOME'];
+    });
+  };
+
+  // Android Hardware Back button handling
+  useEffect(() => {
+    const onHardwareBack = () => {
+      if (history.length > 1 && currentScreen !== 'HOME') {
+        goBack();
+        return true; // handled, don't exit
+      }
+      return false; // at root HOME, allow system default
+    };
+
+    const sub = BackHandler.addEventListener('hardwareBackPress', onHardwareBack);
+    return () => sub.remove();
+  }, [history, currentScreen]);
 
   // Load persistent bookings on start and whenever user changes
-  React.useEffect(() => {
+  useEffect(() => {
     mockApi.setCurrentUserId(user ? user.id : null);
+    notificationService.setCurrentUserId(user ? user.id : null);
     mockApi.getBookings().then((data) => {
       setBookings(data);
       if (data.length > 0) {
@@ -84,31 +117,40 @@ export const AppNavigator: React.FC = () => {
     });
   }, [user]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!user) {
       setCurrentScreen('HOME');
+      setHistory(['HOME']);
     }
   }, [user]);
 
   // Handle Tab navigation
   const handleTabChange = (tab: BottomTabType) => {
+    let target: ScreenName = 'HOME';
     switch (tab) {
       case 'Search':
-        setCurrentScreen('HOME');
+        target = 'HOME';
         break;
       case 'Favorites':
-        setCurrentScreen('FAVORITES');
+        target = 'FAVORITES';
         break;
       case 'Bookings':
-        setCurrentScreen('BOOKINGS');
+        target = 'BOOKINGS';
         break;
       case 'Inbox':
-        setCurrentScreen('INBOX');
+        target = 'INBOX';
         break;
       case 'Profile':
-        setCurrentScreen('PROFILE');
+        target = 'PROFILE';
         break;
     }
+    setCurrentScreen(target);
+    setHistory([target]);
+  };
+
+  const handleSelectStay = (stay: Accommodation) => {
+    setActiveStay(stay);
+    navigateTo('ROOM_DETAIL');
   };
 
   // 1. Splash Screen
@@ -135,11 +177,9 @@ export const AppNavigator: React.FC = () => {
       {currentScreen === 'HOME' && (
         <HomeScreen
           onOpenSearch={() => setIsSearchModalVisible(true)}
-          onSelectStay={(stay) => {
-            setActiveStay(stay);
-            setCurrentScreen('ROOM_DETAIL');
-          }}
+          onSelectStay={handleSelectStay}
           onTabChange={handleTabChange}
+          onOpenAiSupport={() => navigateTo('AI_SUPPORT')}
         />
       )}
 
@@ -147,11 +187,11 @@ export const AppNavigator: React.FC = () => {
         <SearchResultsScreen
           filters={searchFilters}
           onOpenSearch={() => setIsSearchModalVisible(true)}
-          onSelectStay={(stay) => {
-            setActiveStay(stay);
-            setCurrentScreen('ROOM_DETAIL');
+          onSelectStay={handleSelectStay}
+          onBackToHome={() => {
+            setCurrentScreen('HOME');
+            setHistory(['HOME']);
           }}
-          onBackToHome={() => setCurrentScreen('HOME')}
           onTabChange={handleTabChange}
         />
       )}
@@ -159,26 +199,30 @@ export const AppNavigator: React.FC = () => {
       {currentScreen === 'ROOM_DETAIL' && (
         <RoomDetailScreen
           stay={activeStay}
-          onBack={() => setCurrentScreen('HOME')}
+          initialFilters={searchFilters}
+          onBack={goBack}
           onToggleFavorite={handleToggleFavorite}
-          onOpenFacilities={() => setCurrentScreen('FACILITIES')}
-          onOpenReviews={() => setCurrentScreen('REVIEWS')}
-          onOpenDescription={() => setCurrentScreen('DESCRIPTION')}
-          onBookNow={() => setCurrentScreen('CHECKOUT')}
+          onOpenFacilities={() => navigateTo('FACILITIES')}
+          onOpenReviews={() => navigateTo('REVIEWS')}
+          onOpenDescription={() => navigateTo('DESCRIPTION')}
+          onBookNow={(dates) => {
+            setSelectedBookingDates(dates);
+            navigateTo('CHECKOUT');
+          }}
         />
       )}
 
       {currentScreen === 'FACILITIES' && (
         <FacilitiesScreen
           stay={activeStay}
-          onBack={() => setCurrentScreen('ROOM_DETAIL')}
+          onBack={goBack}
         />
       )}
 
       {currentScreen === 'REVIEWS' && (
         <ReviewsScreen
           stay={activeStay}
-          onBack={() => setCurrentScreen('ROOM_DETAIL')}
+          onBack={goBack}
           onReviewAdded={(updatedStay) => setActiveStay(updatedStay)}
         />
       )}
@@ -186,7 +230,7 @@ export const AppNavigator: React.FC = () => {
       {currentScreen === 'DESCRIPTION' && (
         <DescriptionScreen
           stay={activeStay}
-          onBack={() => setCurrentScreen('ROOM_DETAIL')}
+          onBack={goBack}
         />
       )}
 
@@ -194,7 +238,8 @@ export const AppNavigator: React.FC = () => {
         <CheckoutScreen
           stay={activeStay}
           initialFilters={searchFilters}
-          onBack={() => setCurrentScreen('ROOM_DETAIL')}
+          selectedDates={selectedBookingDates}
+          onBack={goBack}
           onConfirmPayment={async (newBooking) => {
             const uniqueBooking: BookingDetails = {
               ...newBooking,
@@ -205,7 +250,21 @@ export const AppNavigator: React.FC = () => {
             const updated = await mockApi.saveBooking(uniqueBooking);
             setBookings(updated);
             setLastBooking(uniqueBooking);
+
+            try {
+              await notificationService.addNotification({
+                type: 'booking_success',
+                title: 'Đặt chuyến thành công 🎉',
+                message: `Chuyến đi đến "${uniqueBooking.accommodation.title}" đã được xác nhận. Nhận phòng: ${uniqueBooking.checkIn}, Trả phòng: ${uniqueBooking.checkOut}. Mã đặt chỗ: #${uniqueBooking.bookingId.slice(-8)}. Chúc bạn có kỳ nghỉ tuyệt vời!`,
+                bookingId: uniqueBooking.bookingId,
+                actionText: 'Xem chi tiết chuyến đi',
+              });
+            } catch (e) {
+              console.warn('Lỗi khi thêm thông báo đặt phòng:', e);
+            }
+
             setCurrentScreen('PAYMENT_SUCCESS');
+            setHistory(['HOME', 'PAYMENT_SUCCESS']);
           }}
         />
       )}
@@ -230,17 +289,21 @@ export const AppNavigator: React.FC = () => {
               paymentMethod: 'Thẻ tín dụng (Credit card)',
             }
           }
-          onViewBooking={() => setCurrentScreen('BOOKINGS')}
+          onViewBooking={() => {
+            setCurrentScreen('BOOKINGS');
+            setHistory(['BOOKINGS']);
+          }}
+          onExplore={() => {
+            setCurrentScreen('HOME');
+            setHistory(['HOME']);
+          }}
         />
       )}
 
       {currentScreen === 'FAVORITES' && (
         <FavoritesScreen
-          onBack={() => setCurrentScreen('HOME')}
-          onSelectStay={(stay) => {
-            setActiveStay(stay);
-            setCurrentScreen('ROOM_DETAIL');
-          }}
+          onBack={goBack}
+          onSelectStay={handleSelectStay}
           onTabChange={handleTabChange}
         />
       )}
@@ -248,15 +311,15 @@ export const AppNavigator: React.FC = () => {
       {currentScreen === 'BOOKINGS' && (
         <BookingsScreen
           bookings={bookings}
-          onExplore={() => setCurrentScreen('HOME')}
+          onExplore={() => {
+            setCurrentScreen('HOME');
+            setHistory(['HOME']);
+          }}
           onSelectBookingDetail={(booking) => {
             setLastBooking(booking);
-            setCurrentScreen('PAYMENT_SUCCESS');
+            navigateTo('PAYMENT_SUCCESS');
           }}
-          onRebook={(stay) => {
-            setActiveStay(stay);
-            setCurrentScreen('ROOM_DETAIL');
-          }}
+          onRebook={handleSelectStay}
           onTabChange={handleTabChange}
           onBookingsUpdated={setBookings}
         />
@@ -265,17 +328,14 @@ export const AppNavigator: React.FC = () => {
       {currentScreen === 'INBOX' && (
         <InboxScreen
           onTabChange={handleTabChange}
-          onOpenAiSupport={() => {
-            setPreviousScreen('INBOX');
-            setCurrentScreen('AI_SUPPORT');
-          }}
+          onOpenAiSupport={() => navigateTo('AI_SUPPORT')}
           onViewBooking={(bookingId) => {
             const found = bookings.find((b) => b.bookingId === bookingId);
             if (found) {
               setLastBooking(found);
-              setCurrentScreen('PAYMENT_SUCCESS');
+              navigateTo('PAYMENT_SUCCESS');
             } else {
-              setCurrentScreen('BOOKINGS');
+              navigateTo('BOOKINGS');
             }
           }}
         />
@@ -284,20 +344,14 @@ export const AppNavigator: React.FC = () => {
       {currentScreen === 'PROFILE' && (
         <ProfileScreen
           onTabChange={handleTabChange}
-          onOpenAiSupport={() => {
-            setPreviousScreen('PROFILE');
-            setCurrentScreen('AI_SUPPORT');
-          }}
+          onOpenAiSupport={() => navigateTo('AI_SUPPORT')}
         />
       )}
 
       {currentScreen === 'AI_SUPPORT' && (
         <AiSupportScreen
-          onBack={() => setCurrentScreen(previousScreen)}
-          onSelectStay={(stay) => {
-            setActiveStay(stay);
-            setCurrentScreen('ROOM_DETAIL');
-          }}
+          onBack={goBack}
+          onSelectStay={handleSelectStay}
           onApplyFiltersToSearch={(filters) => {
             setSearchFilters((prev) => ({
               ...prev,
@@ -306,7 +360,7 @@ export const AppNavigator: React.FC = () => {
               minPrice: filters.minPrice || prev.minPrice,
               facilities: filters.amenities && filters.amenities.length > 0 ? filters.amenities : prev.facilities,
             }));
-            setCurrentScreen('SEARCH_RESULTS');
+            navigateTo('SEARCH_RESULTS');
           }}
           onTabChange={handleTabChange}
         />
@@ -319,7 +373,7 @@ export const AppNavigator: React.FC = () => {
         initialFilters={searchFilters}
         onSearch={(newFilters) => {
           setSearchFilters(newFilters);
-          setCurrentScreen('SEARCH_RESULTS');
+          navigateTo('SEARCH_RESULTS');
         }}
       />
     </View>

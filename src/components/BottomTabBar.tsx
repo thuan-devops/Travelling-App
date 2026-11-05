@@ -18,7 +18,7 @@ interface TabItem {
 }
 
 const TABS: TabItem[] = [
-  { key: 'Search', label: 'Tìm kiếm', activeIcon: 'search', inactiveIcon: 'search-outline' },
+  { key: 'Search', label: 'Khám phá', activeIcon: 'compass', inactiveIcon: 'compass-outline' },
   { key: 'Favorites', label: 'Yêu thích', activeIcon: 'heart', inactiveIcon: 'heart-outline' },
   { key: 'Bookings', label: 'Chuyến đi', activeIcon: 'grid', inactiveIcon: 'grid-outline' },
   { key: 'Inbox', label: 'Hộp thư', activeIcon: 'chatbubble-ellipses', inactiveIcon: 'chatbubble-ellipses-outline' },

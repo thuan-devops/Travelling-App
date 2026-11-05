@@ -33,16 +33,54 @@ const INITIAL_NOTIFICATIONS: AppNotification[] = [
 ];
 
 class NotificationService {
+  private currentUserId: string | null = null;
+
+  setCurrentUserId(userId: string | null) {
+    this.currentUserId = userId ? String(userId) : null;
+  }
+
+  getCurrentUserId(): string | null {
+    return this.currentUserId;
+  }
+
+  private async getStorageKey(): Promise<string> {
+    if (this.currentUserId) {
+      return `@travelling_app_notifications_${this.currentUserId}`;
+    }
+    try {
+      const stored = await AsyncStorage.getItem('@travelling_app_user_session');
+      if (stored) {
+        const u = JSON.parse(stored);
+        if (u?.id || u?.email) {
+          this.currentUserId = String(u.id || u.email);
+          return `@travelling_app_notifications_${this.currentUserId}`;
+        }
+      }
+    } catch {}
+    return '@travelling_app_notifications_guest';
+  }
+
   async getNotifications(): Promise<AppNotification[]> {
     try {
-      const raw = await AsyncStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+      const key = await this.getStorageKey();
+      const raw = await AsyncStorage.getItem(key);
       if (raw) {
         return JSON.parse(raw);
       }
-      await AsyncStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(INITIAL_NOTIFICATIONS));
-      return INITIAL_NOTIFICATIONS;
+      const initial: AppNotification[] = [
+        {
+          id: `notif-${Date.now()}-welcome`,
+          type: 'system_promo',
+          title: 'Chào mừng bạn đến với Travelling App 🎁',
+          message: 'Chào mừng bạn! Nhận ngay voucher ưu đãi và dịch vụ hỗ trợ chu đáo cho các chuyến đi sắp tới.',
+          time: 'Hôm nay',
+          read: false,
+        },
+      ];
+      await AsyncStorage.setItem(key, JSON.stringify(initial));
+      return initial;
     } catch {
-      return INITIAL_NOTIFICATIONS;
+      return [];
     }
   }
 
@@ -50,6 +88,7 @@ class NotificationService {
     data: Omit<AppNotification, 'id' | 'time' | 'read'>
   ): Promise<AppNotification[]> {
     try {
+      const key = await this.getStorageKey();
       const existing = await this.getNotifications();
       const newNotif: AppNotification = {
         ...data,
@@ -58,7 +97,7 @@ class NotificationService {
         read: false,
       };
       const updated = [newNotif, ...existing];
-      await AsyncStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
+      await AsyncStorage.setItem(key, JSON.stringify(updated));
       return updated;
     } catch {
       return [];
@@ -67,9 +106,10 @@ class NotificationService {
 
   async markAsRead(id: string): Promise<AppNotification[]> {
     try {
+      const key = await this.getStorageKey();
       const existing = await this.getNotifications();
       const updated = existing.map((n) => (n.id === id ? { ...n, read: true } : n));
-      await AsyncStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
+      await AsyncStorage.setItem(key, JSON.stringify(updated));
       return updated;
     } catch {
       return [];
@@ -78,9 +118,10 @@ class NotificationService {
 
   async markAllAsRead(): Promise<AppNotification[]> {
     try {
+      const key = await this.getStorageKey();
       const existing = await this.getNotifications();
       const updated = existing.map((n) => ({ ...n, read: true }));
-      await AsyncStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
+      await AsyncStorage.setItem(key, JSON.stringify(updated));
       return updated;
     } catch {
       return [];
@@ -89,9 +130,10 @@ class NotificationService {
 
   async deleteNotification(id: string): Promise<AppNotification[]> {
     try {
+      const key = await this.getStorageKey();
       const existing = await this.getNotifications();
       const updated = existing.filter((n) => n.id !== id);
-      await AsyncStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
+      await AsyncStorage.setItem(key, JSON.stringify(updated));
       return updated;
     } catch {
       return [];

@@ -1,13 +1,13 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CategoryItem, StayCategory } from '../types';
 import { useTheme } from '../context/ThemeContext';
 
 interface CategorySelectorProps {
   categories: CategoryItem[];
   selectedCategory: StayCategory | 'All';
-  onSelectCategory: (category: StayCategory) => void;
+  onSelectCategory: (category: StayCategory | 'All') => void;
 }
 
 export const CategorySelector: React.FC<CategorySelectorProps> = ({
@@ -17,19 +17,21 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
 }) => {
   const { isDarkMode, colors } = useTheme();
 
-  // Map category to accurate icon matching screenshot 3
-  const getIconName = (category: StayCategory): keyof typeof Ionicons.glyphMap => {
-    switch (category) {
+  // Ánh xạ icon chuẩn du lịch chuyên nghiệp, trực quan
+  const getIconName = (categoryId: StayCategory | 'All'): keyof typeof MaterialCommunityIcons.glyphMap => {
+    switch (categoryId) {
+      case 'All':
+        return 'apps';
       case 'Beach':
-        return 'umbrella-outline';
+        return 'beach'; // Bãi biển & cây dừa
       case 'Mountain':
-        return 'triangle-outline';
+        return 'image-filter-hdr'; // Dãy núi non tuyết hùng vĩ
       case 'Camping':
-        return 'bonfire-outline';
+        return 'tent'; // Lều cắm trại ngoài trời
       case 'City':
-        return 'business-outline';
+        return 'city-variant-outline'; // Các tòa cao ốc đô thị
       case 'Villa':
-        return 'home-outline';
+        return 'home-modern'; // Biệt thự nghỉ dưỡng sang trọng
       default:
         return 'compass-outline';
     }
@@ -51,9 +53,9 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
               activeOpacity={0.7}
               onPress={() => onSelectCategory(cat.id)}
             >
-              <Ionicons
+              <MaterialCommunityIcons
                 name={getIconName(cat.id)}
-                size={22}
+                size={23}
                 color={isActive ? '#00BDD6' : (isDarkMode ? '#94A3B8' : '#6B7280')}
               />
               <Text style={[styles.categoryLabel, { color: isDarkMode ? '#94A3B8' : '#6B7280' }, isActive && styles.activeLabel]}>

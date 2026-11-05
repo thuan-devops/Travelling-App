@@ -41,6 +41,10 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
   const [currentFilters, setCurrentFilters] = useState<SearchFilterState>(filters);
 
   useEffect(() => {
+    setCurrentFilters(filters);
+  }, [filters]);
+
+  useEffect(() => {
     loadResults();
   }, [currentFilters]);
 
@@ -78,7 +82,8 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
       ? 'Bất kỳ đâu'
       : currentFilters.destination;
   const guestCount = (currentFilters.adults || 0) + (currentFilters.children || 0) || 2;
-  const headerSummaryText = `${destSummary}, ${dateSummary}, ${guestCount} khách`;
+  const ratingBadge = currentFilters.minRating ? ` • ⭐ ${currentFilters.minRating}+` : '';
+  const headerSummaryText = `${destSummary}, ${dateSummary}, ${guestCount} khách${ratingBadge}`;
 
   const renderStayCard = ({ item }: { item: Accommodation }) => {
     const hasSpecificNights = !!(
@@ -161,6 +166,42 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
           </TouchableOpacity>
         </TouchableOpacity>
       </View>
+
+      {/* ACTIVE FILTER CHIPS */}
+      {(currentFilters.minRating || (currentFilters.minPrice > 0 || (currentFilters.maxPrice && currentFilters.maxPrice < 10000000))) ? (
+        <View style={styles.activeChipsRow}>
+          {!!currentFilters.minRating && (
+            <TouchableOpacity
+              style={styles.activeChipPill}
+              onPress={() => setCurrentFilters((prev) => ({ ...prev, minRating: undefined }))}
+            >
+              <Ionicons name="star" size={13} color="#F59E0B" style={{ marginRight: 4 }} />
+              <Text style={styles.activeChipText}>Từ {currentFilters.minRating}★</Text>
+              <Ionicons name="close-circle" size={14} color="#6B7280" style={{ marginLeft: 4 }} />
+            </TouchableOpacity>
+          )}
+
+          {(currentFilters.minPrice > 0 || (currentFilters.maxPrice && currentFilters.maxPrice < 10000000)) && (
+            <TouchableOpacity
+              style={styles.activeChipPill}
+              onPress={() => setCurrentFilters((prev) => ({ ...prev, minPrice: 0, maxPrice: 10000000 }))}
+            >
+              <Ionicons name="pricetag" size={12} color="#00BDD6" style={{ marginRight: 4 }} />
+              <Text style={styles.activeChipText}>
+                {currentFilters.minPrice > 0 ? `${(currentFilters.minPrice / 1000000).toFixed(1)}Tr` : '0đ'} - {currentFilters.maxPrice && currentFilters.maxPrice < 10000000 ? `${(currentFilters.maxPrice / 1000000).toFixed(1)}Tr` : 'Max'}
+              </Text>
+              <Ionicons name="close-circle" size={14} color="#6B7280" style={{ marginLeft: 4 }} />
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            onPress={() => setCurrentFilters((prev) => ({ ...prev, minRating: undefined, minPrice: 0, maxPrice: 10000000 }))}
+            style={{ paddingHorizontal: 6, justifyContent: 'center' }}
+          >
+            <Text style={{ fontSize: 12, color: '#EF4444', fontWeight: '600' }}>Xóa lọc</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
 
       {/* TOGGLE ROW: Present total price (Page 7) */}
       <View style={styles.totalPriceToggleRow}>
@@ -400,5 +441,36 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     textAlign: 'center',
     lineHeight: 22,
+  },
+  activeChipsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 6,
+    flexWrap: 'wrap',
+    gap: 8,
+    backgroundColor: '#F8FAFC',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  activeChipPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#00BDD6',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  activeChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F766E',
   },
 });

@@ -17,11 +17,13 @@ import { useCurrency } from '../context/CurrencyContext';
 interface PaymentSuccessScreenProps {
   booking: BookingDetails;
   onViewBooking: () => void;
+  onExplore?: () => void;
 }
 
 export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
   booking,
   onViewBooking,
+  onExplore,
 }) => {
   const { formatPrice } = useCurrency();
   const [isExporting, setIsExporting] = useState<boolean>(false);
@@ -86,6 +88,40 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
           </View>
 
           <View style={styles.receiptRow}>
+            <Text style={styles.receiptLabel}>Giờ nhận / trả phòng</Text>
+            <Text style={[styles.receiptValueBold, { color: '#0F766E' }]}>
+              Từ {booking.accommodation.rules?.checkIn || '14:00'} • Trước {booking.accommodation.rules?.checkOut || '12:00'}
+            </Text>
+          </View>
+
+          {booking.estimatedCheckInTime && (
+            <View style={styles.receiptRow}>
+              <Text style={styles.receiptLabel}>Giờ đến dự kiến</Text>
+              <Text style={[styles.receiptValueBold, { color: '#0F766E' }]}>
+                {booking.estimatedCheckInTime}
+              </Text>
+            </View>
+          )}
+
+          {booking.servicePackageName && (
+            <View style={styles.receiptRow}>
+              <Text style={styles.receiptLabel}>Gói dịch vụ</Text>
+              <Text style={[styles.receiptValueBold, { color: '#D97706' }]}>
+                {booking.servicePackageName}
+              </Text>
+            </View>
+          )}
+
+          {booking.contactName && (
+            <View style={styles.receiptRow}>
+              <Text style={styles.receiptLabel}>Khách nhận phòng</Text>
+              <Text style={styles.receiptValueBold}>
+                {booking.contactName} {booking.contactPhone ? `(${booking.contactPhone})` : ''}
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.receiptRow}>
             <Text style={styles.receiptLabel}>
               {booking.paymentType === 'part' ? 'Đã thanh toán trước (50%)' : 'Số tiền đã thanh toán'}
             </Text>
@@ -126,7 +162,7 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
 
         </View>
 
-        {/* BOTTOM VIEW BOOKING BUTTON */}
+        {/* BOTTOM ACTION BUTTONS */}
         <View style={styles.footer}>
           <TouchableOpacity
             style={styles.viewBookingButton}
@@ -135,6 +171,17 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
           >
             <Text style={styles.viewBookingText}>Xem đặt phòng</Text>
           </TouchableOpacity>
+
+          {onExplore && (
+            <TouchableOpacity
+              style={styles.exploreButton}
+              activeOpacity={0.8}
+              onPress={onExplore}
+            >
+              <Ionicons name="compass-outline" size={18} color="#00BDD6" style={{ marginRight: 6 }} />
+              <Text style={styles.exploreButtonText}>Tiếp tục khám phá</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </SafeAreaView>
@@ -294,6 +341,22 @@ const styles = StyleSheet.create({
   viewBookingText: {
     color: '#FFFFFF',
     fontSize: 16,
+    fontWeight: '700',
+  },
+  exploreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#00BDD6',
+    borderRadius: 10,
+    paddingVertical: 12,
+    marginTop: 10,
+  },
+  exploreButtonText: {
+    color: '#00BDD6',
+    fontSize: 15,
     fontWeight: '700',
   },
 });

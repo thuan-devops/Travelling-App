@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -26,39 +26,79 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   onApply,
   initialFilters,
 }) => {
-  const { formatPrice } = useCurrency();
-  const [minPrice, setMinPrice] = useState<number>(initialFilters?.minPrice || 10);
-  const [maxPrice, setMaxPrice] = useState<number>(initialFilters?.maxPrice || 250);
+  const { formatPrice, currency } = useCurrency();
+  const isVnd = currency === 'VND';
+
+  // Normalize initial min/max prices (support VND & USD)
+  const defaultMin = 0;
+  const defaultMax = isVnd ? 20000000 : 800;
+
+  const [minPrice, setMinPrice] = useState<number>(
+    initialFilters?.minPrice !== undefined ? initialFilters.minPrice : defaultMin
+  );
+  const [maxPrice, setMaxPrice] = useState<number>(
+    initialFilters?.maxPrice !== undefined ? initialFilters.maxPrice : defaultMax
+  );
 
   // Type of place
   const [entirePlace, setEntirePlace] = useState<boolean>(true);
-  const [privateRoom, setPrivateRoom] = useState<boolean>(false);
+  const [privateRoom, setPrivateRoom] = useState<boolean>(true);
   const [dormitories, setDormitories] = useState<boolean>(false);
 
-  // Rooms and beds
-  const [bedrooms, setBedrooms] = useState<number>(initialFilters?.bedrooms || 1);
-  const [beds, setBeds] = useState<number>(initialFilters?.beds || 1);
-  const [bathrooms, setBathrooms] = useState<number>(initialFilters?.bathrooms || 1);
+  // Rooms and beds (0 = Bất kỳ)
+  const [bedrooms, setBedrooms] = useState<number>(initialFilters?.bedrooms || 0);
+  const [beds, setBeds] = useState<number>(initialFilters?.beds || 0);
+  const [bathrooms, setBathrooms] = useState<number>(initialFilters?.bathrooms || 0);
 
-  // Facilities
-  const [kitchen, setKitchen] = useState<boolean>(true);
+  // Facilities - default to false so they don't block all listings
+  const [kitchen, setKitchen] = useState<boolean>(false);
   const [pool, setPool] = useState<boolean>(false);
   const [gym, setGym] = useState<boolean>(false);
-  const [outdoorSpace, setOutdoorSpace] = useState<boolean>(true);
-  const [internetAccess, setInternetAccess] = useState<boolean>(true);
+  const [outdoorSpace, setOutdoorSpace] = useState<boolean>(false);
+  const [internetAccess, setInternetAccess] = useState<boolean>(false);
 
   // Star Rating
   const [minRating, setMinRating] = useState<number>(initialFilters?.minRating || 0);
 
+  // Sync when initialFilters changes
+  useEffect(() => {
+    if (initialFilters) {
+      if (initialFilters.minPrice !== undefined) setMinPrice(initialFilters.minPrice);
+      if (initialFilters.maxPrice !== undefined) setMaxPrice(initialFilters.maxPrice);
+      if (initialFilters.minRating !== undefined) setMinRating(initialFilters.minRating);
+      if (initialFilters.bedrooms !== undefined) setBedrooms(initialFilters.bedrooms);
+      if (initialFilters.beds !== undefined) setBeds(initialFilters.beds);
+      if (initialFilters.bathrooms !== undefined) setBathrooms(initialFilters.bathrooms);
+      if (initialFilters.facilities) {
+        setKitchen(initialFilters.facilities.some((f) => f.toLowerCase().includes('bếp') || f.toLowerCase().includes('kitchen')));
+        setPool(initialFilters.facilities.some((f) => f.toLowerCase().includes('hồ bơi') || f.toLowerCase().includes('pool')));
+        setGym(initialFilters.facilities.some((f) => f.toLowerCase().includes('gym')));
+        setOutdoorSpace(initialFilters.facilities.some((f) => f.toLowerCase().includes('ngoài trời') || f.toLowerCase().includes('outdoor')));
+        setInternetAccess(initialFilters.facilities.some((f) => f.toLowerCase().includes('wifi') || f.toLowerCase().includes('internet')));
+      }
+    }
+  }, [initialFilters]);
+
+  // Adjust price helper
+  const stepAmount = isVnd ? 500000 : 20;
+
+  const handleAdjustMin = (delta: number) => {
+    setMinPrice((prev) => Math.max(0, Math.min(prev + delta, maxPrice - stepAmount)));
+  };
+
+  const handleAdjustMax = (delta: number) => {
+    setMaxPrice((prev) => Math.max(minPrice + stepAmount, prev + delta));
+  };
+
   const handleClearAll = () => {
-    setMinPrice(100000);
-    setMaxPrice(5000000);
+    setMinPrice(0);
+    setMaxPrice(defaultMax);
     setEntirePlace(true);
-    setPrivateRoom(false);
-    setDormitories(false);
-    setBedrooms(1);
-    setBeds(1);
-    setBathrooms(1);
+    setPrivateRoom(true);
+    setDormitories(true);
+    setBedrooms(0);
+    setBeds(0);
+    setBathrooms(0);
     setKitchen(false);
     setPool(false);
     setGym(false);
@@ -69,18 +109,24 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
   const handleApply = () => {
     const selectedFacilities: string[] = [];
-    if (kitchen) selectedFacilities.push('Kitchen');
-    if (pool) selectedFacilities.push('Pool');
+    if (kitchen) selectedFacilities.push('Bếp');
+    if (pool) selectedFacilities.push('Hồ bơi');
     if (gym) selectedFacilities.push('Gym');
-    if (outdoorSpace) selectedFacilities.push('Outdoor space');
-    if (internetAccess) selectedFacilities.push('Internet access');
+    if (outdoorSpace) selectedFacilities.push('Không gian ngoài trời');
+    if (internetAccess) selectedFacilities.push('Wifi');
+
+    const selectedPlaceTypes: ('entire' | 'private' | 'dorm')[] = [];
+    if (entirePlace) selectedPlaceTypes.push('entire');
+    if (privateRoom) selectedPlaceTypes.push('private');
+    if (dormitories) selectedPlaceTypes.push('dorm');
 
     onApply({
       minPrice,
       maxPrice,
-      bedrooms,
-      beds,
-      bathrooms,
+      placeTypes: selectedPlaceTypes.length > 0 ? selectedPlaceTypes : ['entire', 'private'],
+      bedrooms: bedrooms > 0 ? bedrooms : 0,
+      beds: beds > 0 ? beds : 0,
+      bathrooms: bathrooms > 0 ? bathrooms : 0,
       minRating: minRating > 0 ? minRating : undefined,
       facilities: selectedFacilities,
     });
@@ -97,228 +143,270 @@ export const FilterModal: React.FC<FilterModalProps> = ({
       <View style={styles.modalOverlay}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.phoneContainer}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={{ width: 24 }} />
-          <Text style={styles.headerTitle}>Bộ lọc</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-            <Ionicons name="close" size={24} color="#374151" />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* PRICE RANGE */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Khoảng giá</Text>
-
-            {/* Slider track visual representation */}
-            <View style={styles.sliderContainer}>
-              <View style={styles.sliderTrackBackground} />
-              <View style={styles.sliderTrackActive} />
-              <View style={[styles.sliderHandle, { left: '15%' }]}>
-                <Ionicons name="chevron-back" size={14} color="#FFFFFF" />
-              </View>
-              <View style={[styles.sliderHandle, { right: '15%' }]}>
-                <Ionicons name="chevron-forward" size={14} color="#FFFFFF" />
-              </View>
-            </View>
-
-            <View style={styles.priceBoxesRow}>
-              <View style={styles.priceBox}>
-                <Text style={styles.priceLabel}>Tối thiểu</Text>
-                <Text style={styles.priceValue}>{formatPrice(minPrice)}</Text>
-              </View>
-              <Text style={styles.priceDivider}>—</Text>
-              <View style={styles.priceBox}>
-                <Text style={styles.priceLabel}>Tối đa</Text>
-                <Text style={styles.priceValue}>{formatPrice(maxPrice)}</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* TYPE OF PLACE */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Loại chỗ ở</Text>
-
-            <TouchableOpacity
-              style={styles.checkboxRow}
-              activeOpacity={0.7}
-              onPress={() => setEntirePlace(!entirePlace)}
-            >
-              <View style={styles.checkboxInfo}>
-                <Text style={styles.optionTitle}>Toàn bộ nhà</Text>
-                <Text style={styles.optionSubtitle}>Toàn bộ căn hộ, chung cư, nhà riêng</Text>
-              </View>
-              <View style={[styles.checkbox, entirePlace && styles.checkboxActive]}>
-                {entirePlace && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.checkboxRow}
-              activeOpacity={0.7}
-              onPress={() => setPrivateRoom(!privateRoom)}
-            >
-              <View style={styles.checkboxInfo}>
-                <Text style={styles.optionTitle}>Phòng riêng</Text>
-                <Text style={styles.optionSubtitle}>
-                  Thường có phòng tắm riêng trừ khi có ghi chú khác
-                </Text>
-              </View>
-              <View style={[styles.checkbox, privateRoom && styles.checkboxActive]}>
-                {privateRoom && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.checkboxRow}
-              activeOpacity={0.7}
-              onPress={() => setDormitories(!dormitories)}
-            >
-              <View style={styles.checkboxInfo}>
-                <Text style={styles.optionTitle}>Phòng tập thể / Ký túc xá</Text>
-                <Text style={styles.optionSubtitle}>
-                  Phòng lớn nhiều giường chia sẻ với người khác
-                </Text>
-              </View>
-              <View style={[styles.checkbox, dormitories && styles.checkboxActive]}>
-                {dormitories && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          {/* ROOMS AND BEDS */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Phòng ngủ và giường</Text>
-
-            <View style={styles.counterItemRow}>
-              <Text style={styles.counterItemLabel}>Phòng ngủ</Text>
-              <View style={styles.pillSelectorRow}>
-                {[1, 2, 3, 4].map((num) => (
-                  <TouchableOpacity
-                    key={num}
-                    style={[styles.countPill, bedrooms === num && styles.countPillActive]}
-                    onPress={() => setBedrooms(num)}
-                  >
-                    <Text style={[styles.countPillText, bedrooms === num && styles.countPillTextActive]}>
-                      {num}+
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.counterItemRow}>
-              <Text style={styles.counterItemLabel}>Giường</Text>
-              <View style={styles.pillSelectorRow}>
-                {[1, 2, 3, 4].map((num) => (
-                  <TouchableOpacity
-                    key={num}
-                    style={[styles.countPill, beds === num && styles.countPillActive]}
-                    onPress={() => setBeds(num)}
-                  >
-                    <Text style={[styles.countPillText, beds === num && styles.countPillTextActive]}>
-                      {num}+
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.counterItemRow}>
-              <Text style={styles.counterItemLabel}>Phòng tắm</Text>
-              <View style={styles.pillSelectorRow}>
-                {[1, 2, 3].map((num) => (
-                  <TouchableOpacity
-                    key={num}
-                    style={[styles.countPill, bathrooms === num && styles.countPillActive]}
-                    onPress={() => setBathrooms(num)}
-                  >
-                    <Text style={[styles.countPillText, bathrooms === num && styles.countPillTextActive]}>
-                      {num}+
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </View>
-
-          {/* STAR RATING FILTER */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Đánh giá sao</Text>
-            <View style={styles.ratingChipsRow}>
-              {[
-                { value: 0, label: 'Tất cả' },
-                { value: 5, label: '5★' },
-                { value: 4, label: '4★ trở lên' },
-                { value: 3, label: '3★ trở lên' },
-                { value: 2, label: '2★ trở lên' },
-                { value: 1, label: '1★ trở lên' },
-              ].map((rate) => (
-                <TouchableOpacity
-                  key={rate.value}
-                  style={[
-                    styles.ratingChip,
-                    minRating === rate.value && styles.ratingChipActive,
-                  ]}
-                  onPress={() => setMinRating(rate.value)}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="star"
-                    size={14}
-                    color={minRating === rate.value ? '#FFFFFF' : '#F59E0B'}
-                    style={{ marginRight: 4 }}
-                  />
-                  <Text
-                    style={[
-                      styles.ratingChipText,
-                      minRating === rate.value && styles.ratingChipTextActive,
-                    ]}
-                  >
-                    {rate.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* FACILITIES */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Tiện nghi</Text>
-
-            {[
-              { label: 'Bếp', checked: kitchen, setChecked: setKitchen },
-              { label: 'Hồ bơi', checked: pool, setChecked: setPool },
-              { label: 'Phòng gym', checked: gym, setChecked: setGym },
-              { label: 'Không gian ngoài trời', checked: outdoorSpace, setChecked: setOutdoorSpace },
-              { label: 'Kết nối Internet', checked: internetAccess, setChecked: setInternetAccess },
-            ].map((fac) => (
-              <TouchableOpacity
-                key={fac.label}
-                style={styles.facilityRow}
-                activeOpacity={0.7}
-                onPress={() => fac.setChecked(!fac.checked)}
-              >
-                <Text style={styles.facilityLabel}>{fac.label}</Text>
-                <View style={[styles.checkbox, fac.checked && styles.checkboxActive]}>
-                  {fac.checked && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
-                </View>
+            {/* Header */}
+            <View style={styles.header}>
+              <View style={{ width: 24 }} />
+              <Text style={styles.headerTitle}>Bộ lọc nâng cao</Text>
+              <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+                <Ionicons name="close" size={24} color="#374151" />
               </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
+            </View>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <TouchableOpacity onPress={handleClearAll}>
-            <Text style={styles.clearAllText}>Xóa tất cả</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
-            <Text style={styles.applyButtonText}>Xem kết quả</Text>
-          </TouchableOpacity>
-        </View>
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+              {/* 1. PRICE RANGE */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Khoảng giá mỗi đêm</Text>
 
+                {/* Quick Presets */}
+                <View style={styles.presetsRow}>
+                  {[
+                    { label: 'Tất cả giá', min: 0, max: defaultMax },
+                    { label: isVnd ? '< 1 triệu' : '< $40', min: 0, max: isVnd ? 1000000 : 40 },
+                    { label: isVnd ? '1 - 2.5 triệu' : '$40 - $100', min: isVnd ? 1000000 : 40, max: isVnd ? 2500000 : 100 },
+                    { label: isVnd ? '2.5 - 5 triệu' : '$100 - $200', min: isVnd ? 2500000 : 100, max: isVnd ? 5000000 : 200 },
+                    { label: isVnd ? '> 5 triệu' : '> $200', min: isVnd ? 5000000 : 200, max: isVnd ? 25000000 : 1000 },
+                  ].map((p, idx) => {
+                    const isSel = minPrice === p.min && maxPrice === p.max;
+                    return (
+                      <TouchableOpacity
+                        key={idx}
+                        style={[styles.presetChip, isSel && styles.presetChipActive]}
+                        onPress={() => {
+                          setMinPrice(p.min);
+                          setMaxPrice(p.max);
+                        }}
+                      >
+                        <Text style={[styles.presetChipText, isSel && styles.presetChipTextActive]}>
+                          {p.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {/* Interactive Stepper Boxes */}
+                <View style={styles.priceBoxesRow}>
+                  {/* Min Price Box */}
+                  <View style={styles.priceBox}>
+                    <Text style={styles.priceLabel}>Tối thiểu</Text>
+                    <Text style={styles.priceValue}>{formatPrice(minPrice)}</Text>
+                    <View style={styles.stepperRow}>
+                      <TouchableOpacity
+                        style={styles.stepperBtn}
+                        onPress={() => handleAdjustMin(-stepAmount)}
+                        disabled={minPrice <= 0}
+                      >
+                        <Ionicons name="remove" size={14} color={minPrice <= 0 ? '#CBD5E1' : '#00BDD6'} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.stepperBtn}
+                        onPress={() => handleAdjustMin(stepAmount)}
+                      >
+                        <Ionicons name="add" size={14} color="#00BDD6" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  <Text style={styles.priceDivider}>➔</Text>
+
+                  {/* Max Price Box */}
+                  <View style={styles.priceBox}>
+                    <Text style={styles.priceLabel}>Tối đa</Text>
+                    <Text style={styles.priceValue}>{formatPrice(maxPrice)}</Text>
+                    <View style={styles.stepperRow}>
+                      <TouchableOpacity
+                        style={styles.stepperBtn}
+                        onPress={() => handleAdjustMax(-stepAmount)}
+                        disabled={maxPrice <= minPrice + stepAmount}
+                      >
+                        <Ionicons name="remove" size={14} color={maxPrice <= minPrice + stepAmount ? '#CBD5E1' : '#00BDD6'} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.stepperBtn}
+                        onPress={() => handleAdjustMax(stepAmount)}
+                      >
+                        <Ionicons name="add" size={14} color="#00BDD6" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </View>
+
+              {/* 2. STAR RATING FILTER */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Đánh giá sao chất lượng</Text>
+                <View style={styles.ratingChipsRow}>
+                  {[
+                    { value: 0, label: 'Tất cả' },
+                    { value: 4.8, label: '4.8★+ (Xuất sắc)' },
+                    { value: 4, label: '4★+ (Rất tốt)' },
+                    { value: 3, label: '3★+ (Hài lòng)' },
+                  ].map((rate) => {
+                    const isSel = minRating === rate.value;
+                    return (
+                      <TouchableOpacity
+                        key={rate.value}
+                        style={[styles.ratingChip, isSel && styles.ratingChipActive]}
+                        onPress={() => setMinRating(rate.value)}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons
+                          name="star"
+                          size={14}
+                          color={isSel ? '#FFFFFF' : rate.value === 0 ? '#9CA3AF' : '#F59E0B'}
+                          style={{ marginRight: 4 }}
+                        />
+                        <Text style={[styles.ratingChipText, isSel && styles.ratingChipTextActive]}>
+                          {rate.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* 3. TYPE OF PLACE */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Loại chỗ ở</Text>
+
+                <TouchableOpacity
+                  style={styles.checkboxRow}
+                  activeOpacity={0.7}
+                  onPress={() => setEntirePlace(!entirePlace)}
+                >
+                  <View style={styles.checkboxInfo}>
+                    <Text style={styles.optionTitle}>Toàn bộ nhà</Text>
+                    <Text style={styles.optionSubtitle}>Toàn bộ căn hộ, biệt thự villa, nhà riêng</Text>
+                  </View>
+                  <View style={[styles.checkbox, entirePlace && styles.checkboxActive]}>
+                    {entirePlace && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.checkboxRow}
+                  activeOpacity={0.7}
+                  onPress={() => setPrivateRoom(!privateRoom)}
+                >
+                  <View style={styles.checkboxInfo}>
+                    <Text style={styles.optionTitle}>Phòng riêng</Text>
+                    <Text style={styles.optionSubtitle}>Phòng nghỉ cao cấp có phòng tắm riêng</Text>
+                  </View>
+                  <View style={[styles.checkbox, privateRoom && styles.checkboxActive]}>
+                    {privateRoom && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.checkboxRow}
+                  activeOpacity={0.7}
+                  onPress={() => setDormitories(!dormitories)}
+                >
+                  <View style={styles.checkboxInfo}>
+                    <Text style={styles.optionTitle}>Phòng tập thể / Cắm trại</Text>
+                    <Text style={styles.optionSubtitle}>Lều cắm trại glamping hoặc phòng chia sẻ</Text>
+                  </View>
+                  <View style={[styles.checkbox, dormitories && styles.checkboxActive]}>
+                    {dormitories && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+              {/* 4. ROOMS AND BEDS */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Phòng ngủ và giường</Text>
+
+                <View style={styles.counterItemRow}>
+                  <Text style={styles.counterItemLabel}>Phòng ngủ</Text>
+                  <View style={styles.pillSelectorRow}>
+                    {[{ val: 0, lbl: 'Bất kỳ' }, { val: 1, lbl: '1+' }, { val: 2, lbl: '2+' }, { val: 3, lbl: '3+' }, { val: 4, lbl: '4+' }].map((item) => (
+                      <TouchableOpacity
+                        key={item.val}
+                        style={[styles.countPill, bedrooms === item.val && styles.countPillActive]}
+                        onPress={() => setBedrooms(item.val)}
+                      >
+                        <Text style={[styles.countPillText, bedrooms === item.val && styles.countPillTextActive]}>
+                          {item.lbl}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                <View style={styles.counterItemRow}>
+                  <Text style={styles.counterItemLabel}>Giường</Text>
+                  <View style={styles.pillSelectorRow}>
+                    {[{ val: 0, lbl: 'Bất kỳ' }, { val: 1, lbl: '1+' }, { val: 2, lbl: '2+' }, { val: 3, lbl: '3+' }, { val: 4, lbl: '4+' }].map((item) => (
+                      <TouchableOpacity
+                        key={item.val}
+                        style={[styles.countPill, beds === item.val && styles.countPillActive]}
+                        onPress={() => setBeds(item.val)}
+                      >
+                        <Text style={[styles.countPillText, beds === item.val && styles.countPillTextActive]}>
+                          {item.lbl}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                <View style={styles.counterItemRow}>
+                  <Text style={styles.counterItemLabel}>Phòng tắm</Text>
+                  <View style={styles.pillSelectorRow}>
+                    {[{ val: 0, lbl: 'Bất kỳ' }, { val: 1, lbl: '1+' }, { val: 2, lbl: '2+' }, { val: 3, lbl: '3+' }].map((item) => (
+                      <TouchableOpacity
+                        key={item.val}
+                        style={[styles.countPill, bathrooms === item.val && styles.countPillActive]}
+                        onPress={() => setBathrooms(item.val)}
+                      >
+                        <Text style={[styles.countPillText, bathrooms === item.val && styles.countPillTextActive]}>
+                          {item.lbl}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              </View>
+
+              {/* 5. FACILITIES */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Tiện nghi yêu cầu</Text>
+
+                {[
+                  { label: 'Bếp nấu ăn', checked: kitchen, setChecked: setKitchen, icon: 'restaurant-outline' },
+                  { label: 'Hồ bơi / Bể bơi', checked: pool, setChecked: setPool, icon: 'water-outline' },
+                  { label: 'Phòng tập gym', checked: gym, setChecked: setGym, icon: 'barbell-outline' },
+                  { label: 'Không gian ngoài trời / Sân vườn', checked: outdoorSpace, setChecked: setOutdoorSpace, icon: 'leaf-outline' },
+                  { label: 'Kết nối Internet / Wifi', checked: internetAccess, setChecked: setInternetAccess, icon: 'wifi-outline' },
+                ].map((fac) => (
+                  <TouchableOpacity
+                    key={fac.label}
+                    style={styles.facilityRow}
+                    activeOpacity={0.7}
+                    onPress={() => fac.setChecked(!fac.checked)}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Ionicons name={fac.icon as any} size={18} color="#00BDD6" style={{ marginRight: 10 }} />
+                      <Text style={styles.facilityLabel}>{fac.label}</Text>
+                    </View>
+                    <View style={[styles.checkbox, fac.checked && styles.checkboxActive]}>
+                      {fac.checked && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+
+            {/* Footer */}
+            <View style={styles.footer}>
+              <TouchableOpacity onPress={handleClearAll} style={styles.clearBtn}>
+                <Text style={styles.clearAllText}>Xóa tất cả</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
+                <Ionicons name="search" size={17} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <Text style={styles.applyButtonText}>Xem kết quả</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </SafeAreaView>
       </View>
@@ -329,9 +417,9 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: Platform.OS === 'web' ? '#F3F4F6' : '#FFFFFF',
-    alignItems: 'center',
+    backgroundColor: Platform.OS === 'web' ? 'rgba(0,0,0,0.5)' : '#FFFFFF',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   safeArea: {
     flex: 1,
@@ -339,29 +427,23 @@ const styles = StyleSheet.create({
     maxWidth: 480,
     backgroundColor: '#FFFFFF',
     alignSelf: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
   },
   phoneContainer: {
     flex: 1,
-    position: 'relative',
     backgroundColor: '#FFFFFF',
-    width: '100%',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingTop: 14,
+    paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '700',
     color: '#111827',
   },
@@ -370,109 +452,146 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 16,
     paddingBottom: 100,
   },
   section: {
-    marginBottom: 30,
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 16,
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  sliderContainer: {
-    height: 40,
-    justifyContent: 'center',
-    position: 'relative',
-    marginVertical: 10,
+  presetsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 14,
   },
-  sliderTrackBackground: {
-    height: 4,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 2,
-    width: '100%',
+  presetChip: {
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
-  sliderTrackActive: {
-    position: 'absolute',
-    height: 4,
-    backgroundColor: '#00BDD6',
-    borderRadius: 2,
-    left: '15%',
-    right: '15%',
+  presetChipActive: {
+    backgroundColor: '#E0F7FA',
+    borderColor: '#00BDD6',
   },
-  sliderHandle: {
-    position: 'absolute',
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#00BDD6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 3,
+  presetChipText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#4B5563',
+  },
+  presetChipTextActive: {
+    color: '#008394',
+    fontWeight: '700',
   },
   priceBoxesRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 12,
   },
   priceBox: {
     flex: 1,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#FAFAFA',
   },
   priceLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#6B7280',
-    marginBottom: 4,
+    fontWeight: '500',
+    marginBottom: 2,
   },
   priceValue: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: '#111827',
+    marginBottom: 6,
+  },
+  stepperRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  stepperBtn: {
+    width: 28,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+    backgroundColor: '#F0FDFA',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   priceDivider: {
-    marginHorizontal: 12,
+    fontSize: 16,
     color: '#9CA3AF',
-    fontSize: 18,
+    marginHorizontal: 10,
+    fontWeight: '700',
+  },
+  ratingChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  ratingChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  ratingChipActive: {
+    backgroundColor: '#00BDD6',
+    borderColor: '#00BDD6',
+  },
+  ratingChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  ratingChipTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   checkboxRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F9FAFB',
+    alignItems: 'center',
+    paddingVertical: 10,
   },
   checkboxInfo: {
     flex: 1,
     paddingRight: 16,
   },
   optionTitle: {
-    fontSize: 16,
+    fontSize: 14.5,
     fontWeight: '600',
     color: '#111827',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   optionSubtitle: {
-    fontSize: 13,
+    fontSize: 12.5,
     color: '#6B7280',
-    lineHeight: 18,
+    lineHeight: 17,
   },
   checkbox: {
     width: 22,
     height: 22,
     borderRadius: 6,
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: '#D1D5DB',
     alignItems: 'center',
     justifyContent: 'center',
@@ -483,26 +602,27 @@ const styles = StyleSheet.create({
     borderColor: '#00BDD6',
   },
   counterItemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
+    marginBottom: 14,
   },
   counterItemLabel: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '600',
     color: '#374151',
+    marginBottom: 8,
   },
   pillSelectorRow: {
     flexDirection: 'row',
+    gap: 8,
   },
   countPill: {
-    paddingHorizontal: 14,
+    flex: 1,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    marginLeft: 8,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   countPillActive: {
     backgroundColor: '#00BDD6',
@@ -510,83 +630,65 @@ const styles = StyleSheet.create({
   },
   countPillText: {
     fontSize: 13,
-    color: '#4B5563',
-    fontWeight: '600',
-  },
-  countPillTextActive: {
-    color: '#FFFFFF',
-  },
-  facilityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F9FAFB',
-  },
-  facilityLabel: {
-    fontSize: 16,
-    color: '#1F2937',
-    fontWeight: '500',
-  },
-  ratingChipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 4,
-  },
-  ratingChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
-    marginBottom: 6,
-  },
-  ratingChipActive: {
-    backgroundColor: '#00BDD6',
-    borderColor: '#00BDD6',
-  },
-  ratingChipText: {
-    fontSize: 13,
     fontWeight: '600',
     color: '#374151',
   },
-  ratingChipTextActive: {
+  countPillTextActive: {
     color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  facilityRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 11,
+  },
+  facilityLabel: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
   },
   footer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+  clearBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 8,
   },
   clearAllText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#6B7280',
+    fontSize: 14.5,
+    fontWeight: '700',
+    color: '#4B5563',
     textDecorationLine: 'underline',
   },
   applyButton: {
     backgroundColor: '#00BDD6',
-    paddingHorizontal: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 12,
-    borderRadius: 10,
+    paddingHorizontal: 22,
+    borderRadius: 12,
+    shadowColor: '#00BDD6',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
   applyButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
   },
 });

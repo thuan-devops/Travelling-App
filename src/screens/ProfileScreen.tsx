@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
+  Platform,
   View,
   Text,
   StyleSheet,
@@ -27,13 +28,22 @@ interface ProfileScreenProps {
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange, onOpenAiSupport }) => {
-  const { user, logout, isLoading, changePassword } = useAuth();
+  const { user, logout, isLoading, changePassword, updateUserProfile } = useAuth();
   const { currency, toggleCurrency } = useCurrency();
   const { isDarkMode, toggleTheme, colors } = useTheme();
 
   const [displayName, setDisplayName] = useState<string>(user?.name || 'Nguyễn Văn Du Khách');
   const [phoneNumber, setPhoneNumber] = useState<string>(user?.phoneNumber || '+84 987 654 321');
   const [email, setEmail] = useState<string>(user?.email || 'traveler@gmail.com');
+  const [isSavingProfile, setIsSavingProfile] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (user) {
+      if (user.name) setDisplayName(user.name);
+      if (user.phoneNumber) setPhoneNumber(user.phoneNumber);
+      if (user.email) setEmail(user.email);
+    }
+  }, [user]);
 
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState<boolean>(false);
@@ -48,9 +58,25 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange, onOpe
   const [isSubmittingPassword, setIsSubmittingPassword] = useState<boolean>(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
 
-  const handleSaveProfile = () => {
-    setIsEditModalOpen(false);
-    Alert.alert('Thành công', 'Thông tin cá nhân của bạn đã được cập nhật.');
+  const handleSaveProfile = async () => {
+    if (!displayName.trim()) {
+      Alert.alert('Lỗi', 'Họ và tên không được để trống.');
+      return;
+    }
+    setIsSavingProfile(true);
+    try {
+      await updateUserProfile({
+        name: displayName.trim(),
+        phoneNumber: phoneNumber.trim(),
+        email: email.trim(),
+      });
+      setIsEditModalOpen(false);
+      Alert.alert('Thành công', 'Thông tin cá nhân của bạn đã được cập nhật.');
+    } catch {
+      Alert.alert('Lỗi', 'Không thể lưu thay đổi lúc này. Vui lòng thử lại!');
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
     const handleChangePassword = async () => {
@@ -357,8 +383,17 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange, onOpe
                 keyboardType="email-address"
               />
 
-              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveProfile}>
-                <Text style={styles.saveBtnText}>Lưu thay đổi</Text>
+              <TouchableOpacity
+                style={styles.saveBtn}
+                onPress={handleSaveProfile}
+                disabled={isSavingProfile}
+                activeOpacity={0.8}
+              >
+                {isSavingProfile ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.saveBtnText}>Lưu thay đổi</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -488,9 +523,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange, onOpe
         visible={isTermsModalOpen}
         animationType="slide"
         presentationStyle="pageSheet"
+        transparent={Platform.OS === 'web'}
         onRequestClose={() => setIsTermsModalOpen(false)}
       >
-        <SafeAreaView style={[styles.termsModalSafeArea, { backgroundColor: colors.background }]}>
+        <View style={styles.termsModalOverlay}>
+          <SafeAreaView style={[styles.termsModalSafeArea, { backgroundColor: colors.background }]}>
           {/* Modal Header */}
           <View style={[styles.termsModalHeader, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
             <View style={{ width: 36 }} />
@@ -632,7 +669,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange, onOpe
 
             <View style={{ height: 40 }} />
           </ScrollView>
-        </SafeAreaView>
+          </SafeAreaView>
+        </View>
       </Modal>
 
       <BottomTabBar activeTab="Profile" onTabChange={onTabChange} />
@@ -960,8 +998,22 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
+  termsModalOverlay: {
+    flex: 1,
+    backgroundColor: Platform.OS === 'web' ? 'rgba(0, 0, 0, 0.5)' : undefined,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   termsModalSafeArea: {
     flex: 1,
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
   },
   termsModalHeader: {
     flexDirection: 'row',

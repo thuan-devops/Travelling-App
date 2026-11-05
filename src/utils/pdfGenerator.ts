@@ -171,6 +171,16 @@ export const generateAndShareReceiptPdf = async (booking: BookingDetails): Promi
             <div class="info-label">Số khách lưu trú</div>
             <div class="info-val">${booking.guests} khách</div>
           </div>
+          ${booking.servicePackageName ? `
+          <div class="info-item">
+            <div class="info-label">Gói dịch vụ lưu trú</div>
+            <div class="info-val" style="color: #0D9488; font-weight: 700;">${booking.servicePackageName}</div>
+          </div>` : ''}
+          ${booking.contactName ? `
+          <div class="info-item">
+            <div class="info-label">Người đại diện nhận phòng</div>
+            <div class="info-val">${booking.contactName} ${booking.contactPhone ? '(' + booking.contactPhone + ')' : ''}</div>
+          </div>` : ''}
         </div>
       </div>
 
@@ -183,9 +193,13 @@ export const generateAndShareReceiptPdf = async (booking: BookingDetails): Promi
           📍 ${booking.accommodation.location}
         </div>
         <div style="display: flex; gap: 20px; font-size: 14px; color: #6B7280;">
-          <div><strong>Nhận phòng:</strong> ${booking.checkIn}</div>
-          <div><strong>Trả phòng:</strong> ${booking.checkOut}</div>
-          <div><strong>Thời gian:</strong> ${booking.nights} đêm</div>
+          <div><strong>Nhận phòng:</strong> ${booking.checkIn} <span style="color: #0D9488; font-weight: 600;">(${booking.estimatedCheckInTime ? 'Dự kiến: ' + booking.estimatedCheckInTime : 'Từ ' + (booking.accommodation.rules?.checkIn || '14:00')})</span></div>
+          <div><strong>Trả phòng:</strong> ${booking.checkOut} <span style="color: #D97706; font-weight: 600;">(Trước ${booking.accommodation.rules?.checkOut || '12:00'})</span></div>
+          <div><strong>Thời gian lưu trú:</strong> ${booking.nights} đêm</div>
+        </div>
+        <div style="margin-top: 14px; padding: 10px 14px; background: #F0FDFA; border-left: 3px solid #00BDD6; border-radius: 6px; font-size: 13px; color: #0F766E;">
+          <strong>🕒 Quy định nhận / trả phòng:</strong> Nhận phòng từ <strong>${booking.accommodation.rules?.checkIn || '14:00'}</strong> • Trả phòng trước <strong>${booking.accommodation.rules?.checkOut || '12:00'}</strong>
+          ${booking.accommodation.rules?.policyNote ? `<br/><span style="font-size: 12px; color: #115E59; margin-top: 4px; display: inline-block;">* Ghi chú: ${booking.accommodation.rules.policyNote}</span>` : ''}
         </div>
       </div>
 

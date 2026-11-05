@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User } from '../types';
 import { authService } from '../services/authService';
 import { mockApi } from '../api/mockApi';
+import { notificationService } from '../services/notificationService';
 
 interface AuthContextType {
   user: User | null;
@@ -15,6 +16,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   skipToGuest: () => void;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  updateUserProfile: (data: { name?: string; phoneNumber?: string; email?: string; avatarUrl?: string }) => Promise<User>;
 }
 
 const AUTH_STORAGE_KEY = '@travelling_app_user_session';
@@ -31,6 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     mockApi.setCurrentUserId(user ? user.id : null);
+    notificationService.setCurrentUserId(user ? user.id : null);
   }, [user]);
 
   const loadStoredUser = async () => {
@@ -40,6 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const parsed = JSON.parse(stored);
         setUser(parsed);
         mockApi.setCurrentUserId(parsed ? parsed.id : null);
+        notificationService.setCurrentUserId(parsed ? parsed.id : null);
       }
     } catch (e) {
       console.warn('Error reading stored user', e);
@@ -122,11 +126,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await authService.changePassword(user.id, currentPassword, newPassword, user.username, user.email);
   };
 
+  const updateUserProfile = async (data: { name?: string; phoneNumber?: string; email?: string; avatarUrl?: string }): Promise<User> => {
+    if (!user) {
+      throw new Error('Vui lòng đăng nhập để cập nhật hồ sơ.');
+    }
+    const updatedUser: User = {
+      ...user,
+      name: data.name !== undefined ? data.name : user.name,
+      phoneNumber: data.phoneNumber !== undefined ? data.phoneNumber : user.phoneNumber,
+      email: data.email !== undefined ? data.email : user.email,
+      avatarUrl: data.avatarUrl !== undefined ? data.avatarUrl : user.avatarUrl,
+    };
+    setUser(updatedUser);
+    await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updatedUser));
+    return updatedUser;
+  };
+
   const logout = async () => {
     setIsLoading(true);
     try {
       setUser(null);
       mockApi.setCurrentUserId(null);
+      notificationService.setCurrentUserId(null);
       await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
     } finally {
       setIsLoading(false);
@@ -156,6 +177,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         skipToGuest,
         changePassword,
+        updateUserProfile,
       }}
     >
       {children}

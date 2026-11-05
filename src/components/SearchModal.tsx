@@ -14,6 +14,23 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { SearchFilterState } from '../types';
 import { CalendarPicker, DateRange } from './CalendarPicker';
+import { VoiceSearchModal } from './VoiceSearchModal';
+import { aiService } from '../services/aiService';
+
+const PRICE_PRESETS = [
+  { id: 'all', label: 'Tất cả giá', min: 0, max: 10000000 },
+  { id: 'under1m', label: '< 1.000.000₫', min: 0, max: 1000000 },
+  { id: '1m_2m5', label: '1 - 2.5 triệu', min: 1000000, max: 2500000 },
+  { id: '2m5_5m', label: '2.5 - 5 triệu', min: 2500000, max: 5000000 },
+  { id: 'over5m', label: '> 5.000.000₫', min: 5000000, max: 20000000 },
+];
+
+const RATING_OPTIONS = [
+  { value: 0, label: 'Tất cả sao', sub: 'Mọi đánh giá' },
+  { value: 3, label: '3★ trở lên', sub: 'Hài lòng (3.0+)' },
+  { value: 4, label: '4★ trở lên', sub: 'Rất tốt (4.0+)' },
+  { value: 4.8, label: '4.8★ trở lên', sub: 'Xuất sắc (Top đầu)' },
+];
 
 interface SearchModalProps {
   visible: boolean;
@@ -73,7 +90,8 @@ export const SearchModal: React.FC<SearchModalProps> = ({
   onSearch,
   initialFilters,
 }) => {
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState<boolean>(false);
 
   // Search State
   const [destination, setDestination] = useState<string>(initialFilters?.destination || 'Anywhere');
@@ -90,6 +108,12 @@ export const SearchModal: React.FC<SearchModalProps> = ({
   const [adults, setAdults] = useState<number>(initialFilters?.adults || 2);
   const [children, setChildren] = useState<number>(initialFilters?.children || 0);
 
+  // Price & Rating filter state
+  const [selectedPricePreset, setSelectedPricePreset] = useState<string>('all');
+  const [minPrice, setMinPrice] = useState<number>(initialFilters?.minPrice || 0);
+  const [maxPrice, setMaxPrice] = useState<number>(initialFilters?.maxPrice || 10000000);
+  const [selectedRating, setSelectedRating] = useState<number>(initialFilters?.minRating || 0);
+
   const resetFilters = () => {
     setDestination('Anywhere');
     setSearchQuery('');
@@ -102,6 +126,10 @@ export const SearchModal: React.FC<SearchModalProps> = ({
     setDaysCount(1);
     setAdults(2);
     setChildren(0);
+    setSelectedPricePreset('all');
+    setMinPrice(0);
+    setMaxPrice(10000000);
+    setSelectedRating(0);
     setCurrentStep(1);
   };
 
@@ -126,14 +154,15 @@ export const SearchModal: React.FC<SearchModalProps> = ({
       daysCount: nights,
       adults,
       children,
-      minPrice: 0,
-      maxPrice: 10000000,
+      minPrice: minPrice > 0 ? minPrice : 0,
+      maxPrice: maxPrice < 10000000 ? maxPrice : 20000000,
       placeTypes: ['entire'],
       bedrooms: 0,
       beds: 0,
       bathrooms: 0,
       facilities: [],
       presentTotalPrice: true,
+      minRating: selectedRating > 0 ? selectedRating : undefined,
     };
     onSearch(finalState);
     onClose();
@@ -143,6 +172,16 @@ export const SearchModal: React.FC<SearchModalProps> = ({
     whenMode === 'choose' && dateRange.startDate && dateRange.endDate
       ? `${dateRange.startDate.getDate()} Thg ${dateRange.startDate.getMonth() + 1} - ${dateRange.endDate.getDate()} Thg ${dateRange.endDate.getMonth() + 1} (${dateRange.nights} đêm)`
       : 'Bất kỳ lúc nào';
+
+  const priceSummaryText =
+    selectedPricePreset === 'all'
+      ? 'Bất kỳ mức giá nào'
+      : PRICE_PRESETS.find((p) => p.id === selectedPricePreset)?.label || 'Theo khoảng giá';
+
+  const ratingSummaryText =
+    selectedRating === 0
+      ? 'Tất cả đánh giá'
+      : `${selectedRating}★ trở lên`;
 
   return (
     <Modal
@@ -170,7 +209,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                     <Ionicons name="search-outline" size={20} color="#374151" style={{ marginRight: 8 }} />
                     <TextInput
                       style={styles.input}
-                      placeholder="Tìm kiếm điểm đến tại Việt Nam (Đà Lạt, Phú Quốc...)"
+                      placeholder="Tìm kiếm điểm đến (Đà Lạt, Phú Quốc...)"
                       placeholderTextColor="#9CA3AF"
                       value={searchQuery}
                       onChangeText={(text) => {
@@ -179,6 +218,13 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                         else setDestination('Anywhere');
                       }}
                     />
+                    <TouchableOpacity
+                      onPress={() => setIsVoiceModalOpen(true)}
+                      style={styles.voiceMicBtn}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Ionicons name="mic" size={19} color="#00BDD6" />
+                    </TouchableOpacity>
                   </View>
 
                   <Text style={styles.sectionSubHeader}>Điểm đến phổ biến tại Việt Nam</Text>
@@ -205,7 +251,8 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                         </TouchableOpacity>
                       );
                     })}
-                  </ScrollView>
+
+            </ScrollView>
 
                   {/* Collapsible Rows */}
                   <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(2)}>
@@ -216,6 +263,16 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                   <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(3)}>
                     <Text style={styles.summaryLabel}>Khách</Text>
                     <Text style={styles.summaryValueAction}>{adults + children} khách</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(4)}>
+                    <Text style={styles.summaryLabel}>Khoảng giá</Text>
+                    <Text style={styles.summaryValueAction}>{priceSummaryText}</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(4)}>
+                    <Text style={styles.summaryLabel}>Đánh giá sao</Text>
+                    <Text style={styles.summaryValueAction}>{ratingSummaryText}</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -346,6 +403,116 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                         </TouchableOpacity>
                       </View>
                     </View>
+
+                    {/* Step 3 to Step 4 Actions */}
+                    <View style={styles.stepActionsRow}>
+                      <TouchableOpacity onPress={() => setCurrentStep(4)}>
+                        <Text style={styles.skipText}>Bỏ qua</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.nextButton}
+                        onPress={() => setCurrentStep(4)}
+                      >
+                        <Text style={styles.nextButtonText}>Tiếp tục</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              )}
+            
+              {/* STEP 4: PRICE & RATING FILTER */}
+              {currentStep === 4 && (
+                <View style={styles.stepContainer}>
+                  <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(1)}>
+                    <Text style={styles.summaryLabel}>Địa điểm</Text>
+                    <Text style={styles.summaryValueBold}>{destination === 'Anywhere' ? 'Bất kỳ đâu' : destination}</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(2)}>
+                    <Text style={styles.summaryLabel}>Thời gian</Text>
+                    <Text style={styles.summaryValueBold}>{dateSummaryText}</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.summaryRow} onPress={() => setCurrentStep(3)}>
+                    <Text style={styles.summaryLabel}>Khách</Text>
+                    <Text style={styles.summaryValueBold}>{adults + children} khách</Text>
+                  </TouchableOpacity>
+
+                  <View style={styles.filterCard}>
+                    <Text style={styles.title}>Giá tiền & Đánh giá</Text>
+
+                    {/* 1. KHOẢNG GIÁ */}
+                    <Text style={styles.filterSectionTitle}>Khoảng giá mỗi đêm</Text>
+                    <View style={styles.presetsGrid}>
+                      {PRICE_PRESETS.map((p) => {
+                        const isSel = selectedPricePreset === p.id;
+                        return (
+                          <TouchableOpacity
+                            key={p.id}
+                            style={[styles.presetChip, isSel && styles.presetChipActive]}
+                            onPress={() => {
+                              setSelectedPricePreset(p.id);
+                              setMinPrice(p.min);
+                              setMaxPrice(p.max);
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.presetChipText, isSel && styles.presetChipTextActive]}>
+                              {p.label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+
+                    <View style={styles.priceDisplayBox}>
+                      <Ionicons name="pricetag" size={17} color="#00BDD6" style={{ marginRight: 8 }} />
+                      <Text style={styles.priceDisplayText}>
+                        {selectedPricePreset === 'all'
+                          ? 'Tất cả các mức giá (0đ - 10.000.000đ+)'
+                          : `${minPrice.toLocaleString('vi-VN')}₫  ➔  ${maxPrice >= 20000000 ? 'Không giới hạn' : `${maxPrice.toLocaleString('vi-VN')}₫`}`}
+                      </Text>
+                    </View>
+
+                    <View style={styles.filterDivider} />
+
+                    {/* 2. ĐÁNH GIÁ SAO */}
+                    <Text style={styles.filterSectionTitle}>Tiêu chuẩn đánh giá sao</Text>
+                    <View style={styles.ratingGrid}>
+                      {RATING_OPTIONS.map((r) => {
+                        const isSel = selectedRating === r.value;
+                        return (
+                          <TouchableOpacity
+                            key={r.value}
+                            style={[styles.ratingCard, isSel && styles.ratingCardActive]}
+                            onPress={() => setSelectedRating(r.value)}
+                            activeOpacity={0.7}
+                          >
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                              <Ionicons
+                                name="star"
+                                size={15}
+                                color={r.value === 0 ? '#9CA3AF' : '#F59E0B'}
+                                style={{ marginRight: 4 }}
+                              />
+                              <Text style={[styles.ratingCardLabel, isSel && styles.ratingCardLabelActive]}>
+                                {r.label}
+                              </Text>
+                            </View>
+                            <Text style={[styles.ratingCardSub, isSel && styles.ratingCardSubActive]}>
+                              {r.sub}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+
+                    {/* Back to overview link */}
+                    <View style={{ marginTop: 14, alignItems: 'center' }}>
+                      <TouchableOpacity onPress={() => setCurrentStep(1)} style={{ paddingVertical: 6 }}>
+                        <Text style={styles.skipText}>➔ Xem lại tổng quan các bước</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
               )}
@@ -365,6 +532,30 @@ export const SearchModal: React.FC<SearchModalProps> = ({
 
           </View>
         </SafeAreaView>
+
+        <VoiceSearchModal
+          visible={isVoiceModalOpen}
+          onClose={() => setIsVoiceModalOpen(false)}
+          onResult={async (text) => {
+            try {
+              const res = await aiService.processVoiceQuery(text);
+              if (res.destination) {
+                setDestination(res.destination);
+                setSearchQuery(res.destination);
+              } else {
+                setSearchQuery(text);
+                setDestination(text.trim());
+              }
+              // Tự động kích hoạt tìm kiếm ngay
+              setTimeout(() => {
+                handleExecuteSearch();
+              }, 150);
+            } catch {
+              setSearchQuery(text);
+              setDestination(text.trim());
+            }
+          }}
+        />
       </View>
     </Modal>
   );
@@ -439,6 +630,12 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: '#111827',
+  },
+  voiceMicBtn: {
+    padding: 6,
+    borderRadius: 14,
+    backgroundColor: '#F0FDFA',
+    marginLeft: 6,
   },
   destinationsScroll: {
     paddingRight: 10,
@@ -647,5 +844,105 @@ const styles = StyleSheet.create({
     color: '#475569',
     textAlign: 'center',
     lineHeight: 19,
+  },
+  filterCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: 18,
+    marginTop: 6,
+  },
+  filterSectionTitle: {
+    fontSize: 14.5,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 10,
+    marginTop: 4,
+  },
+  presetsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  presetChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  presetChipActive: {
+    backgroundColor: '#E0F7FA',
+    borderColor: '#00BDD6',
+  },
+  presetChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4B5563',
+  },
+  presetChipTextActive: {
+    color: '#008394',
+    fontWeight: '700',
+  },
+  priceDisplayBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDFA',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+    marginBottom: 12,
+  },
+  priceDisplayText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#0F766E',
+  },
+  filterDivider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginVertical: 12,
+  },
+  ratingGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+  },
+  ratingCard: {
+    flex: 1,
+    minWidth: '45%',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FAFAFA',
+  },
+  ratingCardActive: {
+    borderColor: '#00BDD6',
+    backgroundColor: '#F0FDFA',
+  },
+  ratingCardLabel: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#374151',
+  },
+  ratingCardLabelActive: {
+    color: '#008394',
+  },
+  ratingCardSub: {
+    fontSize: 11,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  ratingCardSubActive: {
+    color: '#0D9488',
+    fontWeight: '600',
   },
 });
