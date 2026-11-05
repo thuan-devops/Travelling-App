@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, BackHandler } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { Accommodation, BookingDetails, BottomTabType, SearchFilterState } from '../types';
 import { INITIAL_ACCOMMODATIONS, mockApi } from '../api/mockApi';
 import { notificationService } from '../services/notificationService';
@@ -21,8 +22,10 @@ import { BookingsScreen } from '../screens/BookingsScreen';
 import { InboxScreen } from '../screens/InboxScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { AiSupportScreen } from '../screens/AiSupportScreen';
-import { SearchModal } from '../components/SearchModal';
-import { SidebarNav } from '../components/SidebarNav';
+import { SearchModal } from '../components/SearchModal';
+
+import { SidebarNav } from '../components/SidebarNav';
+
 import { useResponsive } from '../hooks/useResponsive';
 
 export type ScreenName =
@@ -50,39 +53,73 @@ export const AppNavigator: React.FC = () => {
 
   // Search State & Modal
   const [isSearchModalVisible, setIsSearchModalVisible] = useState<boolean>(false);
-  const { isMobile } = useResponsive();
-  const [favoritesCount, setFavoritesCount] = useState<number>(0);
-
-  const refreshFavorites = async () => {
-    try {
-      const stored = await mockApi.getStoredFavorites();
-      setFavoritesCount(stored.length);
-    } catch {
-      // ignore
-    }
-  };
-
-  useEffect(() => {
-    refreshFavorites();
-  }, [user, currentScreen]);
-
-  const getActiveTab = (): BottomTabType => {
-    switch (currentScreen) {
-      case 'FAVORITES':
-        return 'Favorites';
-      case 'BOOKINGS':
-        return 'Bookings';
-      case 'INBOX':
-        return 'Inbox';
-      case 'PROFILE':
-        return 'Profile';
-      case 'HOME':
-      case 'SEARCH_RESULTS':
-      default:
-        return 'Search';
-    }
-  };
-
+  const { isMobile } = useResponsive();
+  const { isDarkMode, colors } = useTheme();
+
+  const [favoritesCount, setFavoritesCount] = useState<number>(0);
+
+
+
+  const refreshFavorites = async () => {
+
+    try {
+
+      const stored = await mockApi.getStoredFavorites();
+
+      setFavoritesCount(stored.length);
+
+    } catch {
+
+      // ignore
+
+    }
+
+  };
+
+
+
+  useEffect(() => {
+
+    refreshFavorites();
+
+  }, [user, currentScreen]);
+
+
+
+  const getActiveTab = (): BottomTabType => {
+
+    switch (currentScreen) {
+
+      case 'FAVORITES':
+
+        return 'Favorites';
+
+      case 'BOOKINGS':
+
+        return 'Bookings';
+
+      case 'INBOX':
+
+        return 'Inbox';
+
+      case 'PROFILE':
+
+        return 'Profile';
+
+      case 'HOME':
+
+      case 'SEARCH_RESULTS':
+
+      default:
+
+        return 'Search';
+
+    }
+
+  };
+
+
+
   const [searchFilters, setSearchFilters] = useState<SearchFilterState>({
     destination: 'Anywhere',
     startDate: '23 May',
@@ -209,7 +246,7 @@ export const AppNavigator: React.FC = () => {
 
   // Render current screen
   return (
-    <View style={[styles.container, !isMobile && styles.desktopLayoutRow]}>
+    <View style={[styles.container, { backgroundColor: colors.background }, !isMobile && styles.desktopLayoutRow]}>
       {/* 🖥️ THANH ĐIỀU HƯỚNG BÊN TRÁI CHO WEB / DESKTOP (Sidebar Navigation) */}
       {!isMobile && (
         <SidebarNav
@@ -222,7 +259,7 @@ export const AppNavigator: React.FC = () => {
       )}
 
       {/* KHÔNG GIAN NỘI DUNG MÀN HÌNH CHÍNH */}
-      <View style={[styles.screenArea, !isMobile && styles.desktopScreenArea]}>
+      <View style={[styles.screenArea, { backgroundColor: colors.background }, !isMobile && styles.desktopScreenArea]}>
       {currentScreen === 'HOME' && (
         <HomeScreen
           onOpenSearch={() => setIsSearchModalVisible(true)}

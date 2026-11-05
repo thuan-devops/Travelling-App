@@ -194,8 +194,9 @@ export const ReviewsScreen: React.FC<ReviewsScreenProps> = ({
       <StatusBar style={isDarkMode ? "light" : "dark"} />
 
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        {/* Header */}
-        <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        {/* Header Full-Width with Centered Inner */}
+        <View style={{ width: '100%', backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+          <View style={[styles.header, { maxWidth: 840, width: '100%', alignSelf: 'center', backgroundColor: colors.card, borderBottomWidth: 0 }]}>
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
             <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
@@ -205,13 +206,14 @@ export const ReviewsScreen: React.FC<ReviewsScreenProps> = ({
           <TouchableOpacity onPress={() => setIsModalOpen(true)} style={styles.writeButton}>
             <Ionicons name="create-outline" size={22} color="#00BDD6" />
           </TouchableOpacity>
+          </View>
         </View>
 
         <FlatList
           data={filteredReviews}
           keyExtractor={(item) => item.id}
           renderItem={renderReviewItem}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { maxWidth: 840, width: '100%', alignSelf: 'center' }]}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={() => (
             <View style={[styles.summaryContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -536,9 +538,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: '100%',
-    maxWidth: 840,
-    alignSelf: 'center',
-    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',

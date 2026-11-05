@@ -61,8 +61,19 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
         },
       ]}
     >
-      {/* 1. TOP BRAND HEADER */}
-      <View style={[styles.header, isCompact && styles.headerCompact]}>
+      {/* 1. TOP BRAND HEADER - Nhấn vào để về trang Khám phá (Home) */}
+      <TouchableOpacity
+        style={[
+          styles.header,
+          isCompact && styles.headerCompact,
+          { borderBottomColor: colors.border },
+          Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : null,
+        ]}
+        activeOpacity={0.7}
+        onPress={() => onTabChange('Search')}
+        accessibilityRole="button"
+        accessibilityLabel="Về trang Khám phá"
+      >
         <View style={styles.brandIconCircle}>
           <Ionicons name="airplane" size={20} color="#FFFFFF" />
         </View>
@@ -72,7 +83,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
             <Text style={styles.brandSub}>Vi vu Việt Nam</Text>
           </View>
         )}
-      </View>
+      </TouchableOpacity>
 
       {/* 2. NAVIGATION MENU */}
       <View style={styles.navMenu}>
@@ -145,7 +156,15 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
               styles.navItemBtn,
               styles.aiSupportBtn,
               isCompact && styles.navItemBtnCompact,
-              activeTab === 'AI_SUPPORT' && styles.navItemBtnActive,
+              {
+                backgroundColor: activeTab === 'AI_SUPPORT'
+                  ? (isDarkMode ? 'rgba(0, 189, 214, 0.2)' : '#E0F7FA')
+                  : (isDarkMode ? '#1E293B' : '#F8FAFC'),
+                borderColor: activeTab === 'AI_SUPPORT'
+                  ? '#00BDD6'
+                  : (isDarkMode ? colors.border : '#E2E8F0'),
+              },
+              Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : null,
             ]}
             activeOpacity={0.75}
             onPress={onOpenAiSupport}
@@ -155,13 +174,35 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
             </View>
             {!isCompact ? (
               <View style={styles.aiLabelRow}>
-                <Text style={styles.aiLabelText}>Trợ lý AI</Text>
-                <View style={styles.aiBadgePill}>
-                  <Text style={styles.aiBadgePillText}>24/7</Text>
+                <Text style={[styles.aiLabelText, { color: isDarkMode ? '#38BDF8' : '#0284C7' }]}>
+                  Trợ lý AI
+                </Text>
+                <View
+                  style={[
+                    styles.aiBadgePill,
+                    { backgroundColor: isDarkMode ? 'rgba(56, 189, 248, 0.18)' : '#E0F2FE' },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.aiBadgePillText,
+                      { color: isDarkMode ? '#38BDF8' : '#0284C7' },
+                    ]}
+                  >
+                    24/7
+                  </Text>
                 </View>
               </View>
             ) : (
-              <Text style={styles.compactLabel}>Trợ lý</Text>
+              <Text
+                style={[
+                  styles.compactLabel,
+                  { color: isDarkMode ? '#94A3B8' : '#64748B' },
+                  activeTab === 'AI_SUPPORT' && styles.compactLabelActive,
+                ]}
+              >
+                Trợ lý
+              </Text>
             )}
           </TouchableOpacity>
         )}
@@ -342,9 +383,7 @@ const styles = StyleSheet.create({
   },
   aiSupportBtn: {
     marginTop: 10,
-    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
   aiLabelRow: {
     flex: 1,

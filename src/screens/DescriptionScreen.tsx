@@ -44,16 +44,18 @@ export const DescriptionScreen: React.FC<DescriptionScreenProps> = ({ stay, onBa
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <StatusBar style={isDarkMode ? "light" : "dark"} />
 
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Mô tả chi tiết</Text>
-        <View style={{ width: 24 }} />
+      {/* Header Full-Width with Centered Inner */}
+      <View style={{ width: '100%', backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+        <View style={[styles.header, { maxWidth: 840, width: '100%', alignSelf: 'center', backgroundColor: colors.card, borderBottomWidth: 0 }]}>
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Mô tả chi tiết</Text>
+          <View style={{ width: 24 }} />
+        </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { maxWidth: 840, width: '100%', alignSelf: 'center' }]} showsVerticalScrollIndicator={false}>
         {/* Full Image */}
         <Image source={{ uri: heroImage }} style={styles.heroImage} />
 
@@ -64,14 +66,24 @@ export const DescriptionScreen: React.FC<DescriptionScreenProps> = ({ stay, onBa
         <Text style={[styles.paragraph, { color: colors.textSecondary }]}>{descriptionText}</Text>
 
         {/* Location & Open Map Link */}
-        <View style={[styles.locationRow, { borderColor: colors.border }]}>
+        <View style={[styles.locationRow, { borderColor: colors.border, backgroundColor: isDarkMode ? '#0F172A' : '#F8FAFC', paddingHorizontal: 12, borderRadius: 12 }]}>
           <View style={styles.locationLeft}>
             <Ionicons name="location-sharp" size={20} color="#00BDD6" style={{ marginRight: 6 }} />
             <Text style={[styles.locationText, { color: colors.textSecondary }]}>{stay.location}</Text>
           </View>
-          <TouchableOpacity onPress={handleOpenGoogleMaps} style={styles.openMapButton}>
-            <Ionicons name="map-outline" size={16} color="#00838F" style={{ marginRight: 4 }} />
-            <Text style={styles.openMapText}>Mở Google Maps</Text>
+          <TouchableOpacity
+            onPress={handleOpenGoogleMaps}
+            style={[
+              styles.openMapButton,
+              {
+                backgroundColor: isDarkMode ? '#083344' : '#E0F7FA',
+                borderColor: isDarkMode ? '#00BDD6' : '#B2EBF2',
+                borderWidth: 1,
+              }
+            ]}
+          >
+            <Ionicons name="map-outline" size={16} color="#00BDD6" style={{ marginRight: 4 }} />
+            <Text style={[styles.openMapText, { color: "#00BDD6" }]}>Mở Google Maps</Text>
           </TouchableOpacity>
         </View>
 
@@ -93,10 +105,7 @@ export const DescriptionScreen: React.FC<DescriptionScreenProps> = ({ stay, onBa
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
     width: '100%',
-    maxWidth: 840,
-    alignSelf: 'center',
   },
   header: {
     flexDirection: 'row',
