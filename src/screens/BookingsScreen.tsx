@@ -1014,13 +1014,12 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
           borderBottomWidth: 1,
         }}
       >
-        <View
-          style={[
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={[
             styles.filterRow,
             {
-              maxWidth: contentMaxWidth,
-              alignSelf: 'center',
-              width: '100%',
               paddingHorizontal: horizontalPadding,
               backgroundColor: 'transparent',
             },
@@ -1097,7 +1096,7 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
               Chuyến đã hủy ({cancelledList.length})
             </Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </View>
 
       {/* DANH SÁCH CHUYẾN ĐI */}

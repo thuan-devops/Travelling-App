@@ -47,6 +47,31 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <StatusBar style={isDarkMode ? "light" : "dark"} />
 
+      {/* TOP HEADER WITH BACK / HOME BUTTON */}
+      <View style={[styles.topHeaderBar, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          style={styles.headerBackBtn}
+          onPress={onExplore || onViewBooking}
+          accessibilityLabel="Quay về trang chủ"
+          activeOpacity={0.7}
+        >
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.headerBarTitle, { color: colors.text }]}>Kết quả giao dịch</Text>
+        {onExplore ? (
+          <TouchableOpacity
+            style={styles.headerHomeBtn}
+            onPress={onExplore}
+            accessibilityLabel="Về trang chủ khám phá"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="home-outline" size={22} color={colors.text} />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 40 }} />
+        )}
+      </View>
+
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={[styles.container, { paddingBottom: 40 }]}
@@ -200,6 +225,32 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#FAFAFA',
+  },
+  topHeaderBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  headerBackBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerBarTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  headerHomeBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   container: {
     flex: 1,
