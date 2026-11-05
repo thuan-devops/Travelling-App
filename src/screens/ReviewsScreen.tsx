@@ -17,6 +17,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Accommodation, ReviewItem } from '../types';
 import { mockApi } from '../api/mockApi';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 interface ReviewsScreenProps {
   stay: Accommodation;
@@ -30,6 +31,7 @@ export const ReviewsScreen: React.FC<ReviewsScreenProps> = ({
   onReviewAdded,
 }) => {
   const { user } = useAuth();
+  const { isDarkMode, colors } = useTheme();
   const [reviews, setReviews] = useState<ReviewItem[]>(stay.reviewsList || []);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [newRating, setNewRating] = useState<number>(5);
@@ -188,22 +190,23 @@ export const ReviewsScreen: React.FC<ReviewsScreenProps> = ({
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
+    <View style={[styles.outerWrapper, { backgroundColor: colors.background }]}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+        <StatusBar style={isDarkMode ? "light" : "dark"} />
 
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={24} color="#111827" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            Đánh giá ({selectedStarFilter !== null ? filteredReviews.length : totalCount})
-          </Text>
-          <TouchableOpacity onPress={() => setIsModalOpen(true)} style={styles.writeButton}>
-            <Ionicons name="create-outline" size={22} color="#00BDD6" />
-          </TouchableOpacity>
-        </View>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          {/* Header */}
+          <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.background }]}>
+            <TouchableOpacity onPress={onBack} style={styles.backButton}>
+              <Ionicons name="chevron-back" size={24} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>
+              Đánh giá ({selectedStarFilter !== null ? filteredReviews.length : totalCount})
+            </Text>
+            <TouchableOpacity onPress={() => setIsModalOpen(true)} style={styles.writeButton}>
+              <Ionicons name="create-outline" size={22} color="#00BDD6" />
+            </TouchableOpacity>
+          </View>
 
         <FlatList
           data={filteredReviews}
@@ -520,15 +523,21 @@ export const ReviewsScreen: React.FC<ReviewsScreenProps> = ({
             </View>
           </View>
         </Modal>
-      </View>
-    </SafeAreaView>
+        </View>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  outerWrapper: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    width: '100%',
     alignItems: 'center',
   },
   container: {
@@ -536,7 +545,6 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 840,
     alignSelf: 'center',
-    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',

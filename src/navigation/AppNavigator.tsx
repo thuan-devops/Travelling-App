@@ -24,6 +24,7 @@ import { AiSupportScreen } from '../screens/AiSupportScreen';
 import { SearchModal } from '../components/SearchModal';
 import { SidebarNav } from '../components/SidebarNav';
 import { useResponsive } from '../hooks/useResponsive';
+import { useTheme } from '../context/ThemeContext';
 
 export type ScreenName =
   | 'SPLASH'
@@ -44,6 +45,7 @@ export type ScreenName =
 
 export const AppNavigator: React.FC = () => {
   const { user } = useAuth();
+  const { isDarkMode, colors } = useTheme();
   const [showSplash, setShowSplash] = useState<boolean>(true);
   const [currentScreen, setCurrentScreen] = useState<ScreenName>('HOME');
   const [history, setHistory] = useState<ScreenName[]>(['HOME']);
@@ -209,7 +211,7 @@ export const AppNavigator: React.FC = () => {
 
   // Render current screen
   return (
-    <View style={[styles.container, !isMobile && styles.desktopLayoutRow]}>
+    <View style={[styles.container, !isMobile && styles.desktopLayoutRow, { backgroundColor: colors.background }]}>
       {/* 🖥️ THANH ĐIỀU HƯỚNG BÊN TRÁI CHO WEB / DESKTOP (Sidebar Navigation) */}
       {!isMobile && (
         <SidebarNav
@@ -222,7 +224,7 @@ export const AppNavigator: React.FC = () => {
       )}
 
       {/* KHÔNG GIAN NỘI DUNG MÀN HÌNH CHÍNH */}
-      <View style={[styles.screenArea, !isMobile && styles.desktopScreenArea]}>
+      <View style={[styles.screenArea, !isMobile && styles.desktopScreenArea, { backgroundColor: colors.background }]}>
       {currentScreen === 'HOME' && (
         <HomeScreen
           onOpenSearch={() => setIsSearchModalVisible(true)}
@@ -433,7 +435,6 @@ export const AppNavigator: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
     width: '100%',
     height: '100%',
   },

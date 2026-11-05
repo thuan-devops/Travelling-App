@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -141,7 +141,15 @@ export const SearchModal: React.FC<SearchModalProps> = ({
     setCurrentStep(1);
   };
 
+  const isExecutingSearchRef = useRef(false);
+
   const handleExecuteSearch = () => {
+    if (isExecutingSearchRef.current) return;
+    isExecutingSearchRef.current = true;
+    setTimeout(() => {
+      isExecutingSearchRef.current = false;
+    }, 400);
+
     let startStr = '';
     let endStr = '';
     let nights = 1;
@@ -155,8 +163,10 @@ export const SearchModal: React.FC<SearchModalProps> = ({
       nights = dateRange.nights || 1;
     }
 
+    const targetDestination = searchQuery.trim() || destination || 'Anywhere';
+
     const finalState: SearchFilterState = {
-      destination: destination || 'Anywhere',
+      destination: targetDestination,
       startDate: startStr,
       endDate: endStr,
       daysCount: nights,
@@ -224,6 +234,13 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                         setSearchQuery(text);
                         if (text.trim()) setDestination(text.trim());
                         else setDestination('Anywhere');
+                      }}
+                      returnKeyType="search"
+                      onSubmitEditing={handleExecuteSearch}
+                      onKeyPress={(e: any) => {
+                        if (Platform.OS === 'web' && e.nativeEvent?.key === 'Enter') {
+                          handleExecuteSearch();
+                        }
                       }}
                     />
                     <TouchableOpacity

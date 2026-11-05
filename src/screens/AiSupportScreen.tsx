@@ -21,6 +21,7 @@ import { BottomTabBar } from '../components/BottomTabBar';
 import { VoiceSearchModal } from '../components/VoiceSearchModal';
 import { aiService, AiChatMessage, AiFilterCriteria } from '../services/aiService';
 import { useCurrency } from '../context/CurrencyContext';
+import { useTheme } from '../context/ThemeContext';
 
 interface AiSupportScreenProps {
   onBack: () => void;
@@ -53,6 +54,7 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
   onTabChange,
 }) => {
   const { formatPrice } = useCurrency();
+  const { isDarkMode, colors } = useTheme();
   const flatListRef = useRef<FlatList>(null);
 
   const [inputMessage, setInputMessage] = useState<string>('');
@@ -167,7 +169,13 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
     return (
       <TouchableOpacity
         key={stay.id}
-        style={styles.stayCard}
+        style={[
+          styles.stayCard,
+          {
+            backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF',
+            borderColor: colors.border,
+          },
+        ]}
         onPress={() => onSelectStay(stay)}
         activeOpacity={0.88}
       >
@@ -181,32 +189,32 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
         />
         <View style={styles.stayContent}>
           <View style={styles.stayHeaderRow}>
-            <View style={styles.categoryBadge}>
-              <Text style={styles.categoryBadgeText}>{stay.category}</Text>
+            <View style={[styles.categoryBadge, isDarkMode && { backgroundColor: 'rgba(37, 99, 235, 0.2)' }]}>
+              <Text style={[styles.categoryBadgeText, isDarkMode && { color: '#60A5FA' }]}>{stay.category}</Text>
             </View>
             <View style={styles.ratingBadge}>
               <Ionicons name="star" size={12} color="#F59E0B" style={{ marginRight: 3 }} />
-              <Text style={styles.ratingText}>{stay.rating.toFixed(1)}</Text>
+              <Text style={[styles.ratingText, { color: colors.text }]}>{stay.rating.toFixed(1)}</Text>
             </View>
           </View>
 
-          <Text style={styles.stayTitle} numberOfLines={1}>
+          <Text style={[styles.stayTitle, { color: colors.text }]} numberOfLines={1}>
             {stay.title}
           </Text>
-          <Text style={styles.stayLocation} numberOfLines={1}>
-            <Ionicons name="location-outline" size={12} color="#6B7280" /> {stay.location}
+          <Text style={[styles.stayLocation, { color: colors.textSecondary }]} numberOfLines={1}>
+            <Ionicons name="location-outline" size={12} color={colors.textSecondary} /> {stay.location}
           </Text>
 
-          <View style={styles.stayFooter}>
+          <View style={[styles.stayFooter, { borderTopColor: colors.border }]}>
             <View>
-              <Text style={styles.priceLabel}>Chỉ từ</Text>
+              <Text style={[styles.priceLabel, { color: colors.textSecondary }]}>Chỉ từ</Text>
               <Text style={styles.priceValue}>
                 {formatPrice(stay.pricePerNight)}
-                <Text style={styles.priceUnit}> /đêm</Text>
+                <Text style={[styles.priceUnit, { color: colors.textSecondary }]}> /đêm</Text>
               </Text>
             </View>
 
-            <View style={styles.viewStayBtn}>
+            <View style={[styles.viewStayBtn, isDarkMode && { backgroundColor: 'rgba(0, 189, 214, 0.15)', borderColor: 'rgba(0, 189, 214, 0.3)' }]}>
               <Text style={styles.viewStayBtnText}>Xem chi tiết</Text>
               <Ionicons name="arrow-forward" size={13} color="#00BDD6" style={{ marginLeft: 3 }} />
             </View>
@@ -228,24 +236,38 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
           </View>
         )}
 
-        <View style={[styles.bubbleContainer, isUser ? styles.userBubble : styles.aiBubble]}>
+        <View
+          style={[
+            styles.bubbleContainer,
+            isUser
+              ? styles.userBubble
+              : [
+                  styles.aiBubble,
+                  {
+                    backgroundColor: isDarkMode ? '#1E293B' : '#F3F4F6',
+                    borderWidth: isDarkMode ? 1 : 0,
+                    borderColor: colors.border,
+                  },
+                ],
+          ]}
+        >
           {!isUser && (
             <View style={styles.aiSenderHeader}>
-              <Text style={styles.aiSenderName}>Trợ lý AI Travelling</Text>
-              <View style={styles.geminiBadge}>
-                <Text style={styles.geminiBadgeText}>AI</Text>
+              <Text style={[styles.aiSenderName, { color: colors.text }]}>Trợ lý AI Travelling</Text>
+              <View style={[styles.geminiBadge, isDarkMode && { backgroundColor: 'rgba(2, 132, 199, 0.25)' }]}>
+                <Text style={[styles.geminiBadgeText, isDarkMode && { color: '#38BDF8' }]}>AI</Text>
               </View>
             </View>
           )}
 
-          <Text style={[styles.messageText, isUser ? styles.userMessageText : styles.aiMessageText]}>
+          <Text style={[styles.messageText, isUser ? styles.userMessageText : [styles.aiMessageText, { color: colors.text }]]}>
             {item.text}
           </Text>
 
           {/* If AI recommended stays */}
           {item.recommendedStays && item.recommendedStays.length > 0 && (
-            <View style={styles.recommendationsSection}>
-              <Text style={styles.recommendationsTitle}>
+            <View style={[styles.recommendationsSection, { borderTopColor: colors.border }]}>
+              <Text style={[styles.recommendationsTitle, { color: colors.text }]}>
                 <Ionicons name="bed-outline" size={14} color="#00BDD6" /> Gợi ý chỗ nghỉ dành cho bạn:
               </Text>
               <View style={styles.staysListContainer}>
@@ -275,18 +297,24 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
 
           {/* Follow-up question chips on the latest AI message */}
           {!isUser && isLatest && item.followUps && item.followUps.length > 0 && !isLoading && (
-            <View style={styles.followUpsContainer}>
-              <Text style={styles.followUpsTitle}>Gợi ý câu hỏi tiếp theo:</Text>
+            <View style={[styles.followUpsContainer, { borderTopColor: colors.border }]}>
+              <Text style={[styles.followUpsTitle, { color: colors.textSecondary }]}>Gợi ý câu hỏi tiếp theo:</Text>
               <View style={styles.followUpsWrap}>
                 {item.followUps.map((prompt, pIdx) => (
                   <TouchableOpacity
                     key={pIdx}
-                    style={styles.followUpChip}
+                    style={[
+                      styles.followUpChip,
+                      {
+                        backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF',
+                        borderColor: colors.border,
+                      },
+                    ]}
                     onPress={() => handleSend(prompt)}
                     activeOpacity={0.7}
                   >
                     <Ionicons name="chatbubble-ellipses-outline" size={12} color="#00BDD6" style={{ marginRight: 4 }} />
-                    <Text style={styles.followUpText}>{prompt}</Text>
+                    <Text style={[styles.followUpText, isDarkMode && { color: '#2DD4BF' }]}>{prompt}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -298,30 +326,30 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <StatusBar style={isDarkMode ? "light" : "dark"} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={24} color="#1F2937" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
 
         <View style={styles.headerTitleContainer}>
           <View style={styles.headerTitleRow}>
-            <Text style={styles.headerTitle}>Trợ lý Du lịch AI</Text>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>Trợ lý Du lịch AI</Text>
             <View style={styles.activeDot} />
           </View>
-          <Text style={styles.headerSubtitle}>Trợ giúp & Hỗ trợ thông minh 24/7</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Trợ giúp & Hỗ trợ thông minh 24/7</Text>
         </View>
 
         <TouchableOpacity style={styles.clearButton} onPress={handleClearChat} activeOpacity={0.7}>
-          <Ionicons name="refresh-outline" size={20} color="#6B7280" />
+          <Ionicons name="refresh-outline" size={20} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
       {/* Quick Prompts Carousel */}
-      <View style={styles.quickPromptsWrapper}>
+      <View style={[styles.quickPromptsWrapper, { backgroundColor: isDarkMode ? '#0F172A' : '#F8FAFC', borderBottomColor: colors.border }]}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -330,12 +358,18 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
           {QUICK_PROMPTS.map((prompt, idx) => (
             <TouchableOpacity
               key={idx}
-              style={styles.quickPromptChip}
+              style={[
+                styles.quickPromptChip,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                },
+              ]}
               onPress={() => handleSend(prompt.query)}
               disabled={isLoading}
               activeOpacity={0.75}
             >
-              <Text style={styles.quickPromptText}>{prompt.label}</Text>
+              <Text style={[styles.quickPromptText, { color: colors.text }]}>{prompt.label}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -360,9 +394,9 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
                 <View style={styles.aiAvatarContainer}>
                   <Ionicons name="sparkles" size={14} color="#FFFFFF" />
                 </View>
-                <View style={styles.loadingBubble}>
+                <View style={[styles.loadingBubble, { backgroundColor: isDarkMode ? '#1E293B' : '#F3F4F6' }]}>
                   <ActivityIndicator size="small" color="#00BDD6" />
-                  <Text style={styles.loadingText}>AI đang phân tích và tìm chỗ nghỉ phù hợp...</Text>
+                  <Text style={[styles.loadingText, { color: colors.textSecondary }]}>AI đang phân tích và tìm chỗ nghỉ phù hợp...</Text>
                 </View>
               </View>
             ) : null
@@ -370,9 +404,15 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
         />
 
         {/* Input Bar */}
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
           <TouchableOpacity
-            style={styles.voiceButton}
+            style={[
+              styles.voiceButton,
+              isDarkMode && {
+                backgroundColor: '#0F172A',
+                borderColor: colors.border,
+              },
+            ]}
             onPress={() => setIsVoiceModalOpen(true)}
             activeOpacity={0.7}
             disabled={isLoading}
@@ -381,19 +421,32 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
           </TouchableOpacity>
 
           <TextInput
-            style={styles.textInput}
+            style={[
+              styles.textInput,
+              {
+                backgroundColor: isDarkMode ? '#0F172A' : '#F9FAFB',
+                borderColor: colors.border,
+                color: colors.text,
+              },
+            ]}
             placeholder="Hỏi AI tìm phòng, tư vấn du lịch, hủy chuyến..."
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colors.textSecondary}
             value={inputMessage}
             onChangeText={setInputMessage}
             multiline
             maxLength={500}
             editable={!isLoading}
+            onKeyPress={(e: any) => {
+              if (Platform.OS === 'web' && e.nativeEvent?.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault?.();
+                handleSend();
+              }
+            }}
           />
           <TouchableOpacity
             style={[
               styles.sendButton,
-              (!inputMessage.trim() || isLoading) && styles.sendButtonDisabled,
+              (!inputMessage.trim() || isLoading) && (isDarkMode ? { backgroundColor: '#334155' } : styles.sendButtonDisabled),
             ]}
             onPress={() => handleSend()}
             disabled={!inputMessage.trim() || isLoading}
@@ -428,7 +481,6 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
@@ -438,7 +490,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
-    backgroundColor: '#FFFFFF',
   },
   backButton: {
     padding: 6,

@@ -11,26 +11,26 @@ function MainApp() {
   const { isDarkMode, colors } = useTheme();
 
   return (
-    <View style={[styles.outerContainer, { backgroundColor: isDarkMode ? '#0B0F17' : '#F3F4F6' }]}>
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <StatusBar style={colors.statusBar} />
-        <AppNavigator />
+    <SafeAreaProvider style={[styles.outerContainer, { backgroundColor: colors.background }]}>
+      <View style={[styles.outerContainer, { backgroundColor: colors.background }]}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          <StatusBar style={colors.statusBar} />
+          <AppNavigator />
+        </View>
       </View>
-    </View>
+    </SafeAreaProvider>
   );
 }
 
 export default function App() {
   return (
-    <SafeAreaProvider style={styles.outerContainer}>
-      <AuthProvider>
-        <ThemeProvider>
-          <CurrencyProvider>
-            <MainApp />
-          </CurrencyProvider>
-        </ThemeProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <AuthProvider>
+      <ThemeProvider>
+        <CurrencyProvider>
+          <MainApp />
+        </CurrencyProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 
@@ -9,6 +9,7 @@ interface SearchHeaderProps {
   onClear: () => void;
   onPress?: () => void;
   onVoicePress?: () => void;
+  onSubmit?: () => void;
 }
 
 export const SearchHeader: React.FC<SearchHeaderProps> = ({
@@ -17,6 +18,7 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
   onClear,
   onPress,
   onVoicePress,
+  onSubmit,
 }) => {
   const { isDarkMode, colors } = useTheme();
 
@@ -40,6 +42,12 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
             value={searchQuery}
             onChangeText={onSearchChange}
             returnKeyType="search"
+            onSubmitEditing={onSubmit}
+            onKeyPress={(e: any) => {
+              if (Platform.OS === 'web' && e.nativeEvent?.key === 'Enter') {
+                onSubmit?.();
+              }
+            }}
             clearButtonMode="never"
           />
         )}

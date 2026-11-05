@@ -37,7 +37,7 @@ export const isPastCheckout = (checkOutDateStr: string): boolean => {
       const checkout = new Date(y, m, d, 23, 59, 59);
       return checkout < new Date();
     }
-  } catch {}
+  } catch { }
   return false;
 };
 
@@ -97,10 +97,10 @@ const formatAccommodation = (
 
   const rating = hasUserReviews
     ? Math.round(
-        ((itemReviews.reduce((sum, r) => sum + r.rating, 0) + rawRating * rawReviewCount) /
-          (itemReviews.length + rawReviewCount)) *
-          10
-      ) / 10
+      ((itemReviews.reduce((sum, r) => sum + r.rating, 0) + rawRating * rawReviewCount) /
+        (itemReviews.length + rawReviewCount)) *
+      10
+    ) / 10
     : Math.round(rawRating * 10) / 10;
 
   const reviewCount = rawReviewCount + itemReviews.length;
@@ -141,9 +141,9 @@ const formatAccommodation = (
   const host = raw.host && raw.host.name
     ? raw.host
     : {
-        name: 'Chủ nhà thân thiện',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-      };
+      name: 'Chủ nhà thân thiện',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    };
 
   const services = translation?.services || [
     'Dọn phòng hàng ngày theo yêu cầu',
@@ -381,7 +381,7 @@ class MockApiService {
         if (Array.isArray(fetchedData) && fetchedData.length > 0) {
           rawData = fetchedData;
           // Lưu cache vào AsyncStorage để dùng khi offline
-          AsyncStorage.setItem(REMOTE_CACHE_KEY, JSON.stringify(fetchedData)).catch(() => {});
+          AsyncStorage.setItem(REMOTE_CACHE_KEY, JSON.stringify(fetchedData)).catch(() => { });
         }
       }
     } catch {
@@ -391,7 +391,7 @@ class MockApiService {
         if (cached) {
           rawData = JSON.parse(cached);
         }
-      } catch {}
+      } catch { }
     }
 
     // 3. Fallback sang dữ liệu 50 sản phẩm đã bundle sẵn nếu chưa có mạng
@@ -587,7 +587,7 @@ class MockApiService {
           return this.currentUserId;
         }
       }
-    } catch {}
+    } catch { }
     return 'guest';
   }
 
@@ -622,7 +622,7 @@ class MockApiService {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isFavorite: !isFav }),
-      }).catch(() => {});
+      }).catch(() => { });
 
       return !isFav;
     } catch (e) {
@@ -730,11 +730,11 @@ class MockApiService {
       const updated = existing.map((b) =>
         b.bookingId === bookingId
           ? {
-              ...b,
-              status: 'cancelled' as const,
-              cancellationReason: reason || 'Thay đổi lịch trình cá nhân',
-              cancelledAt: new Date().toLocaleDateString('vi-VN'),
-            }
+            ...b,
+            status: 'cancelled' as const,
+            cancellationReason: reason || 'Thay đổi lịch trình cá nhân',
+            cancelledAt: new Date().toLocaleDateString('vi-VN'),
+          }
           : b
       );
       await AsyncStorage.setItem(key, JSON.stringify(updated));
@@ -751,10 +751,10 @@ class MockApiService {
       const updated = existing.map((b) =>
         b.bookingId === bookingId
           ? {
-              ...b,
-              status: 'completed' as const,
-              completedAt: new Date().toLocaleDateString('vi-VN'),
-            }
+            ...b,
+            status: 'completed' as const,
+            completedAt: new Date().toLocaleDateString('vi-VN'),
+          }
           : b
       );
       await AsyncStorage.setItem(key, JSON.stringify(updated));
@@ -798,11 +798,11 @@ class MockApiService {
       const updated = existing.map((b) =>
         b.bookingId === bookingId
           ? {
-              ...b,
-              hasReviewed: true,
-              review: newReview,
-              status: 'completed' as const,
-            }
+            ...b,
+            hasReviewed: true,
+            review: newReview,
+            status: 'completed' as const,
+          }
           : b
       );
 

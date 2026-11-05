@@ -41,59 +41,65 @@ export const DescriptionScreen: React.FC<DescriptionScreenProps> = ({ stay, onBa
   ];
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      <StatusBar style={isDarkMode ? "light" : "dark"} />
+    <View style={[styles.outerWrapper, { backgroundColor: colors.background }]}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+        <StatusBar style={isDarkMode ? "light" : "dark"} />
 
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Mô tả chi tiết</Text>
-        <View style={{ width: 24 }} />
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Full Image */}
-        <Image source={{ uri: heroImage }} style={styles.heroImage} />
-
-        {/* Title */}
-        <Text style={[styles.stayTitle, { color: colors.text }]}>{stay.title}</Text>
-
-        {/* Description Text */}
-        <Text style={[styles.paragraph, { color: colors.textSecondary }]}>{descriptionText}</Text>
-
-        {/* Location & Open Map Link */}
-        <View style={[styles.locationRow, { borderColor: colors.border }]}>
-          <View style={styles.locationLeft}>
-            <Ionicons name="location-sharp" size={20} color="#00BDD6" style={{ marginRight: 6 }} />
-            <Text style={[styles.locationText, { color: colors.textSecondary }]}>{stay.location}</Text>
-          </View>
-          <TouchableOpacity onPress={handleOpenGoogleMaps} style={styles.openMapButton}>
-            <Ionicons name="map-outline" size={16} color="#00838F" style={{ marginRight: 4 }} />
-            <Text style={styles.openMapText}>Mở Google Maps</Text>
+        {/* Header */}
+        <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.background }]}>
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Mô tả chi tiết</Text>
+          <View style={{ width: 24 }} />
         </View>
 
-        {/* Feature Bullets with Checkmarks */}
-        <Text style={[styles.highlightsHeader, { color: colors.text }]}>Điểm nổi bật của chỗ ở</Text>
-        <View style={styles.bulletsList}>
-          {highlights.map((bullet, idx) => (
-            <View key={idx} style={styles.bulletItem}>
-              <Ionicons name="checkmark-circle" size={22} color="#00BDD6" style={styles.checkIcon} />
-              <Text style={[styles.bulletText, { color: colors.textSecondary }]}>{bullet}</Text>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Full Image */}
+          <Image source={{ uri: heroImage }} style={styles.heroImage} />
+
+          {/* Title */}
+          <Text style={[styles.stayTitle, { color: colors.text }]}>{stay.title}</Text>
+
+          {/* Description Text */}
+          <Text style={[styles.paragraph, { color: colors.textSecondary }]}>{descriptionText}</Text>
+
+          {/* Location & Open Map Link */}
+          <View style={[styles.locationRow, { borderColor: colors.border }]}>
+            <View style={styles.locationLeft}>
+              <Ionicons name="location-sharp" size={20} color="#00BDD6" style={{ marginRight: 6 }} />
+              <Text style={[styles.locationText, { color: colors.textSecondary }]}>{stay.location}</Text>
             </View>
-          ))}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+            <TouchableOpacity onPress={handleOpenGoogleMaps} style={styles.openMapButton}>
+              <Ionicons name="map-outline" size={16} color="#00838F" style={{ marginRight: 4 }} />
+              <Text style={styles.openMapText}>Mở Google Maps</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Feature Bullets with Checkmarks */}
+          <Text style={[styles.highlightsHeader, { color: colors.text }]}>Điểm nổi bật của chỗ ở</Text>
+          <View style={styles.bulletsList}>
+            {highlights.map((bullet, idx) => (
+              <View key={idx} style={styles.bulletItem}>
+                <Ionicons name="checkmark-circle" size={22} color="#00BDD6" style={styles.checkIcon} />
+                <Text style={[styles.bulletText, { color: colors.textSecondary }]}>{bullet}</Text>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  outerWrapper: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
     width: '100%',
     maxWidth: 840,
     alignSelf: 'center',

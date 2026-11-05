@@ -37,72 +37,77 @@ export const FacilitiesScreen: React.FC<FacilitiesScreenProps> = ({ stay, onBack
       : ['Phòng tắm riêng biệt', 'Khăn tắm cao cấp', 'Máy sấy tóc'];
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      <StatusBar style={isDarkMode ? "light" : "dark"} />
+    <View style={[styles.outerWrapper, { backgroundColor: colors.background }]}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+        <StatusBar style={isDarkMode ? "light" : "dark"} />
 
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Tiện ích & dịch vụ</Text>
-        <View style={{ width: 24 }} />
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* FACILITIES SECTION */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Tiện ích</Text>
-        <Text style={[styles.summaryText, { color: colors.textSecondary }]}>
-          {stay.maxGuests || 2} Khách   {stay.bedrooms || 1} phòng ngủ   {stay.beds || 1} giường   {stay.bathrooms || 1} phòng tắm
-        </Text>
-
-        <View style={styles.itemsList}>
-          {facilities.map((fac, idx) => (
-            <View key={`fac-${idx}`} style={styles.facilityRow}>
-              <Ionicons name={getAmenityIcon(fac)} size={22} color="#00BDD6" style={styles.itemIcon} />
-              <Text style={[styles.itemText, { color: colors.text }]}>{fac}</Text>
-            </View>
-          ))}
+        {/* Header */}
+        <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.background }]}>
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Tiện ích & dịch vụ</Text>
+          <View style={{ width: 24 }} />
         </View>
 
-        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          {/* FACILITIES SECTION */}
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Tiện ích</Text>
+          <Text style={[styles.summaryText, { color: colors.textSecondary }]}>
+            {stay.maxGuests || 2} Khách   {stay.bedrooms || 1} phòng ngủ   {stay.beds || 1} giường   {stay.bathrooms || 1} phòng tắm
+          </Text>
 
-        {/* SERVICES SECTION */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Dịch vụ</Text>
-        <Text style={styles.subCategoryHeader}>Dịch vụ & tiện nghi bổ sung</Text>
+          <View style={styles.itemsList}>
+            {facilities.map((fac, idx) => (
+              <View key={`fac-${idx}`} style={[styles.facilityRow, { borderBottomColor: colors.border }]}>
+                <Ionicons name={getAmenityIcon(fac)} size={22} color="#00BDD6" style={styles.itemIcon} />
+                <Text style={[styles.itemText, { color: colors.text }]}>{fac}</Text>
+              </View>
+            ))}
+          </View>
 
-        <View style={styles.itemsList}>
-          {services.map((srv, idx) => (
-            <View key={`srv-${idx}`} style={styles.facilityRow}>
-              <Ionicons name={getAmenityIcon(srv)} size={22} color="#00BDD6" style={styles.itemIcon} />
-              <Text style={[styles.itemText, { color: colors.text }]}>{srv}</Text>
-            </View>
-          ))}
-        </View>
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          {/* SERVICES SECTION */}
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Dịch vụ</Text>
+          <Text style={[styles.subCategoryHeader, { color: colors.text }]}>Dịch vụ & tiện nghi bổ sung</Text>
 
-        {/* BATHROOM SECTION */}
-        <Text style={styles.subCategoryHeader}>Phòng tắm & vệ sinh cá nhân</Text>
+          <View style={styles.itemsList}>
+            {services.map((srv, idx) => (
+              <View key={`srv-${idx}`} style={[styles.facilityRow, { borderBottomColor: colors.border }]}>
+                <Ionicons name={getAmenityIcon(srv)} size={22} color="#00BDD6" style={styles.itemIcon} />
+                <Text style={[styles.itemText, { color: colors.text }]}>{srv}</Text>
+              </View>
+            ))}
+          </View>
 
-        <View style={styles.itemsList}>
-          {bathroom.map((bath, idx) => (
-            <View key={`bath-${idx}`} style={styles.facilityRow}>
-              <Ionicons name={getAmenityIcon(bath)} size={22} color="#00BDD6" style={styles.itemIcon} />
-              <Text style={[styles.itemText, { color: colors.text }]}>{bath}</Text>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-    </SafeAreaView>
+          {/* BATHROOM SECTION */}
+          <Text style={[styles.subCategoryHeader, { color: colors.text }]}>Phòng tắm & vệ sinh cá nhân</Text>
+
+          <View style={styles.itemsList}>
+            {bathroom.map((bath, idx) => (
+              <View key={`bath-${idx}`} style={[styles.facilityRow, { borderBottomColor: colors.border }]}>
+                <Ionicons name={getAmenityIcon(bath)} size={22} color="#00BDD6" style={styles.itemIcon} />
+                <Text style={[styles.itemText, { color: colors.text }]}>{bath}</Text>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  outerWrapper: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
     width: '100%',
     maxWidth: 840,
     alignSelf: 'center',
