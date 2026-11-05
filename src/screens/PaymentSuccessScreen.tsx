@@ -73,9 +73,11 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
       </View>
 
       <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={[styles.container, { paddingBottom: 40 }]}
-        showsVerticalScrollIndicator={false}
+        style={{ flex: 1, width: '100%' }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 60 }}
+        showsVerticalScrollIndicator={true}
+        bounces={true}
+        overScrollMode="always"
       >
         {/* CELEBRATION ICON GRAPHIC (Page 15) */}
         <View style={styles.graphicContainer}>
@@ -261,28 +263,28 @@ const styles = StyleSheet.create({
   graphicContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 40,
-    marginBottom: 20,
+    marginTop: 16,
+    marginBottom: 12,
     position: 'relative',
-    height: 140,
+    height: 100,
   },
   checkCircleOuter: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
     backgroundColor: '#34D399',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowRadius: 8,
+    elevation: 6,
   },
   checkCircleInner: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: '#10B981',
     alignItems: 'center',
     justifyContent: 'center',
@@ -332,11 +334,11 @@ const styles = StyleSheet.create({
     right: '25%',
   },
   title: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: '800',
     color: '#111827',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   receiptCard: {
     backgroundColor: '#FFFFFF',
