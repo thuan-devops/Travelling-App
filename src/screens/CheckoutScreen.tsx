@@ -972,9 +972,18 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
                 initialStartDate={startDate}
                 initialEndDate={endDate}
                 onSelectRange={(range) => {
-                  if (range.startDate) setStartDate(range.startDate);
-                  if (range.endDate) setEndDate(range.endDate);
-                  setNights(range.nights);
+                  if (range.startDate) {
+                    setStartDate(range.startDate);
+                    if (range.endDate) {
+                      setEndDate(range.endDate);
+                    } else {
+                      const next = new Date(range.startDate.getTime() + 86400000);
+                      setEndDate(next);
+                    }
+                  }
+                  if (range.nights) {
+                    setNights(range.nights);
+                  }
                 }}
               />
 

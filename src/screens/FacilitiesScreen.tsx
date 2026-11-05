@@ -40,16 +40,18 @@ export const FacilitiesScreen: React.FC<FacilitiesScreenProps> = ({ stay, onBack
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <StatusBar style={isDarkMode ? "light" : "dark"} />
 
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Tiện ích & dịch vụ</Text>
-        <View style={{ width: 24 }} />
+      {/* Header Full-Width with Centered Inner */}
+      <View style={{ width: '100%', backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+        <View style={[styles.header, { maxWidth: 840, width: '100%', alignSelf: 'center', backgroundColor: colors.card, borderBottomWidth: 0 }]}>
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Tiện ích & dịch vụ</Text>
+          <View style={{ width: 24 }} />
+        </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { maxWidth: 840, width: '100%', alignSelf: 'center' }]} showsVerticalScrollIndicator={false}>
         {/* FACILITIES SECTION */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Tiện ích</Text>
         <Text style={[styles.summaryText, { color: colors.textSecondary }]}>
@@ -102,10 +104,7 @@ export const FacilitiesScreen: React.FC<FacilitiesScreenProps> = ({ stay, onBack
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
     width: '100%',
-    maxWidth: 840,
-    alignSelf: 'center',
   },
   header: {
     flexDirection: 'row',

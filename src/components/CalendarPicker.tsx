@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -62,13 +62,34 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
     initialEndDate || null
   );
 
+  // Cờ nhận diện người dùng đang tương tác chọn ngày bên trong component
+  const isUserInteractingRef = useRef<boolean>(false);
+  const prevPropsRef = useRef<{ start?: number; end?: number }>({
+    start: initialStartDate?.getTime(),
+    end: initialEndDate?.getTime(),
+  });
+
   useEffect(() => {
-    if (initialStartDate) {
+    const prevStart = prevPropsRef.current.start;
+    const prevEnd = prevPropsRef.current.end;
+    const newStart = initialStartDate?.getTime();
+    const newEnd = initialEndDate?.getTime();
+
+    const startChanged = newStart !== prevStart;
+    const endChanged = newEnd !== prevEnd;
+    prevPropsRef.current = { start: newStart, end: newEnd };
+
+    // Nếu người dùng đang thao tác chọn ngày dở dang (chưa chọn ngày về), không để props cha ghi đè
+    if (isUserInteractingRef.current) {
+      return;
+    }
+
+    if (startChanged && initialStartDate) {
       setStartDate(initialStartDate);
       setCurrentMonth(initialStartDate.getMonth());
       setCurrentYear(initialStartDate.getFullYear());
     }
-    if (initialEndDate) {
+    if (endChanged && initialEndDate) {
       setEndDate(initialEndDate);
     }
   }, [initialStartDate, initialEndDate]);
@@ -120,17 +141,26 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
     const clickedDate = new Date(currentYear, currentMonth, day);
     clickedDate.setHours(0, 0, 0, 0);
 
-    // If no start date or both start & end exist, start fresh
+    // Bước 1: Nếu chưa có ngày nhận phòng HOẶC đã có cả 2 ngày (khoảng cũ xong rồi) -> bắt đầu chọn khoảng mới
     if (!startDate || (startDate && endDate)) {
+      isUserInteractingRef.current = true;
       setStartDate(clickedDate);
       setEndDate(null);
+
+      // Tạo ngày về mặc định +1 đêm để màn hình cha không bị rỗng/lỗi số tiền
+      const defaultEnd = new Date(clickedDate.getFullYear(), clickedDate.getMonth(), clickedDate.getDate() + 1);
+      defaultEnd.setHours(0, 0, 0, 0);
+
       onSelectRange({
         startDate: clickedDate,
-        endDate: null,
+        endDate: defaultEnd,
         nights: 1,
       });
     } else if (startDate && !endDate) {
+      // Bước 2: Đang chờ chọn ngày trả phòng
       if (clickedDate.getTime() > startDate.getTime()) {
+        // Chọn ngày trả phòng hợp lệ (sau ngày nhận phòng)
+        isUserInteractingRef.current = false; // Hoàn tất khoảng chọn
         setEndDate(clickedDate);
         const nights = calculateNights(startDate, clickedDate);
         onSelectRange({
@@ -138,13 +168,28 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
           endDate: clickedDate,
           nights,
         });
-      } else {
-        // Clicked date is earlier than startDate, reset start date
-        setStartDate(clickedDate);
-        setEndDate(null);
+      } else if (clickedDate.getTime() === startDate.getTime()) {
+        // Nhấn trùng ngày nhận phòng: mặc định 1 đêm
+        isUserInteractingRef.current = false;
+        const nextDay = new Date(clickedDate.getFullYear(), clickedDate.getMonth(), clickedDate.getDate() + 1);
+        nextDay.setHours(0, 0, 0, 0);
+        setEndDate(nextDay);
         onSelectRange({
           startDate: clickedDate,
-          endDate: null,
+          endDate: nextDay,
+          nights: 1,
+        });
+      } else {
+        // Nhấn ngày nhỏ hơn ngày nhận phòng: đổi ngày nhận phòng sang ngày vừa nhấn
+        isUserInteractingRef.current = true;
+        setStartDate(clickedDate);
+        setEndDate(null);
+
+        const defaultEnd = new Date(clickedDate.getFullYear(), clickedDate.getMonth(), clickedDate.getDate() + 1);
+        defaultEnd.setHours(0, 0, 0, 0);
+        onSelectRange({
+          startDate: clickedDate,
+          endDate: defaultEnd,
           nights: 1,
         });
       }
@@ -152,7 +197,8 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
   };
 
   const applyQuickPreset = (nightsCount: number) => {
-    const base = startDate || new Date();
+    isUserInteractingRef.current = false;
+    const base = (startDate && startDate.getTime() >= today.getTime()) ? startDate : today;
     const newStart = new Date(base.getFullYear(), base.getMonth(), base.getDate());
     newStart.setHours(0, 0, 0, 0);
     const newEnd = new Date(newStart.getFullYear(), newStart.getMonth(), newStart.getDate() + nightsCount);
@@ -303,11 +349,13 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
         </View>
         <View style={styles.arrowIconWrap}>
           <Ionicons name="arrow-forward" size={16} color="#00BDD6" />
-          <Text style={styles.nightsBadge}>{nights} đêm</Text>
+          <Text style={styles.nightsBadge}>{endDate ? `${nights} đêm` : 'Chọn ngày về'}</Text>
         </View>
         <View style={styles.summaryItem}>
           <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Trả phòng</Text>
-          <Text style={[styles.summaryValue, { color: colors.text }]}>{formatDate(endDate)}</Text>
+          <Text style={[styles.summaryValue, { color: endDate ? colors.text : '#00BDD6' }]}>
+            {endDate ? formatDate(endDate) : 'Chọn ngày về'}
+          </Text>
         </View>
       </View>
     </View>
