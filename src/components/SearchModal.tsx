@@ -104,7 +104,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
   initialFilters,
 }) => {
   const { isDarkMode, colors } = useTheme();
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState<boolean>(false);
 
   // Search State
@@ -119,7 +119,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
   });
 
   const [daysCount, setDaysCount] = useState<number>(initialFilters?.daysCount || 1);
-  const [adults, setAdults] = useState<number>(initialFilters?.adults || 2);
+  const [adults, setAdults] = useState<number>(initialFilters?.adults || 0);
   const [children, setChildren] = useState<number>(initialFilters?.children || 0);
 
   // Price & Rating filter state
@@ -138,7 +138,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
       nights: 1,
     });
     setDaysCount(1);
-    setAdults(2);
+    setAdults(0);
     setChildren(0);
     setSelectedPricePreset('all');
     setMinPrice(0);
@@ -168,11 +168,11 @@ export const SearchModal: React.FC<SearchModalProps> = ({
       startDate: startStr,
       endDate: endStr,
       daysCount: nights,
-      adults,
-      children,
+      adults: 0,
+      children: 0,
       minPrice: minPrice > 0 ? minPrice : 0,
       maxPrice: maxPrice < 10000000 ? maxPrice : 20000000,
-      placeTypes: ['entire'],
+      placeTypes: [],
       bedrooms: 0,
       beds: 0,
       bathrooms: 0,
@@ -204,8 +204,6 @@ export const SearchModal: React.FC<SearchModalProps> = ({
     destination,
     whenMode,
     dateRange,
-    adults,
-    children,
     minPrice,
     maxPrice,
     selectedRating,
@@ -307,16 +305,11 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                   </TouchableOpacity>
 
                   <TouchableOpacity style={[styles.summaryRow, { borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]} onPress={() => setCurrentStep(3)}>
-                    <Text style={[styles.summaryLabel, { color: isDarkMode ? '#E2E8F0' : '#4B5563', fontWeight: '600' }]}>Khách</Text>
-                    <Text style={[styles.summaryValueAction, { color: '#00BDD6', fontWeight: '700' }]}>{adults + children} khách</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity style={[styles.summaryRow, { borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]} onPress={() => setCurrentStep(4)}>
                     <Text style={[styles.summaryLabel, { color: isDarkMode ? '#E2E8F0' : '#4B5563', fontWeight: '600' }]}>Khoảng giá</Text>
                     <Text style={[styles.summaryValueAction, { color: '#00BDD6', fontWeight: '700' }]}>{priceSummaryText}</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity style={[styles.summaryRow, { borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]} onPress={() => setCurrentStep(4)}>
+                  <TouchableOpacity style={[styles.summaryRow, { borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]} onPress={() => setCurrentStep(3)}>
                     <Text style={[styles.summaryLabel, { color: isDarkMode ? '#E2E8F0' : '#4B5563', fontWeight: '600' }]}>Đánh giá sao</Text>
                     <Text style={[styles.summaryValueAction, { color: '#00BDD6', fontWeight: '700' }]}>{ratingSummaryText}</Text>
                   </TouchableOpacity>
@@ -389,7 +382,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                 </View>
               )}
 
-              {/* STEP 3: HOW MANY GUESTS? */}
+              {/* STEP 3: PRICE & RATING FILTER */}
               {currentStep === 3 && (
                 <View style={styles.stepContainer}>
                   <TouchableOpacity style={[styles.summaryRow, { borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]} onPress={() => setCurrentStep(1)}>
@@ -400,88 +393,6 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                   <TouchableOpacity style={[styles.summaryRow, { borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]} onPress={() => setCurrentStep(2)}>
                     <Text style={[styles.summaryLabel, { color: isDarkMode ? '#E2E8F0' : '#4B5563', fontWeight: '600' }]}>Thời gian</Text>
                     <Text style={[styles.summaryValueBold, { color: isDarkMode ? colors.text : '#111827' }]}>{dateSummaryText}</Text>
-                  </TouchableOpacity>
-
-                  {/* Guests Card */}
-                  <View style={[styles.guestsCard, { borderColor: isDarkMode ? colors.border : '#E5E7EB', backgroundColor: isDarkMode ? colors.surface : '#FFFFFF' }]}>
-                    <Text style={[styles.title, { color: isDarkMode ? colors.text : '#111827' }]}>Có bao nhiêu khách?</Text>
-
-                    <View style={[styles.guestRow, { borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]}>
-                      <View>
-                        <Text style={[styles.guestType, { color: isDarkMode ? colors.text : '#111827' }]}>Người lớn</Text>
-                        <Text style={[styles.guestSubtitle, { color: isDarkMode ? colors.textSecondary : '#9CA3AF' }]}>Từ 13 tuổi trở lên</Text>
-                      </View>
-                      <View style={styles.counterRow}>
-                        <TouchableOpacity
-                          style={[styles.counterCircle, { borderColor: isDarkMode ? colors.border : '#D1D5DB', backgroundColor: isDarkMode ? colors.card : '#FFFFFF' }]}
-                          onPress={() => setAdults((prev) => Math.max(1, prev - 1))}
-                        >
-                          <Ionicons name="remove" size={18} color="#9CA3AF" />
-                        </TouchableOpacity>
-                        <Text style={[styles.counterValue, { color: isDarkMode ? colors.text : '#111827' }]}>{adults}</Text>
-                        <TouchableOpacity
-                          style={[styles.counterCircle, { borderColor: isDarkMode ? colors.border : '#D1D5DB', backgroundColor: isDarkMode ? colors.card : '#FFFFFF' }]}
-                          onPress={() => setAdults((prev) => prev + 1)}
-                        >
-                          <Ionicons name="add" size={18} color="#1F2937" />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-
-                    <View style={[styles.guestRow, { borderBottomWidth: 0, borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]}>
-                      <View>
-                        <Text style={[styles.guestType, { color: isDarkMode ? colors.text : '#111827' }]}>Trẻ em</Text>
-                        <Text style={[styles.guestSubtitle, { color: isDarkMode ? colors.textSecondary : '#9CA3AF' }]}>Dưới 13 tuổi</Text>
-                      </View>
-                      <View style={styles.counterRow}>
-                        <TouchableOpacity
-                          style={[styles.counterCircle, { borderColor: isDarkMode ? colors.border : '#D1D5DB', backgroundColor: isDarkMode ? colors.card : '#FFFFFF' }]}
-                          onPress={() => setChildren((prev) => Math.max(0, prev - 1))}
-                        >
-                          <Ionicons name="remove" size={18} color="#9CA3AF" />
-                        </TouchableOpacity>
-                        <Text style={[styles.counterValue, { color: isDarkMode ? colors.text : '#111827' }]}>{children}</Text>
-                        <TouchableOpacity
-                          style={[styles.counterCircle, { borderColor: isDarkMode ? colors.border : '#D1D5DB', backgroundColor: isDarkMode ? colors.card : '#FFFFFF' }]}
-                          onPress={() => setChildren((prev) => prev + 1)}
-                        >
-                          <Ionicons name="add" size={18} color="#1F2937" />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-
-                    {/* Step 3 to Step 4 Actions */}
-                    <View style={styles.stepActionsRow}>
-                      <TouchableOpacity onPress={() => setCurrentStep(4)}>
-                        <Text style={[styles.skipText, { color: isDarkMode ? colors.textSecondary : '#4B5563' }]}>Bỏ qua</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.nextButton}
-                        onPress={() => setCurrentStep(4)}
-                      >
-                        <Text style={styles.nextButtonText}>Tiếp tục</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </View>
-              )}
-            
-              {/* STEP 4: PRICE & RATING FILTER */}
-              {currentStep === 4 && (
-                <View style={styles.stepContainer}>
-                  <TouchableOpacity style={[styles.summaryRow, { borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]} onPress={() => setCurrentStep(1)}>
-                    <Text style={[styles.summaryLabel, { color: isDarkMode ? '#E2E8F0' : '#4B5563', fontWeight: '600' }]}>Địa điểm</Text>
-                    <Text style={[styles.summaryValueBold, { color: isDarkMode ? colors.text : '#111827' }]}>{destination === 'Anywhere' ? 'Bất kỳ đâu' : destination}</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity style={[styles.summaryRow, { borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]} onPress={() => setCurrentStep(2)}>
-                    <Text style={[styles.summaryLabel, { color: isDarkMode ? '#E2E8F0' : '#4B5563', fontWeight: '600' }]}>Thời gian</Text>
-                    <Text style={[styles.summaryValueBold, { color: isDarkMode ? colors.text : '#111827' }]}>{dateSummaryText}</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity style={[styles.summaryRow, { borderBottomColor: isDarkMode ? colors.border : '#F3F4F6' }]} onPress={() => setCurrentStep(3)}>
-                    <Text style={[styles.summaryLabel, { color: isDarkMode ? '#E2E8F0' : '#4B5563', fontWeight: '600' }]}>Khách</Text>
-                    <Text style={[styles.summaryValueBold, { color: isDarkMode ? colors.text : '#111827' }]}>{adults + children} khách</Text>
                   </TouchableOpacity>
 
                   <View style={[styles.filterCard, { backgroundColor: isDarkMode ? colors.surface : '#FFFFFF', borderColor: isDarkMode ? colors.border : '#E5E7EB' }]}>

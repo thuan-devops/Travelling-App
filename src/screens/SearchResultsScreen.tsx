@@ -40,7 +40,6 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
   const { isMobile, isTablet, isDesktop, gridColumns, contentMaxWidth, horizontalPadding } = useResponsive();
   const [stays, setStays] = useState<Accommodation[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [presentTotalPrice, setPresentTotalPrice] = useState<boolean>(true);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState<boolean>(false);
   const [currentFilters, setCurrentFilters] = useState<SearchFilterState>(filters);
 
@@ -85,9 +84,10 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
     !currentFilters.destination || currentFilters.destination === 'Anywhere'
       ? 'Bất kỳ đâu'
       : currentFilters.destination;
-  const guestCount = (currentFilters.adults || 0) + (currentFilters.children || 0) || 2;
+  const totalGuests = (currentFilters.adults || 0) + (currentFilters.children || 0);
+  const guestBadge = totalGuests > 0 ? `, ${totalGuests} khách` : '';
   const ratingBadge = currentFilters.minRating ? ` • ⭐ ${currentFilters.minRating}+` : '';
-  const headerSummaryText = `${destSummary}, ${dateSummary}, ${guestCount} khách${ratingBadge}`;
+  const headerSummaryText = `${destSummary}, ${dateSummary}${guestBadge}${ratingBadge}`;
 
   const renderStayCard = ({ item }: { item: any }) => {
     if (item.empty) {
@@ -100,16 +100,7 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
         />
       );
     }
-    const hasSpecificNights = !!(
-      currentFilters.startDate &&
-      currentFilters.endDate &&
-      currentFilters.daysCount &&
-      currentFilters.daysCount > 1
-    );
-    const displayPrice =
-      presentTotalPrice && hasSpecificNights
-        ? item.pricePerNight * currentFilters.daysCount
-        : item.pricePerNight;
+    const displayPrice = item.pricePerNight;
 
     return (
       <TouchableOpacity
@@ -160,7 +151,7 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
             </View>
             <Text style={[styles.priceText, { color: colors.textSecondary }]}>
               <Text style={[styles.priceBold, { color: colors.text }]}>{formatPrice(displayPrice)}</Text>
-              {presentTotalPrice && hasSpecificNights ? '/' + currentFilters.daysCount + ' đêm' : '/đêm'}
+              /đêm
             </Text>
           </View>
         </View>
@@ -192,8 +183,10 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
 
       <View style={{ maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%', paddingHorizontal: horizontalPadding }}>
         {/* ACTIVE FILTER CHIPS */}
-        {(currentFilters.minRating || (currentFilters.minPrice > 0 || (currentFilters.maxPrice && currentFilters.maxPrice < 10000000))) ? (
-          <View style={styles.activeChipsRow}>
+        {((currentFilters.minRating && currentFilters.minRating > 0) ||
+          ((currentFilters.minPrice && currentFilters.minPrice > 0) ||
+           (currentFilters.maxPrice && currentFilters.maxPrice > 1000 && currentFilters.maxPrice < 10000000))) ? (
+          <View style={[styles.activeChipsRow, { marginBottom: 10 }]}>
             {!!currentFilters.minRating && (
               <TouchableOpacity
                 style={styles.activeChipPill}
@@ -205,14 +198,15 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
               </TouchableOpacity>
             )}
 
-            {(currentFilters.minPrice > 0 || (currentFilters.maxPrice && currentFilters.maxPrice < 10000000)) && (
+            {((currentFilters.minPrice && currentFilters.minPrice > 0) ||
+              (currentFilters.maxPrice && currentFilters.maxPrice > 1000 && currentFilters.maxPrice < 10000000)) && (
               <TouchableOpacity
                 style={styles.activeChipPill}
                 onPress={() => setCurrentFilters((prev) => ({ ...prev, minPrice: 0, maxPrice: 10000000 }))}
               >
                 <Ionicons name="pricetag" size={12} color="#00BDD6" style={{ marginRight: 4 }} />
                 <Text style={styles.activeChipText}>
-                  {currentFilters.minPrice > 0 ? `${(currentFilters.minPrice / 1000000).toFixed(1)}Tr` : '0đ'} - {currentFilters.maxPrice && currentFilters.maxPrice < 10000000 ? `${(currentFilters.maxPrice / 1000000).toFixed(1)}Tr` : 'Max'}
+                  {currentFilters.minPrice && currentFilters.minPrice > 0 ? `${(currentFilters.minPrice / 1000000).toFixed(1)}Tr` : '0đ'} - {currentFilters.maxPrice && currentFilters.maxPrice < 10000000 ? `${(currentFilters.maxPrice / 1000000).toFixed(1)}Tr` : 'Max'}
                 </Text>
                 <Ionicons name="close-circle" size={14} color="#6B7280" style={{ marginLeft: 4 }} />
               </TouchableOpacity>
@@ -226,20 +220,6 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
             </TouchableOpacity>
           </View>
         ) : null}
-
-        {/* TOGGLE ROW: Present total price (Page 7) */}
-        <View style={styles.totalPriceToggleRow}>
-          <View>
-            <Text style={styles.toggleTitle}>Hiển thị tổng giá</Text>
-            <Text style={styles.toggleSubtitle}>Trọn gói, trước thuế</Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.checkbox, presentTotalPrice && styles.checkboxActive]}
-            onPress={() => setPresentTotalPrice(!presentTotalPrice)}
-          >
-            {presentTotalPrice && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
-          </TouchableOpacity>
-        </View>
       </View>
 
       {/* LIST OF HOMES */}

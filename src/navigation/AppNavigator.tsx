@@ -122,18 +122,18 @@ export const AppNavigator: React.FC = () => {
 
   const [searchFilters, setSearchFilters] = useState<SearchFilterState>({
     destination: 'Anywhere',
-    startDate: '23 May',
-    endDate: '31 May',
+    startDate: '',
+    endDate: '',
     daysCount: 1,
-    adults: 2,
+    adults: 0,
     children: 0,
-    minPrice: 10,
-    maxPrice: 250,
-    placeTypes: ['entire'],
-    bedrooms: 1,
-    beds: 1,
-    bathrooms: 1,
-    facilities: ['Kitchen', 'Outdoor space'],
+    minPrice: 0,
+    maxPrice: 20000000,
+    placeTypes: [],
+    bedrooms: 0,
+    beds: 0,
+    bathrooms: 0,
+    facilities: [],
     presentTotalPrice: true,
   });
 

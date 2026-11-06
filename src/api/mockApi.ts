@@ -507,7 +507,12 @@ class MockApiService {
             cleanT.includes('chalet') ||
             cleanT.includes('nguyen can') ||
             cleanT.includes('penthouse') ||
-            cleanT.includes('resort');
+            cleanT.includes('resort') ||
+            cleanT.includes('lodge') ||
+            cleanT.includes('cruise') ||
+            cleanT.includes('thuyen') ||
+            cleanT.includes('hotel') ||
+            cleanT.includes('khach san');
           const isDorm =
             cleanT.includes('ky tuc') ||
             cleanT.includes('dorm') ||
