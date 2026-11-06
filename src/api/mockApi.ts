@@ -19,6 +19,28 @@ const REVIEWS_STORAGE_KEY = '@travelling_app_all_reviews_v2';
 const BOOKINGS_STORAGE_KEY = '@travelling_app_bookings';
 const REMOTE_CACHE_KEY = '@travelling_app_remote_cache_v6';
 
+export const parseBookingDate = (dateStr: string): Date | null => {
+  if (!dateStr) return null;
+  try {
+    const parts = dateStr.split(/[-/]/);
+    if (parts.length === 3) {
+      let d: number, m: number, y: number;
+      if (parts[0].length === 4) {
+        y = parseInt(parts[0], 10);
+        m = parseInt(parts[1], 10) - 1;
+        d = parseInt(parts[2], 10);
+      } else {
+        d = parseInt(parts[0], 10);
+        m = parseInt(parts[1], 10) - 1;
+        y = parseInt(parts[2], 10);
+      }
+      const dt = new Date(y, m, d, 0, 0, 0, 0);
+      if (!isNaN(dt.getTime())) return dt;
+    }
+  } catch {}
+  return null;
+};
+
 export const isPastCheckout = (checkOutDateStr: string): boolean => {
   if (!checkOutDateStr) return false;
   try {
@@ -762,6 +784,38 @@ class MockApiService {
       return list;
     } catch {
       return [];
+    }
+  }
+
+  async checkBookingConflict(
+    stayId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<BookingDetails | null> {
+    try {
+      const bookings = await this.getBookings();
+      const reqStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0, 0);
+      const reqEnd = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 0, 0, 0, 0);
+
+      for (const b of bookings) {
+        if (b.accommodation?.id !== stayId) continue;
+        if (b.status === 'cancelled' || b.status === 'completed') continue;
+
+        const remaining = b.dueAmount !== undefined ? b.dueAmount : (b.totalPrice - b.paidAmount);
+        const isPartUnpaid = b.paymentType === 'part' && remaining > 0;
+        if (isPastCheckout(b.checkOut) && !isPartUnpaid) continue;
+
+        const existingStart = parseBookingDate(b.checkIn);
+        const existingEnd = parseBookingDate(b.checkOut);
+        if (!existingStart || !existingEnd) continue;
+
+        if (reqStart.getTime() < existingEnd.getTime() && reqEnd.getTime() > existingStart.getTime()) {
+          return b;
+        }
+      }
+      return null;
+    } catch {
+      return null;
     }
   }
 
