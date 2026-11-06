@@ -9,6 +9,8 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  TextInput,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -22,9 +24,10 @@ interface VoiceSearchModalProps {
 }
 
 const VOICE_PROMPTS = [
+  'Tìm khách sạn view vịnh Hạ Long',
   'Tìm homestay view đồi ở Đà Lạt',
   'Resort có hồ bơi tại Phú Quốc',
-  'Lập lịch trình 3 ngày 2 đêm ở Vũng Tàu',
+  'Lập lịch trình 3 ngày 2 đêm ở Đà Lạt',
   'Villa sát biển cho gia đình 4 người',
   'Khách sạn giá rẻ gần trung tâm',
   'Chỗ nghỉ cắm trại lều bên bờ suối',
@@ -39,14 +42,23 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
 }) => {
   const { isDarkMode, colors } = useTheme();
   const [isListening, setIsListening] = useState<boolean>(false);
+  const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [spokenText, setSpokenText] = useState<string>('');
   const [hasSpeechSupport, setHasSpeechSupport] = useState<boolean>(true);
 
   // Pulse animation for mic
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  // Soundwave animation bars
+  const waveAnim1 = useRef(new Animated.Value(0.3)).current;
+  const waveAnim2 = useRef(new Animated.Value(0.7)).current;
+  const waveAnim3 = useRef(new Animated.Value(0.4)).current;
+  const waveAnim4 = useRef(new Animated.Value(0.9)).current;
+
   const recognitionRef = useRef<any>(null);
   const autoSubmitTimeout = useRef<any>(null);
+  const typingIntervalRef = useRef<any>(null);
+  const promptIndexRef = useRef<number>(0);
   const latestSpokenText = useRef<string>('');
   const isTriggeredRef = useRef<boolean>(false);
 
@@ -56,25 +68,80 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
       latestSpokenText.current = '';
       isTriggeredRef.current = false;
       setIsAnalyzing(false);
+      setIsSimulating(false);
       startPulse();
       initAndStartListening();
     } else {
-      stopListening();
-      if (autoSubmitTimeout.current) clearTimeout(autoSubmitTimeout.current);
-      pulseAnim.setValue(1);
+      cleanupAudio();
     }
 
     return () => {
-      stopListening();
-      if (autoSubmitTimeout.current) clearTimeout(autoSubmitTimeout.current);
+      cleanupAudio();
     };
   }, [visible]);
+
+  // Handle sound wave animation when listening or simulating
+  useEffect(() => {
+    if (isListening || isSimulating) {
+      const animateWave = (anim: Animated.Value, toVal: number, duration: number) => {
+        return Animated.loop(
+          Animated.sequence([
+            Animated.timing(anim, {
+              toValue: toVal,
+              duration,
+              useNativeDriver: true,
+            }),
+            Animated.timing(anim, {
+              toValue: 0.25,
+              duration,
+              useNativeDriver: true,
+            }),
+          ])
+        );
+      };
+
+      const w1 = animateWave(waveAnim1, 1.3, 350);
+      const w2 = animateWave(waveAnim2, 1.6, 420);
+      const w3 = animateWave(waveAnim3, 1.2, 380);
+      const w4 = animateWave(waveAnim4, 1.5, 460);
+
+      w1.start();
+      w2.start();
+      w3.start();
+      w4.start();
+
+      return () => {
+        w1.stop();
+        w2.stop();
+        w3.stop();
+        w4.stop();
+        waveAnim1.setValue(0.3);
+        waveAnim2.setValue(0.7);
+        waveAnim3.setValue(0.4);
+        waveAnim4.setValue(0.9);
+      };
+    } else {
+      waveAnim1.setValue(0.3);
+      waveAnim2.setValue(0.7);
+      waveAnim3.setValue(0.4);
+      waveAnim4.setValue(0.9);
+    }
+  }, [isListening, isSimulating]);
+
+  const cleanupAudio = () => {
+    stopListening();
+    if (autoSubmitTimeout.current) clearTimeout(autoSubmitTimeout.current);
+    if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
+    pulseAnim.setValue(1);
+    setIsSimulating(false);
+    setIsListening(false);
+  };
 
   const startPulse = () => {
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: 1.25,
+          toValue: 1.22,
           duration: 900,
           useNativeDriver: true,
         }),
@@ -92,6 +159,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
     if (!clean || isTriggeredRef.current) return;
     isTriggeredRef.current = true;
     stopListening();
+    setIsSimulating(false);
     setIsAnalyzing(true);
 
     // Tự động đóng và tìm kiếm ngay lập tức sau 500ms để người dùng thấy phản hồi AI
@@ -100,11 +168,41 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
       onClose();
       setIsAnalyzing(false);
       isTriggeredRef.current = false;
-    }, 500);
+    }, 550);
+  };
+
+  const simulateVoiceRecognition = (targetText: string) => {
+    if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
+    if (autoSubmitTimeout.current) clearTimeout(autoSubmitTimeout.current);
+
+    setIsListening(true);
+    setIsSimulating(true);
+    setSpokenText('');
+    latestSpokenText.current = '';
+
+    let currentIndex = 0;
+    const chars = Array.from(targetText);
+    const intervalMs = Math.max(20, Math.min(45, Math.floor(750 / chars.length)));
+
+    typingIntervalRef.current = setInterval(() => {
+      currentIndex += 1;
+      if (currentIndex <= chars.length) {
+        const currentSub = chars.slice(0, currentIndex).join('');
+        setSpokenText(currentSub);
+        latestSpokenText.current = currentSub;
+      } else {
+        if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
+        setIsSimulating(false);
+        setIsListening(false);
+
+        autoSubmitTimeout.current = setTimeout(() => {
+          triggerAutoSearch(targetText);
+        }, 650);
+      }
+    }, intervalMs);
   };
 
   const initAndStartListening = () => {
-    setIsListening(true);
     isTriggeredRef.current = false;
 
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -127,7 +225,6 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
               setSpokenText(finalTranscript);
               latestSpokenText.current = finalTranscript;
 
-              // Tự động kích hoạt tìm kiếm khi người dùng ngừng nói sau 1.2s
               if (autoSubmitTimeout.current) clearTimeout(autoSubmitTimeout.current);
               autoSubmitTimeout.current = setTimeout(() => {
                 triggerAutoSearch(finalTranscript);
@@ -150,6 +247,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
 
           recognition.start();
           recognitionRef.current = recognition;
+          setIsListening(true);
           setHasSpeechSupport(true);
           return;
         } catch (err) {
@@ -158,8 +256,9 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
       }
     }
 
-    // Fallback if browser/platform doesn't support Web Speech API
+    // Trên Mobile hoặc trình duyệt không hỗ trợ Web Speech API trực tiếp
     setHasSpeechSupport(false);
+    setIsListening(false);
   };
 
   const stopListening = () => {
@@ -172,10 +271,31 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
     }
   };
 
+  const handleMicPress = () => {
+    if (isAnalyzing) return;
+
+    if (hasSpeechSupport && Platform.OS === 'web') {
+      if (isListening) {
+        stopListening();
+      } else {
+        initAndStartListening();
+      }
+    } else {
+      // Trên điện thoại hoặc trình duyệt không có Web Speech API:
+      if (spokenText.trim()) {
+        triggerAutoSearch(spokenText);
+      } else {
+        // Kích hoạt mô phỏng nhận diện câu lệnh du lịch
+        const prompt = VOICE_PROMPTS[promptIndexRef.current % VOICE_PROMPTS.length];
+        promptIndexRef.current += 1;
+        simulateVoiceRecognition(prompt);
+      }
+    }
+  };
+
   const handleSelectPrompt = (prompt: string) => {
-    setSpokenText(prompt);
-    latestSpokenText.current = prompt;
-    triggerAutoSearch(prompt);
+    if (isAnalyzing) return;
+    simulateVoiceRecognition(prompt);
   };
 
   const handleConfirmResult = () => {
@@ -186,10 +306,12 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
 
   const handleRetry = () => {
     if (autoSubmitTimeout.current) clearTimeout(autoSubmitTimeout.current);
+    if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
     isTriggeredRef.current = false;
     setSpokenText('');
     latestSpokenText.current = '';
     setIsAnalyzing(false);
+    setIsSimulating(false);
     initAndStartListening();
   };
 
@@ -200,28 +322,46 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
-        <View style={[styles.modalBox, { backgroundColor: colors.card, borderColor: isDarkMode ? colors.border : 'transparent', borderWidth: isDarkMode ? 1 : 0 }]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.overlay}
+      >
+        <View
+          style={[
+            styles.modalBox,
+            {
+              backgroundColor: colors.card,
+              borderColor: isDarkMode ? colors.border : 'transparent',
+              borderWidth: isDarkMode ? 1 : 0,
+            },
+          ]}
+        >
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, { borderBottomColor: colors.border }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Ionicons name="sparkles" size={24} color="#00BDD6" style={{ marginRight: 8 }} />
               <Text style={[styles.headerTitle, { color: colors.text }]}>{title}</Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+            <TouchableOpacity
+              onPress={onClose}
+              style={[styles.closeBtn, { backgroundColor: isDarkMode ? '#1E293B' : '#F3F4F6' }]}
+            >
               <Ionicons name="close" size={22} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
             {/* Animated Mic Section */}
             <View style={styles.micSection}>
               <Animated.View
                 style={[
                   styles.micPulseRing,
                   {
-                    transform: [{ scale: isListening ? pulseAnim : 1 }],
-                    opacity: isListening ? 0.75 : 0.3,
+                    transform: [{ scale: isListening || isSimulating ? pulseAnim : 1 }],
+                    opacity: isListening || isSimulating ? 0.75 : 0.25,
                   },
                 ]}
               />
@@ -229,46 +369,136 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
               <TouchableOpacity
                 style={[
                   styles.micButton,
-                  isListening && styles.micButtonActive,
+                  (isListening || isSimulating) && styles.micButtonActive,
                   isAnalyzing && styles.micButtonAnalyzing,
                 ]}
-                onPress={isListening ? stopListening : initAndStartListening}
+                onPress={handleMicPress}
                 activeOpacity={0.8}
               >
                 {isAnalyzing ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <Ionicons
-                    name={isListening ? 'mic' : 'mic-outline'}
+                    name={isListening || isSimulating ? 'mic' : 'mic-outline'}
                     size={36}
                     color="#FFFFFF"
                   />
                 )}
               </TouchableOpacity>
 
+              {/* Animated Waveform Bars */}
+              {(isListening || isSimulating) && (
+                <View style={styles.waveformRow}>
+                  {[waveAnim1, waveAnim2, waveAnim3, waveAnim4].map((anim, idx) => (
+                    <Animated.View
+                      key={idx}
+                      style={[
+                        styles.waveBar,
+                        {
+                          transform: [{ scaleY: anim }],
+                          backgroundColor: '#00BDD6',
+                        },
+                      ]}
+                    />
+                  ))}
+                </View>
+              )}
+
               <Text style={[styles.statusText, { color: colors.textSecondary }]}>
                 {isAnalyzing
                   ? '✨ AI đang phân tích & tự động tìm kiếm...'
+                  : isSimulating
+                  ? '🎙️ Đang nghe giọng nói của bạn...'
                   : isListening
                   ? 'Đang lắng nghe...'
                   : spokenText
                   ? 'Đã nhận diện giọng nói'
-                  : 'Chạm micro để nói'}
+                  : 'Chạm micro hoặc nói qua bàn phím bên dưới'}
               </Text>
             </View>
 
             {/* Recognized Text Display */}
-            <View style={[styles.transcriptBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View
+              style={[
+                styles.transcriptBox,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
               <View style={styles.transcriptTopRow}>
-                <Text style={[styles.transcriptLabel, { color: colors.textSecondary }]}>Nội dung nhận diện:</Text>
-                {isAnalyzing && (
+                <Text style={[styles.transcriptLabel, { color: colors.textSecondary }]}>
+                  Nội dung nhận diện:
+                </Text>
+                {isAnalyzing ? (
                   <View style={styles.aiBadge}>
                     <Text style={styles.aiBadgeText}>AI ĐANG XỬ LÝ</Text>
                   </View>
-                )}
+                ) : spokenText ? (
+                  <View style={[styles.aiBadge, { backgroundColor: '#DCFCE7' }]}>
+                    <Text style={[styles.aiBadgeText, { color: '#16A34A' }]}>✨ AI ĐÃ NHẬN DIỆN</Text>
+                  </View>
+                ) : null}
               </View>
               <Text style={[styles.transcriptText, { color: colors.text }]}>
                 {spokenText ? `"${spokenText}"` : 'Đang chờ bạn nói...'}
+              </Text>
+            </View>
+
+            {/* Mobile Native Voice Typing / Direct Input Bar */}
+            <View
+              style={[
+                styles.mobileInputSection,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
+              <View style={styles.mobileInputHeader}>
+                <Ionicons name="mic-circle" size={18} color="#00BDD6" style={{ marginRight: 6 }} />
+                <Text style={[styles.mobileInputTitle, { color: colors.text }]}>
+                  Nói qua micro bàn phím điện thoại:
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.inputRow,
+                  {
+                    backgroundColor: isDarkMode ? '#1E293B' : '#F1F5F9',
+                    borderColor: isDarkMode ? '#334155' : '#E2E8F0',
+                  },
+                ]}
+              >
+                <Ionicons
+                  name="search-outline"
+                  size={18}
+                  color={colors.textSecondary}
+                  style={{ marginRight: 8 }}
+                />
+                <TextInput
+                  style={[styles.textInput, { color: colors.text }]}
+                  placeholder="Chạm vào đây và bấm 🎙️ trên bàn phím..."
+                  placeholderTextColor={colors.textSecondary}
+                  value={spokenText}
+                  onChangeText={(text) => {
+                    setSpokenText(text);
+                    latestSpokenText.current = text;
+                  }}
+                  onSubmitEditing={() => {
+                    if (spokenText.trim()) triggerAutoSearch(spokenText);
+                  }}
+                  returnKeyType="search"
+                />
+                {spokenText.length > 0 && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSpokenText('');
+                      latestSpokenText.current = '';
+                    }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                )}
+              </View>
+              <Text style={[styles.mobileHintText, { color: colors.textSecondary }]}>
+                💡 Chạm vào ô trên, sau đó chạm biểu tượng 🎙️ trên bàn phím ảo (Gboard / iOS) để nói tiếng Việt trực tiếp!
               </Text>
             </View>
 
@@ -276,20 +506,23 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
             <View style={styles.autoSearchTip}>
               <Ionicons name="flash" size={14} color="#0D9488" style={{ marginRight: 6 }} />
               <Text style={styles.autoSearchTipText}>
-                Hệ thống AI sẽ tự động tìm kiếm ngay khi bạn nói xong mà không cần bấm nút!
+                Hệ thống AI sẽ tự động phân tích & tìm kiếm ngay khi nhận diện xong!
               </Text>
             </View>
 
             {/* Quick Prompts */}
             <Text style={[styles.promptsSectionTitle, { color: colors.text }]}>
-              Hoặc chạm vào câu lệnh gợi ý:
+              {placeholderPrompt}
             </Text>
 
             <View style={styles.promptsList}>
               {VOICE_PROMPTS.map((prompt, index) => (
                 <TouchableOpacity
                   key={index}
-                  style={[styles.promptChip, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                  style={[
+                    styles.promptChip,
+                    { backgroundColor: colors.surface, borderColor: colors.border },
+                  ]}
                   onPress={() => handleSelectPrompt(prompt)}
                   activeOpacity={0.7}
                 >
@@ -301,7 +534,14 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
 
             {/* Action Buttons */}
             <View style={styles.actionRow}>
-              <TouchableOpacity style={[styles.retryBtn, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={handleRetry} activeOpacity={0.7}>
+              <TouchableOpacity
+                style={[
+                  styles.retryBtn,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                ]}
+                onPress={handleRetry}
+                activeOpacity={0.7}
+              >
                 <Ionicons name="refresh-outline" size={18} color={colors.text} style={{ marginRight: 4 }} />
                 <Text style={[styles.retryBtnText, { color: colors.text }]}>Nói lại</Text>
               </TouchableOpacity>
@@ -324,7 +564,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
             </View>
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -347,7 +587,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: 28,
-    maxHeight: '85%',
+    maxHeight: '90%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
@@ -361,7 +601,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
     paddingBottom: 14,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   headerTitle: {
     fontSize: 17,
@@ -376,7 +616,7 @@ const styles = StyleSheet.create({
   micSection: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
+    paddingVertical: 12,
     position: 'relative',
   },
   micPulseRing: {
@@ -390,7 +630,7 @@ const styles = StyleSheet.create({
     width: 68,
     height: 68,
     borderRadius: 34,
-    backgroundColor: '#9CA3AF',
+    backgroundColor: '#00BDD6',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#00BDD6',
@@ -400,16 +640,31 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   micButtonActive: {
-    backgroundColor: '#00BDD6',
+    backgroundColor: '#0891B2',
   },
   micButtonAnalyzing: {
     backgroundColor: '#0D9488',
   },
+  waveformRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 24,
+    gap: 6,
+    marginTop: 10,
+  },
+  waveBar: {
+    width: 4,
+    height: 18,
+    borderRadius: 2,
+    backgroundColor: '#00BDD6',
+  },
   statusText: {
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '600',
     color: '#0F766E',
-    marginTop: 12,
+    marginTop: 10,
+    textAlign: 'center',
   },
   transcriptBox: {
     backgroundColor: '#F8FAFC',
@@ -417,13 +672,13 @@ const styles = StyleSheet.create({
     padding: 14,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   transcriptTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   transcriptLabel: {
     fontSize: 11.5,
@@ -448,6 +703,40 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     fontStyle: 'italic',
     lineHeight: 22,
+  },
+  mobileInputSection: {
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 12,
+  },
+  mobileInputHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  mobileInputTitle: {
+    fontSize: 12.5,
+    fontWeight: '600',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 14,
+    padding: 0,
+  },
+  mobileHintText: {
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 6,
   },
   autoSearchTip: {
     flexDirection: 'row',
