@@ -858,22 +858,22 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
       {/* FIXED BOTTOM BAR */}
       {!isDesktop && (
       <View style={[styles.bottomBar, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
-        <View style={{ flex: 1, paddingRight: 10 }}>
-          <Text style={[styles.fromPriceLabel, { color: colors.textSecondary }]}>
+        <View style={{ flex: 1, paddingRight: 12 }}>
+          <Text style={[styles.fromPriceLabel, { color: colors.textSecondary, fontSize: 12.5 }]} numberOfLines={1}>
             {totalExtraGuests > 0 
-              ? `${formatPrice(stay.pricePerNight)} x ${nights}đ + ${totalExtraGuests} khách thêm:`
-              : `${formatPrice(stay.pricePerNight)} x ${nights} đêm:`}
+              ? `${formatPrice(stay.pricePerNight)} x ${nights} đêm (+${totalExtraGuests} khách)`
+              : `${formatPrice(stay.pricePerNight)} x ${nights} đêm`}
           </Text>
-          <Text style={[styles.bottomPrice, { color: colors.text }]}>
+          <Text style={[styles.bottomPrice, { color: colors.text, fontSize: 19, marginVertical: 2 }]} numberOfLines={1}>
             {formatPrice(roomTotalWithGuests)}
           </Text>
-          <Text style={styles.guestSummarySub}>
-            {totalGuests} khách {totalExtraGuests > 0 ? `(phụ thu +${formatPrice(extraGuestFeeTotal)})` : ''} • {formatDateStr(startDate).slice(0, -6)} ➔ {formatDateStr(endDate).slice(0, -6)}
+          <Text style={styles.guestSummarySub} numberOfLines={1}>
+            {totalGuests} khách • {formatDateStr(startDate).slice(0, -6)} ➔ {formatDateStr(endDate).slice(0, -6)}
           </Text>
         </View>
 
         <TouchableOpacity
-          style={styles.bookNowButton}
+          style={[styles.bookNowButton, { paddingHorizontal: 20, paddingVertical: 13, borderRadius: 12 }]}
           activeOpacity={0.85}
           onPress={handlePressBookNow}
         >
@@ -1075,41 +1075,167 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
         animationType="fade"
         onRequestClose={() => setIsConflictModalOpen(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalBox, { backgroundColor: colors.card, borderColor: isDarkMode ? colors.border : 'transparent', borderWidth: isDarkMode ? 1 : 0, maxWidth: 420, paddingVertical: 24, paddingHorizontal: 22 }]}>
-            <View style={{ alignItems: 'center', marginBottom: 14 }}>
-              <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(239, 68, 68, 0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-                <Ionicons name="calendar-clear-outline" size={30} color="#EF4444" />
+        <View style={[styles.modalOverlay, { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }]}>
+          <View
+            style={{
+              width: '100%',
+              maxWidth: 370,
+              borderRadius: 24,
+              backgroundColor: colors.card,
+              borderColor: isDarkMode ? colors.border : 'transparent',
+              borderWidth: isDarkMode ? 1 : 0,
+              paddingVertical: 24,
+              paddingHorizontal: 22,
+              alignItems: 'center',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.18,
+              shadowRadius: 20,
+              elevation: 12,
+            }}
+          >
+            {/* Icon Badge */}
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 32,
+                backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.14)' : '#FEE2E2',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 14,
+              }}
+            >
+              <View
+                style={{
+                  width: 46,
+                  height: 46,
+                  borderRadius: 23,
+                  backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.24)' : '#FECACA',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Ionicons name="calendar-clear" size={24} color="#EF4444" />
               </View>
-              <Text style={[styles.modalTitle, { color: colors.text, textAlign: 'center', fontSize: 18 }]}>
-                Phòng đã kín trong ngày này!
-              </Text>
             </View>
 
-            <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 21, marginBottom: 18 }}>
-              Chỗ nghỉ <Text style={{ fontWeight: '700', color: colors.text }}>"{stay.title}"</Text> đã có lịch đặt từ ngày{' '}
-              <Text style={{ fontWeight: '700', color: '#EF4444' }}>{conflictBooking?.checkIn}</Text> đến{' '}
-              <Text style={{ fontWeight: '700', color: '#EF4444' }}>{conflictBooking?.checkOut}</Text>
-              {conflictBooking?.bookingId ? ` (Mã đơn: #${conflictBooking.bookingId.slice(-8)})` : ''}.{'\n\n'}
-              Bạn vui lòng chọn khoảng ngày lưu trú khác để tiếp tục đặt phòng nhé!
+            {/* Title & Room Name */}
+            <Text style={{ fontSize: 19, fontWeight: '800', color: colors.text, textAlign: 'center' }}>
+              Phòng đã kín lịch
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: '700',
+                color: '#00BDD6',
+                textAlign: 'center',
+                marginTop: 4,
+              }}
+              numberOfLines={2}
+            >
+              {stay.title}
             </Text>
 
-            <View style={styles.modalBtnRow}>
+            {/* Booked Date Range Box */}
+            <View
+              style={{
+                width: '100%',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#FFF1F2',
+                borderColor: isDarkMode ? 'rgba(239, 68, 68, 0.28)' : '#FECDD3',
+                borderWidth: 1,
+                borderRadius: 14,
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                marginVertical: 16,
+              }}
+            >
+              <View style={{ flex: 1, alignItems: 'center' }}>
+                <Text style={{ fontSize: 11, fontWeight: '600', color: colors.textSecondary, marginBottom: 3 }}>
+                  ĐÃ ĐẶT TỪ NGÀY
+                </Text>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: '#EF4444' }}>
+                  {conflictBooking?.checkIn?.replace(/-/g, '/')}
+                </Text>
+              </View>
+
+              <View
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 14,
+                  backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.18)' : '#FFE4E6',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginHorizontal: 8,
+                }}
+              >
+                <Ionicons name="arrow-forward" size={14} color="#EF4444" />
+              </View>
+
+              <View style={{ flex: 1, alignItems: 'center' }}>
+                <Text style={{ fontSize: 11, fontWeight: '600', color: colors.textSecondary, marginBottom: 3 }}>
+                  ĐẾN NGÀY
+                </Text>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: '#EF4444' }}>
+                  {conflictBooking?.checkOut?.replace(/-/g, '/')}
+                </Text>
+              </View>
+            </View>
+
+            <Text
+              style={{
+                fontSize: 13.5,
+                color: colors.textSecondary,
+                textAlign: 'center',
+                lineHeight: 20,
+                marginBottom: 20,
+              }}
+            >
+              Khoảng thời gian này đã có khách đặt trước. Bạn vui lòng chọn ngày lưu trú khác để tiếp tục nhé!
+            </Text>
+
+            {/* Balanced Action Buttons */}
+            <View style={{ flexDirection: 'row', width: '100%' }}>
               <TouchableOpacity
-                style={styles.cancelBtn}
+                style={{
+                  flex: 1,
+                  height: 46,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: isDarkMode ? colors.surface : '#F9FAFB',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: 10,
+                }}
+                activeOpacity={0.8}
                 onPress={() => setIsConflictModalOpen(false)}
               >
-                <Text style={[styles.cancelBtnText, { color: colors.textSecondary }]}>Đóng</Text>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textSecondary }}>Đóng</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.submitReviewBtn, { backgroundColor: '#00BDD6' }]}
+                style={{
+                  flex: 1.4,
+                  height: 46,
+                  borderRadius: 12,
+                  backgroundColor: '#00BDD6',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                activeOpacity={0.85}
                 onPress={() => {
                   setIsConflictModalOpen(false);
                   setIsCalendarModalOpen(true);
                 }}
               >
-                <Text style={styles.submitReviewBtnText}>Chọn ngày khác</Text>
+                <Ionicons name="calendar-outline" size={17} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <Text style={{ fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>Chọn ngày khác</Text>
               </TouchableOpacity>
             </View>
           </View>
