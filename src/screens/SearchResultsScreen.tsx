@@ -85,9 +85,10 @@ export const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({
     !currentFilters.destination || currentFilters.destination === 'Anywhere'
       ? 'Bất kỳ đâu'
       : currentFilters.destination;
-  const guestCount = (currentFilters.adults || 0) + (currentFilters.children || 0) || 2;
+  const totalGuests = (currentFilters.adults || 0) + (currentFilters.children || 0);
+  const guestBadge = totalGuests > 0 ? `, ${totalGuests} khách` : '';
   const ratingBadge = currentFilters.minRating ? ` • ⭐ ${currentFilters.minRating}+` : '';
-  const headerSummaryText = `${destSummary}, ${dateSummary}, ${guestCount} khách${ratingBadge}`;
+  const headerSummaryText = `${destSummary}, ${dateSummary}${guestBadge}${ratingBadge}`;
 
   const renderStayCard = ({ item }: { item: any }) => {
     if (item.empty) {
