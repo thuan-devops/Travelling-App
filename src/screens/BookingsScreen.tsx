@@ -12,6 +12,8 @@ import {
   Platform,
   TextInput,
   StatusBar as RNStatusBar,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -93,6 +95,25 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
   const [completeModalVisible, setCompleteModalVisible] = useState<boolean>(false);
   const [completingBooking, setCompletingBooking] = useState<BookingDetails | null>(null);
 
+  // Modal thông báo yêu cầu thanh toán đủ 100% mới được trả phòng
+  const [paymentRequiredModalVisible, setPaymentRequiredModalVisible] = useState<boolean>(false);
+  const [pendingPaymentBooking, setPendingPaymentBooking] = useState<BookingDetails | null>(null);
+
+  // Modal thực hiện thanh toán số tiền còn lại
+  const [payRemainingModalVisible, setPayRemainingModalVisible] = useState<boolean>(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('vietqr');
+  const [isProcessingPayment, setIsProcessingPayment] = useState<boolean>(false);
+
+  // Helper kiểm tra xem chuyến đi có mới thanh toán 50% và chưa hoàn tất thanh toán nốt không
+  const isBookingPartUnpaid = (b: BookingDetails): boolean => {
+    const remaining = b.dueAmount !== undefined ? b.dueAmount : Math.max(0, b.totalPrice - b.paidAmount);
+    return b.paymentType === 'part' && remaining > 0;
+  };
+
+  const getRemainingAmount = (b: BookingDetails): number => {
+    return b.dueAmount !== undefined ? b.dueAmount : Math.max(0, b.totalPrice - b.paidAmount);
+  };
+
   useEffect(() => {
     setLocalBookings(bookings);
   }, [bookings]);
@@ -100,10 +121,10 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
   // Phân loại 3 danh sách dựa trên trạng thái và ngày checkout
   const cancelledList = localBookings.filter((b) => b.status === 'cancelled');
   const completedList = localBookings.filter(
-    (b) => b.status === 'completed' || (b.status !== 'cancelled' && isPastCheckout(b.checkOut))
+    (b) => b.status === 'completed' || (b.status !== 'cancelled' && isPastCheckout(b.checkOut) && !isBookingPartUnpaid(b))
   );
   const upcomingList = localBookings.filter(
-    (b) => b.status !== 'cancelled' && b.status !== 'completed' && !isPastCheckout(b.checkOut)
+    (b) => b.status !== 'cancelled' && b.status !== 'completed' && (!isPastCheckout(b.checkOut) || isBookingPartUnpaid(b))
   );
 
   const displayedList =
@@ -179,8 +200,13 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
     setActiveTab('cancelled');
   };
 
-  // Mở modal xác nhận hoàn thành sớm
+  // Mở modal xác nhận hoàn thành sớm (hoặc cảnh báo thanh toán nếu mới trả 50%)
   const handleOpenCompleteModal = (booking: BookingDetails) => {
+    if (isBookingPartUnpaid(booking)) {
+      setPendingPaymentBooking(booking);
+      setPaymentRequiredModalVisible(true);
+      return;
+    }
     setCompletingBooking(booking);
     setCompleteModalVisible(true);
   };
@@ -188,6 +214,15 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
   const handleConfirmComplete = async () => {
     if (!completingBooking) return;
     const item = completingBooking;
+
+    // Kiểm tra an toàn: nếu mới trả 50% thì tuyệt đối không cho trả phòng thành công
+    if (isBookingPartUnpaid(item)) {
+      setCompleteModalVisible(false);
+      setPendingPaymentBooking(item);
+      setPaymentRequiredModalVisible(true);
+      return;
+    }
+
     const updated = await mockApi.completeBooking(item.bookingId);
     setLocalBookings(updated);
     if (onBookingsUpdated) {
@@ -209,6 +244,74 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
     setCompleteModalVisible(false);
     setCompletingBooking(null);
     setActiveTab('completed');
+  };
+
+  // Mở modal thanh toán số tiền còn lại (nốt 50%)
+  const handleOpenPayRemaining = (booking: BookingDetails) => {
+    setPendingPaymentBooking(booking);
+    setSelectedPaymentMethod('vietqr');
+    setPaymentRequiredModalVisible(false);
+    setPayRemainingModalVisible(true);
+  };
+
+  // Xác nhận thanh toán nốt số tiền còn lại
+  const handleConfirmPayRemaining = async () => {
+    if (!pendingPaymentBooking) return;
+    setIsProcessingPayment(true);
+
+    try {
+      // Giả lập thời gian xử lý thanh toán 600ms
+      await new Promise((resolve) => setTimeout(resolve, 600));
+
+      const remainingAmt = getRemainingAmount(pendingPaymentBooking);
+      const methodName =
+        selectedPaymentMethod === 'vietqr'
+          ? 'VietQR Chuyển khoản (Nốt 50%)'
+          : selectedPaymentMethod === 'momo'
+          ? 'Ví MoMo (Nốt 50%)'
+          : selectedPaymentMethod === 'card'
+          ? 'Thẻ quốc tế Visa/Master (Nốt 50%)'
+          : 'Tiền mặt tại quầy lễ tân (Nốt 50%)';
+
+      const updated = await mockApi.payRemainingAmount(pendingPaymentBooking.bookingId, methodName);
+      setLocalBookings(updated);
+      if (onBookingsUpdated) {
+        onBookingsUpdated(updated);
+      }
+
+      try {
+        await notificationService.addNotification({
+          type: 'booking_success',
+          title: 'Thanh toán thành công 💳',
+          message: `Bạn đã thanh toán toàn bộ số tiền còn lại (${formatPrice(remainingAmt)}) cho đơn đặt tại "${pendingPaymentBooking.accommodation.title}". Bây giờ bạn có thể thực hiện trả phòng!`,
+          bookingId: pendingPaymentBooking.bookingId,
+          actionText: 'Xem chuyến đi',
+        });
+      } catch (err) {
+        console.warn('Lỗi khi gửi thông báo thanh toán:', err);
+      }
+
+      const justPaidBooking = updated.find((b) => b.bookingId === pendingPaymentBooking.bookingId) || {
+        ...pendingPaymentBooking,
+        paidAmount: pendingPaymentBooking.totalPrice,
+        dueAmount: 0,
+        paymentType: 'full' as const,
+      };
+
+      setPayRemainingModalVisible(false);
+      setPendingPaymentBooking(null);
+
+      // Tự động mở modal xác nhận trả phòng ngay sau khi thanh toán thành công
+      setTimeout(() => {
+        setCompletingBooking(justPaidBooking);
+        setCompleteModalVisible(true);
+      }, 350);
+    } catch (e) {
+      console.warn('Lỗi khi thanh toán số tiền còn lại:', e);
+      Alert.alert('Lỗi', 'Không thể hoàn tất thanh toán lúc này. Vui lòng thử lại!');
+    } finally {
+      setIsProcessingPayment(false);
+    }
   };
 
   // Mở modal viết hoặc sửa đánh giá
@@ -267,7 +370,8 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
   // Render thẻ chuyến đi
   const renderBookingCard = ({ item }: { item: BookingDetails }) => {
     const isCancelled = item.status === 'cancelled';
-    const isCompleted = item.status === 'completed' || (!isCancelled && isPastCheckout(item.checkOut));
+    const hasRemainingDebt = isBookingPartUnpaid(item);
+    const isCompleted = item.status === 'completed' || (!isCancelled && isPastCheckout(item.checkOut) && !hasRemainingDebt);
     const isUpcoming = !isCancelled && !isCompleted;
     const hasReviewed = !!item.hasReviewed && !!item.review;
 
@@ -512,6 +616,25 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
             {/* NÚT THAO TÁC THEO TRẠNG THÁI */}
             {isUpcoming && (
               <>
+                {hasRemainingDebt && (
+                  <TouchableOpacity
+                    style={[
+                      styles.payRemainingBtn,
+                      {
+                        backgroundColor: isDark ? '#431407' : '#FFF7ED',
+                        borderColor: isDark ? '#EA580C' : '#FDBA74',
+                      },
+                    ]}
+                    onPress={() => handleOpenPayRemaining(item)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="card-outline" size={15} color={isDark ? '#FB923C' : '#EA580C'} style={{ marginRight: 4 }} />
+                    <Text style={[styles.payRemainingText, { color: isDark ? '#FB923C' : '#C2410C' }]}>
+                      Thanh toán
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
                 <TouchableOpacity
                   style={[
                     styles.completeEarlyBtn,
@@ -806,13 +929,38 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
               </TouchableOpacity>
             </View>
 
-            <Text style={{ fontSize: 14, color: isDark ? '#CBD5E1' : '#4B5563', lineHeight: 21, marginBottom: 16 }}>
+            <Text style={{ fontSize: 14, color: isDark ? '#CBD5E1' : '#4B5563', lineHeight: 21, marginBottom: 12 }}>
               Bạn có chắc chắn muốn xác nhận đã hoàn tất kỳ nghỉ tại{' '}
               <Text style={{ fontWeight: '700', color: isDark ? '#FFFFFF' : '#111827' }}>
                 "{completingBooking.accommodation.title}"
               </Text>
               ? Chuyến đi sẽ được chuyển sang mục "Đã hoàn thành" để bạn có thể viết đánh giá.
             </Text>
+
+            {/* Thông tin xác nhận thanh toán đủ 100% */}
+            <View
+              style={{
+                backgroundColor: isDark ? '#064E3B' : '#ECFDF5',
+                paddingVertical: 10,
+                paddingHorizontal: 12,
+                borderRadius: 10,
+                marginBottom: 16,
+                flexDirection: 'row',
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: isDark ? '#059669' : '#A7F3D0',
+              }}
+            >
+              <Ionicons name="checkmark-circle" size={18} color="#10B981" style={{ marginRight: 8 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, color: isDark ? '#6EE7B7' : '#047857', fontWeight: '700' }}>
+                  Đã thanh toán đủ 100%
+                </Text>
+                <Text style={{ fontSize: 12, color: isDark ? '#A7F3D0' : '#065F46', marginTop: 1 }}>
+                  Tổng tiền đã thanh toán: {formatPrice(completingBooking.paidAmount)}
+                </Text>
+              </View>
+            </View>
 
             <View style={modalStyles.actionRow}>
               <TouchableOpacity
@@ -834,6 +982,345 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
                 <Text style={modalStyles.submitReviewBtnText}>Xác nhận hoàn thành</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  // ============ MODAL: YÊU CẦU THANH TOÁN ĐỦ 100% MỚI ĐƯỢC TRẢ PHÒNG ============
+  const renderPaymentRequiredModal = () => {
+    if (!pendingPaymentBooking) return null;
+    const remainingAmount = getRemainingAmount(pendingPaymentBooking);
+
+    return (
+      <Modal
+        visible={paymentRequiredModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPaymentRequiredModalVisible(false)}
+      >
+        <View style={modalStyles.overlay}>
+          <View style={[modalStyles.container, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}>
+            {/* Header */}
+            <View style={modalStyles.header}>
+              <View style={modalStyles.headerLeft}>
+                <View style={[modalStyles.warningIcon, { backgroundColor: '#EF4444' }]}>
+                  <Ionicons name="alert-circle" size={22} color="#FFFFFF" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[modalStyles.headerTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+                    Chưa thể trả phòng
+                  </Text>
+                  <Text style={{ fontSize: 12, color: '#EF4444', fontWeight: '700', marginTop: 1 }}>
+                    Yêu cầu thanh toán đủ 100%
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={[modalStyles.closeBtn, { backgroundColor: isDark ? '#334155' : '#F3F4F6' }]}
+                onPress={() => setPaymentRequiredModalVisible(false)}
+              >
+                <Ionicons name="close" size={20} color={isDark ? '#94A3B8' : '#6B7280'} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Thông báo cảnh báo nổi bật */}
+            <View
+              style={[
+                modalStyles.noticeBox,
+                {
+                  backgroundColor: isDark ? '#371818' : '#FEF2F2',
+                  borderColor: isDark ? '#7F1D1D' : '#FECACA',
+                  marginBottom: 16,
+                },
+              ]}
+            >
+              <Ionicons name="warning" size={20} color="#EF4444" style={{ marginRight: 8, marginTop: 2 }} />
+              <Text style={[modalStyles.noticeText, { color: isDark ? '#FCA5A5' : '#991B1B', fontWeight: '500' }]}>
+                Đơn đặt phòng này mới được thanh toán <Text style={{ fontWeight: '800' }}>50%</Text>. Bạn phải thanh toán hết toàn bộ số tiền còn lại mới được thực hiện thủ tục trả phòng!
+              </Text>
+            </View>
+
+            {/* Thẻ chi tiết số tiền */}
+            <View
+              style={[
+                modalStyles.bookingInfoCard,
+                {
+                  backgroundColor: isDark ? '#0F172A' : '#F8FAFC',
+                  borderColor: isDark ? '#334155' : '#E2E8F0',
+                  marginBottom: 18,
+                },
+              ]}
+            >
+              <Text style={[modalStyles.bookingTitle, { color: isDark ? '#F8FAFC' : '#0F172A' }]}>
+                {pendingPaymentBooking.accommodation.title}
+              </Text>
+              <Text style={[modalStyles.bookingDates, { color: isDark ? '#94A3B8' : '#64748B', marginBottom: 12 }]}>
+                Mã đặt chỗ: #{pendingPaymentBooking.bookingId.slice(-8)} • {pendingPaymentBooking.nights} đêm
+              </Text>
+
+              <View style={{ gap: 8, borderTopWidth: 1, borderTopColor: isDark ? '#334155' : '#E2E8F0', paddingTop: 12 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 13, color: isDark ? '#94A3B8' : '#64748B' }}>Tổng tiền phòng:</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: isDark ? '#F8FAFC' : '#111827' }}>
+                    {formatPrice(pendingPaymentBooking.totalPrice)}
+                  </Text>
+                </View>
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 13, color: isDark ? '#94A3B8' : '#64748B' }}>Đã thanh toán trước (50%):</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#10B981' }}>
+                    {formatPrice(pendingPaymentBooking.paidAmount)}
+                  </Text>
+                </View>
+
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginTop: 6,
+                    paddingTop: 8,
+                    borderTopWidth: 1,
+                    borderTopColor: isDark ? '#334155' : '#E2E8F0',
+                  }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#E11D48' }}>
+                    Số tiền cần thanh toán:
+                  </Text>
+                  <Text style={{ fontSize: 18, fontWeight: '800', color: '#E11D48' }}>
+                    {formatPrice(remainingAmount)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Các nút hành động */}
+            <View style={modalStyles.actionRow}>
+              <TouchableOpacity
+                style={[modalStyles.keepBtn, { backgroundColor: isDark ? '#334155' : '#F3F4F6' }]}
+                onPress={() => setPaymentRequiredModalVisible(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={[modalStyles.keepBtnText, { color: isDark ? '#E2E8F0' : '#4B5563' }]}>
+                  Để sau
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[modalStyles.submitReviewBtn, { backgroundColor: '#00BDD6' }]}
+                onPress={() => handleOpenPayRemaining(pendingPaymentBooking)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="card" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <Text style={modalStyles.submitReviewBtnText}>Thanh toán ngay</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  // ============ MODAL: THANH TOÁN SỐ TIỀN CÒN LẠI (NỐT 50%) ============
+  const renderPayRemainingModal = () => {
+    if (!pendingPaymentBooking) return null;
+    const remainingAmount = getRemainingAmount(pendingPaymentBooking);
+
+    const paymentMethods = [
+      { id: 'vietqr', label: 'Chuyển khoản VietQR 24/7', icon: 'qr-code-outline', sub: 'Quét mã thanh toán tức thì qua ứng dụng ngân hàng' },
+      { id: 'momo', label: 'Ví MoMo', icon: 'wallet-outline', sub: 'Thanh toán siêu tốc qua ví điện tử MoMo' },
+      { id: 'card', label: 'Thẻ quốc tế (Visa / Mastercard)', icon: 'card-outline', sub: 'Thanh toán bảo mật chuẩn EMV' },
+      { id: 'cash', label: 'Tiền mặt tại quầy lễ tân', icon: 'cash-outline', sub: 'Xác nhận thu tiền mặt trực tiếp tại chỗ nghỉ' },
+    ];
+
+    return (
+      <Modal
+        visible={payRemainingModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          if (!isProcessingPayment) {
+            setPayRemainingModalVisible(false);
+          }
+        }}
+      >
+        <View style={modalStyles.overlay}>
+          <View style={[modalStyles.container, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', maxHeight: '92%' }]}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Header */}
+              <View style={modalStyles.header}>
+                <View style={modalStyles.headerLeft}>
+                  <View style={[modalStyles.reviewIconWrap, { backgroundColor: '#00BDD6' }]}>
+                    <Ionicons name="card" size={20} color="#FFFFFF" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[modalStyles.headerTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+                      Thanh toán còn lại
+                    </Text>
+                    <Text style={{ fontSize: 12, color: isDark ? '#94A3B8' : '#64748B' }}>
+                      Hoàn tất để tiến hành trả phòng
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={[modalStyles.closeBtn, { backgroundColor: isDark ? '#334155' : '#F3F4F6' }]}
+                  onPress={() => {
+                    if (!isProcessingPayment) {
+                      setPayRemainingModalVisible(false);
+                    }
+                  }}
+                  disabled={isProcessingPayment}
+                >
+                  <Ionicons name="close" size={20} color={isDark ? '#94A3B8' : '#6B7280'} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Hộp số tiền cần thanh toán */}
+              <View
+                style={[
+                  modalStyles.bookingInfoCard,
+                  {
+                    backgroundColor: isDark ? '#042F2E' : '#F0FDFA',
+                    borderColor: isDark ? '#0D9488' : '#99F6E4',
+                    alignItems: 'center',
+                    paddingVertical: 16,
+                  },
+                ]}
+              >
+                <Text style={{ fontSize: 12, color: isDark ? '#99F6E4' : '#0F766E', fontWeight: '700', letterSpacing: 0.5, marginBottom: 4 }}>
+                  SỐ TIỀN CẦN THANH TOÁN (50% CÒN LẠI)
+                </Text>
+                <Text style={{ fontSize: 26, fontWeight: '800', color: isDark ? '#2DD4BF' : '#0D9488' }}>
+                  {formatPrice(remainingAmount)}
+                </Text>
+                <Text style={{ fontSize: 12, color: isDark ? '#94A3B8' : '#64748B', marginTop: 4 }}>
+                  {pendingPaymentBooking.accommodation.title}
+                </Text>
+              </View>
+
+              {/* Chọn phương thức thanh toán */}
+              <Text style={[modalStyles.sectionTitle, { color: isDark ? '#FFFFFF' : '#111827', marginTop: 6, marginBottom: 10 }]}>
+                Chọn phương thức thanh toán:
+              </Text>
+
+              {paymentMethods.map((m) => {
+                const isSelected = selectedPaymentMethod === m.id;
+                return (
+                  <TouchableOpacity
+                    key={m.id}
+                    style={[
+                      modalStyles.reasonOption,
+                      {
+                        backgroundColor: isDark
+                          ? isSelected
+                            ? '#042F2E'
+                            : '#0F172A'
+                          : isSelected
+                          ? '#F0FDFA'
+                          : '#FFFFFF',
+                        borderColor: isSelected ? '#00BDD6' : isDark ? '#334155' : '#E5E7EB',
+                        paddingVertical: 12,
+                      },
+                    ]}
+                    onPress={() => setSelectedPaymentMethod(m.id)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[modalStyles.radioOuter, isSelected && modalStyles.radioOuterSelected]}>
+                      {isSelected && <View style={modalStyles.radioInner} />}
+                    </View>
+                    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                      <Ionicons
+                        name={m.icon as any}
+                        size={20}
+                        color={isSelected ? '#00BDD6' : isDark ? '#94A3B8' : '#64748B'}
+                        style={{ marginRight: 10 }}
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: isSelected ? '700' : '600',
+                            color: isSelected ? '#00BDD6' : isDark ? '#E2E8F0' : '#1F2937',
+                          }}
+                        >
+                          {m.label}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: isDark ? '#94A3B8' : '#6B7280', marginTop: 2 }}>
+                          {m.sub}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+
+              {/* Hướng dẫn chuyển khoản nếu chọn VietQR */}
+              {selectedPaymentMethod === 'vietqr' && (
+                <View
+                  style={[
+                    modalStyles.noticeBox,
+                    {
+                      backgroundColor: isDark ? '#0F172A' : '#F8FAFC',
+                      borderColor: isDark ? '#334155' : '#E2E8F0',
+                      marginTop: 6,
+                    },
+                  ]}
+                >
+                  <Ionicons name="information-circle" size={18} color="#00BDD6" style={{ marginRight: 8, marginTop: 2 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 12.5, fontWeight: '700', color: isDark ? '#E2E8F0' : '#1E293B', marginBottom: 2 }}>
+                      Thông tin chuyển khoản:
+                    </Text>
+                    <Text style={{ fontSize: 12, color: isDark ? '#94A3B8' : '#475569' }}>
+                      • Ngân hàng: <Text style={{ fontWeight: '600' }}>MBBank (Quân Đội)</Text>
+                    </Text>
+                    <Text style={{ fontSize: 12, color: isDark ? '#94A3B8' : '#475569' }}>
+                      • Số tài khoản: <Text style={{ fontWeight: '600' }}>0987654321</Text>
+                    </Text>
+                    <Text style={{ fontSize: 12, color: isDark ? '#94A3B8' : '#475569' }}>
+                      • Nội dung: <Text style={{ fontWeight: '700', color: '#00BDD6' }}>TB {pendingPaymentBooking.bookingId.slice(-8)}</Text>
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Hàng nút hành động */}
+              <View style={modalStyles.actionRow}>
+                <TouchableOpacity
+                  style={[modalStyles.keepBtn, { backgroundColor: isDark ? '#334155' : '#F3F4F6' }]}
+                  onPress={() => setPayRemainingModalVisible(false)}
+                  disabled={isProcessingPayment}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[modalStyles.keepBtnText, { color: isDark ? '#E2E8F0' : '#4B5563' }]}>
+                    Hủy
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    modalStyles.submitReviewBtn,
+                    { backgroundColor: '#10B981', opacity: isProcessingPayment ? 0.7 : 1 },
+                  ]}
+                  onPress={handleConfirmPayRemaining}
+                  disabled={isProcessingPayment}
+                  activeOpacity={0.8}
+                >
+                  {isProcessingPayment ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                      <Text style={modalStyles.submitReviewBtnText}>
+                        Xác nhận thanh toán
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1162,6 +1649,8 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
       {renderCancelModal()}
       {renderReviewModal()}
       {renderCompleteModal()}
+      {renderPaymentRequiredModal()}
+      {renderPayRemainingModal()}
 
       <BottomTabBar activeTab="Bookings" onTabChange={onTabChange} />
     </View>
@@ -1601,6 +2090,19 @@ const styles = StyleSheet.create({
   viewDetailBtnText: {
     color: '#FFFFFF',
     fontSize: 13,
+    fontWeight: '700',
+  },
+  payRemainingBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 9,
+    paddingHorizontal: 11,
+    borderRadius: 9,
+    borderWidth: 1,
+  },
+  payRemainingText: {
+    fontSize: 12.5,
     fontWeight: '700',
   },
   completeEarlyBtn: {

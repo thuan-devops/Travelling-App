@@ -671,9 +671,12 @@ class MockApiService {
       }
 
       // Tự động phân loại: nếu chuyến đã qua ngày checkout thì chuyển status thành completed
+      // Lưu ý: Chỉ tự động completed nếu đơn đặt phòng đã thanh toán đủ 100% (không còn nợ 50%)
       let hasChanges = false;
       list = list.map((b) => {
-        if (b.status !== 'cancelled' && b.status !== 'completed' && isPastCheckout(b.checkOut)) {
+        const remaining = b.dueAmount !== undefined ? b.dueAmount : (b.totalPrice - b.paidAmount);
+        const isPartUnpaid = b.paymentType === 'part' && remaining > 0;
+        if (b.status !== 'cancelled' && b.status !== 'completed' && isPastCheckout(b.checkOut) && !isPartUnpaid) {
           hasChanges = true;
           return {
             ...b,
@@ -805,6 +808,30 @@ class MockApiService {
               ...b,
               status: 'completed' as const,
               completedAt: new Date().toLocaleDateString('vi-VN'),
+            }
+          : b
+      );
+      await AsyncStorage.setItem(key, JSON.stringify(updated));
+      return updated;
+    } catch {
+      return [];
+    }
+  }
+
+  // Thanh toán số tiền còn lại (nốt 50%) của đơn đặt phòng
+  async payRemainingAmount(bookingId: string, paymentMethod?: string): Promise<BookingDetails[]> {
+    try {
+      const key = await this.getBookingsKey();
+      const existing = await this.getBookings();
+      const updated = existing.map((b) =>
+        b.bookingId === bookingId
+          ? {
+              ...b,
+              paidAmount: b.totalPrice,
+              dueAmount: 0,
+              paymentType: 'full' as const,
+              remainingPaidAt: new Date().toLocaleDateString('vi-VN'),
+              remainingPaymentMethod: paymentMethod || 'VietQR Chuyển khoản',
             }
           : b
       );

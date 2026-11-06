@@ -128,6 +128,8 @@ export interface BookingDetails {
   cancellationReason?: string;
   cancelledAt?: string;
   completedAt?: string;
+  remainingPaidAt?: string;
+  remainingPaymentMethod?: string;
   hasReviewed?: boolean;
   review?: ReviewItem;
 }
