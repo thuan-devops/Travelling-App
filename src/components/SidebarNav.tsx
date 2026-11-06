@@ -19,6 +19,7 @@ interface SidebarNavProps {
   favoritesCount?: number;
   onOpenSearch?: () => void;
   onOpenAiSupport?: () => void;
+  onGoHome?: () => void;
 }
 
 interface NavItem {
@@ -42,6 +43,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
   favoritesCount = 0,
   onOpenSearch,
   onOpenAiSupport,
+  onGoHome,
 }) => {
   const { isDarkMode, colors } = useTheme();
   const { user } = useAuth();
@@ -49,6 +51,14 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
 
   // If tablet portrait or narrow tablet, use compact Rail mode (width: 80px)
   const isCompact = isTablet;
+
+  const handlePressLogo = () => {
+    if (onGoHome) {
+      onGoHome();
+    } else {
+      onTabChange('Search');
+    }
+  };
 
   return (
     <View
@@ -70,15 +80,15 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
           Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : null,
         ]}
         activeOpacity={0.7}
-        onPress={() => onTabChange('Search')}
+        onPress={handlePressLogo}
         accessibilityRole="button"
         accessibilityLabel="Về trang Khám phá"
       >
-        <View style={styles.brandIconCircle}>
+        <View style={styles.brandIconCircle} pointerEvents="none">
           <Ionicons name="airplane" size={20} color="#FFFFFF" />
         </View>
         {!isCompact && (
-          <View style={styles.brandTextCol}>
+          <View style={styles.brandTextCol} pointerEvents="none">
             <Text style={[styles.brandTitle, { color: colors.text }]}>Travelling</Text>
             <Text style={styles.brandSub}>Vi vu Việt Nam</Text>
           </View>

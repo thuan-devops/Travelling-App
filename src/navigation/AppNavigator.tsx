@@ -197,13 +197,40 @@ export const AppNavigator: React.FC = () => {
     }
   }, [user]);
 
+  // Key reset HomeScreen về đầu trang khi click vào logo hoặc tab Khám phá
+  const [homeResetKey, setHomeResetKey] = useState<number>(0);
+
+  // Xử lý quay về trang Khám phá (Home) sạch sẽ từ bất kỳ đâu
+  const handleGoHome = () => {
+    setCurrentScreen('HOME');
+    setHistory(['HOME']);
+    setIsSearchModalVisible(false);
+    setSearchFilters({
+      destination: 'Anywhere',
+      startDate: '',
+      endDate: '',
+      daysCount: 1,
+      adults: 0,
+      children: 0,
+      minPrice: 0,
+      maxPrice: 20000000,
+      placeTypes: [],
+      bedrooms: 0,
+      beds: 0,
+      bathrooms: 0,
+      facilities: [],
+      presentTotalPrice: true,
+    });
+    setHomeResetKey((prev) => prev + 1);
+  };
+
   // Handle Tab navigation
   const handleTabChange = (tab: BottomTabType) => {
     let target: ScreenName = 'HOME';
     switch (tab) {
       case 'Search':
-        target = 'HOME';
-        break;
+        handleGoHome();
+        return;
       case 'Favorites':
         target = 'FAVORITES';
         break;
@@ -253,6 +280,7 @@ export const AppNavigator: React.FC = () => {
         <SidebarNav
           activeTab={currentScreen === 'AI_SUPPORT' ? 'AI_SUPPORT' : getActiveTab()}
           onTabChange={handleTabChange}
+          onGoHome={handleGoHome}
           favoritesCount={favoritesCount}
           onOpenSearch={() => setIsSearchModalVisible(true)}
           onOpenAiSupport={() => navigateTo('AI_SUPPORT')}
@@ -263,6 +291,7 @@ export const AppNavigator: React.FC = () => {
       <View style={[styles.screenArea, { backgroundColor: colors.background }, !isMobile && styles.desktopScreenArea]}>
       {currentScreen === 'HOME' && (
         <HomeScreen
+          key={`home-${homeResetKey}`}
           onOpenSearch={() => setIsSearchModalVisible(true)}
           onSelectStay={handleSelectStay}
           onTabChange={handleTabChange}

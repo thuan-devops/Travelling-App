@@ -795,7 +795,7 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
                   activeOpacity={0.88}
                   onPress={handlePressBookNow}
                 >
-                  <Text style={styles.desktopBookBtnText}>Đặt phòng ngay</Text>
+                  <Text style={styles.desktopBookBtnText}>Đặt ngay</Text>
                 </TouchableOpacity>
 
                 <Text style={[styles.desktopNoticeText, { color: colors.textSecondary }]}>
@@ -877,7 +877,7 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
           activeOpacity={0.85}
           onPress={handlePressBookNow}
         >
-          <Text style={styles.bookNowText}>Đặt phòng ngay</Text>
+          <Text style={styles.bookNowText}>Đặt ngay</Text>
         </TouchableOpacity>
       </View>
       )}

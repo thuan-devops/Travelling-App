@@ -4,7 +4,7 @@ import {
   View,
   Text,
   StyleSheet,
-TouchableOpacity,
+  TouchableOpacity,
   ScrollView,
   Alert,
   ActivityIndicator,
@@ -203,7 +203,7 @@ export const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
             activeOpacity={0.8}
             onPress={onViewBooking}
           >
-            <Text style={styles.viewBookingText}>Xem đặt phòng</Text>
+            <Text style={styles.viewBookingText}>Xem booking</Text>
           </TouchableOpacity>
 
           {onExplore && (
