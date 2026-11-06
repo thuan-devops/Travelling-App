@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { Accommodation, BookingDetails, SearchFilterState } from '../types';
 import { CalendarPicker } from '../components/CalendarPicker';
+import { mockApi } from '../api/mockApi';
 import { useCurrency, USD_TO_VND_RATE } from '../context/CurrencyContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -104,6 +105,8 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
   const [endDate, setEndDate] = useState<Date>(initialEnd);
   const [nights, setNights] = useState<number>(initialNights);
   const [isDatesModalVisible, setIsDatesModalVisible] = useState<boolean>(false);
+  const [conflictBooking, setConflictBooking] = useState<BookingDetails | null>(null);
+  const [isConflictModalOpen, setIsConflictModalOpen] = useState<boolean>(false);
 
   // Guests state
   const [adults, setAdults] = useState<number>(
@@ -232,13 +235,19 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
     );
   };
 
-  const handleProceedToPayment = () => {
+  const handleProceedToPayment = async () => {
     if (!contactName.trim()) {
       Alert.alert('Thiếu thông tin', 'Vui lòng nhập họ và tên người nhận phòng.');
       return;
     }
     if (!contactPhone.trim()) {
       Alert.alert('Thiếu thông tin', 'Vui lòng nhập số điện thoại để nhận thông tin xác nhận.');
+      return;
+    }
+    const conflict = await mockApi.checkBookingConflict(stay.id, startDate, endDate);
+    if (conflict) {
+      setConflictBooking(conflict);
+      setIsConflictModalOpen(true);
       return;
     }
     setCurrentStep('payment');
@@ -255,7 +264,14 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
     }
   };
 
-  const handleConfirmFinalPayment = () => {
+  const handleConfirmFinalPayment = async () => {
+    const conflict = await mockApi.checkBookingConflict(stay.id, startDate, endDate);
+    if (conflict) {
+      setConflictBooking(conflict);
+      setIsConflictModalOpen(true);
+      return;
+    }
+
     const sD = startDate.getDate();
     const sM = startDate.getMonth() + 1;
     const sY = startDate.getFullYear();
@@ -1149,6 +1165,55 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
                 onPress={() => setIsGuestsModalVisible(false)}
               >
                 <Text style={styles.confirmModalBtnText}>Xong</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL 4: CẢNH BÁO TRÙNG NGÀY ĐẶT PHÒNG */}
+      <Modal
+        visible={isConflictModalOpen}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsConflictModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalBox, { backgroundColor: colors.card, maxWidth: 420, paddingVertical: 24, paddingHorizontal: 22 }]}>
+            <View style={{ alignItems: 'center', marginBottom: 14 }}>
+              <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(239, 68, 68, 0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+                <Ionicons name="calendar-clear-outline" size={30} color="#EF4444" />
+              </View>
+              <Text style={[styles.modalTitle, { color: colors.text, textAlign: 'center', fontSize: 18 }]}>
+                Phòng đã kín trong ngày này!
+              </Text>
+            </View>
+
+            <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 21, marginBottom: 18 }}>
+              Chỗ nghỉ <Text style={{ fontWeight: '700', color: colors.text }}>"{stay.title}"</Text> đã có lịch đặt từ ngày{' '}
+              <Text style={{ fontWeight: '700', color: '#EF4444' }}>{conflictBooking?.checkIn}</Text> đến{' '}
+              <Text style={{ fontWeight: '700', color: '#EF4444' }}>{conflictBooking?.checkOut}</Text>
+              {conflictBooking?.bookingId ? ` (Mã đơn: #${conflictBooking.bookingId.slice(-8)})` : ''}.{'\n\n'}
+              Bạn vui lòng chọn khoảng ngày lưu trú khác để tiếp tục đặt phòng nhé!
+            </Text>
+
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity
+                style={[styles.confirmModalBtn, { flex: 1, backgroundColor: isDarkMode ? '#334155' : '#E5E7EB', marginTop: 0 }]}
+                onPress={() => setIsConflictModalOpen(false)}
+              >
+                <Text style={[styles.confirmModalBtnText, { color: colors.text }]}>Đóng</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.confirmModalBtn, { flex: 1, marginTop: 0 }]}
+                onPress={() => {
+                  setIsConflictModalOpen(false);
+                  setCurrentStep('form');
+                  setIsDatesModalVisible(true);
+                }}
+              >
+                <Text style={styles.confirmModalBtnText}>Chọn ngày khác</Text>
               </TouchableOpacity>
             </View>
           </View>

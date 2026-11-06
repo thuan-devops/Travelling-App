@@ -19,7 +19,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { StatusBar as RNStatusBar } from 'react-native';
-import { Accommodation, ReviewItem, SearchFilterState } from '../types';
+import { Accommodation, BookingDetails, ReviewItem, SearchFilterState } from '../types';
 import { CalendarPicker } from '../components/CalendarPicker';
 import { getAmenityIcon, mockApi } from '../api/mockApi';
 import { useCurrency } from '../context/CurrencyContext';
@@ -88,6 +88,18 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
   const roomBaseTotal = stay.pricePerNight * nights;
   const roomTotalWithGuests = roomBaseTotal + extraGuestFeeTotal;
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState<boolean>(false);
+  const [conflictBooking, setConflictBooking] = useState<BookingDetails | null>(null);
+  const [isConflictModalOpen, setIsConflictModalOpen] = useState<boolean>(false);
+
+  const handlePressBookNow = async () => {
+    const conflict = await mockApi.checkBookingConflict(stay.id, startDate, endDate);
+    if (conflict) {
+      setConflictBooking(conflict);
+      setIsConflictModalOpen(true);
+      return;
+    }
+    onBookNow({ startDate, endDate, nights, adults, children });
+  };
 
   const formatDateStr = (d: Date) => {
     return `${d.getDate()} Thg ${d.getMonth() + 1}, ${d.getFullYear()}`;
@@ -781,7 +793,7 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
                 <TouchableOpacity
                   style={styles.desktopBookBtn}
                   activeOpacity={0.88}
-                  onPress={() => onBookNow({ startDate, endDate, nights, adults, children })}
+                  onPress={handlePressBookNow}
                 >
                   <Text style={styles.desktopBookBtnText}>Đặt phòng ngay</Text>
                 </TouchableOpacity>
@@ -863,7 +875,7 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
         <TouchableOpacity
           style={styles.bookNowButton}
           activeOpacity={0.85}
-          onPress={() => onBookNow({ startDate, endDate, nights, adults, children })}
+          onPress={handlePressBookNow}
         >
           <Text style={styles.bookNowText}>Đặt phòng ngay</Text>
         </TouchableOpacity>
@@ -1051,6 +1063,54 @@ export const RoomDetailScreen: React.FC<RoomDetailScreenProps> = ({
                   <Text style={styles.submitReviewBtnText}>Lưu cập nhật</Text>
                 </TouchableOpacity>
               </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL CẢNH BÁO TRÙNG NGÀY ĐẶT PHÒNG */}
+      <Modal
+        visible={isConflictModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsConflictModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalBox, { backgroundColor: colors.card, borderColor: isDarkMode ? colors.border : 'transparent', borderWidth: isDarkMode ? 1 : 0, maxWidth: 420, paddingVertical: 24, paddingHorizontal: 22 }]}>
+            <View style={{ alignItems: 'center', marginBottom: 14 }}>
+              <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(239, 68, 68, 0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+                <Ionicons name="calendar-clear-outline" size={30} color="#EF4444" />
+              </View>
+              <Text style={[styles.modalTitle, { color: colors.text, textAlign: 'center', fontSize: 18 }]}>
+                Phòng đã kín trong ngày này!
+              </Text>
+            </View>
+
+            <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 21, marginBottom: 18 }}>
+              Chỗ nghỉ <Text style={{ fontWeight: '700', color: colors.text }}>"{stay.title}"</Text> đã có lịch đặt từ ngày{' '}
+              <Text style={{ fontWeight: '700', color: '#EF4444' }}>{conflictBooking?.checkIn}</Text> đến{' '}
+              <Text style={{ fontWeight: '700', color: '#EF4444' }}>{conflictBooking?.checkOut}</Text>
+              {conflictBooking?.bookingId ? ` (Mã đơn: #${conflictBooking.bookingId.slice(-8)})` : ''}.{'\n\n'}
+              Bạn vui lòng chọn khoảng ngày lưu trú khác để tiếp tục đặt phòng nhé!
+            </Text>
+
+            <View style={styles.modalBtnRow}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setIsConflictModalOpen(false)}
+              >
+                <Text style={[styles.cancelBtnText, { color: colors.textSecondary }]}>Đóng</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.submitReviewBtn, { backgroundColor: '#00BDD6' }]}
+                onPress={() => {
+                  setIsConflictModalOpen(false);
+                  setIsCalendarModalOpen(true);
+                }}
+              >
+                <Text style={styles.submitReviewBtnText}>Chọn ngày khác</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
