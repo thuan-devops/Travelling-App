@@ -29,7 +29,6 @@
 
 ### 🔐 2.1. Xác thực & Tài khoản người dùng
 - Đăng nhập / Đăng ký qua Email & Mật khẩu với cơ chế ghi nhớ phiên (`AuthContext` & `AsyncStorage`).
-- Hỗ trợ luồng OAuth (Google, Meta/Facebook) chuẩn bị sẵn sàng qua `expo-auth-session`.
 - Quản lý Hồ sơ cá nhân (`ProfileScreen`), cập nhật thông tin và đổi mật khẩu an toàn.
 
 ### 🔍 2.2. Khám phá & Tìm kiếm Thông minh
