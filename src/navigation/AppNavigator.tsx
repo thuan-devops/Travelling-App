@@ -142,6 +142,7 @@ export const AppNavigator: React.FC = () => {
   const [bookings, setBookings] = useState<BookingDetails[]>([]);
   const [lastBooking, setLastBooking] = useState<BookingDetails | null>(null);
   const [selectedBookingDates, setSelectedBookingDates] = useState<SelectedStayDates | undefined>();
+  const [bookingsInitialTab, setBookingsInitialTab] = useState<'upcoming' | 'completed' | 'cancelled'>('upcoming');
 
   // Navigation Stack Helpers
   const navigateTo = (screen: ScreenName) => {
@@ -401,6 +402,7 @@ export const AppNavigator: React.FC = () => {
       {currentScreen === 'BOOKINGS' && (
         <BookingsScreen
           bookings={bookings}
+          initialTab={bookingsInitialTab}
           onExplore={() => {
             setCurrentScreen('HOME');
             setHistory(['HOME']);
@@ -423,14 +425,61 @@ export const AppNavigator: React.FC = () => {
         <InboxScreen
           onTabChange={handleTabChange}
           onOpenAiSupport={() => navigateTo('AI_SUPPORT')}
-          onViewBooking={(bookingId) => {
-            const found = bookings.find((b) => b.bookingId === bookingId);
-            if (found) {
-              setLastBooking(found);
-              navigateTo('PAYMENT_SUCCESS');
-            } else {
-              navigateTo('BOOKINGS');
+          onSelectNotification={(notif) => {
+            const foundBooking = notif.bookingId
+              ? bookings.find((b) => b.bookingId === notif.bookingId)
+              : undefined;
+
+            // Tìm chỗ nghỉ liên quan từ booking hoặc từ tên phòng trong nội dung thông báo
+            const matchedStay =
+              foundBooking?.accommodation ||
+              INITIAL_ACCOMMODATIONS.find((s) =>
+                notif.message?.toLowerCase().includes(s.title.toLowerCase())
+              );
+
+            // 1. Thông báo "Đánh giá thành công" -> Mở màn hình Xem đánh giá của phòng đó
+            if (
+              notif.actionText === 'Xem đánh giá' ||
+              notif.title?.toLowerCase().includes('đánh giá')
+            ) {
+              if (matchedStay) {
+                setActiveStay(matchedStay);
+              }
+              navigateTo('REVIEWS');
+              return;
             }
+
+            // 2. Thông báo "Hủy chuyến thành công" -> Mở Chuyến đi của tôi (tab Chuyến đã hủy)
+            if (
+              notif.type === 'booking_cancelled' ||
+              notif.title?.toLowerCase().includes('hủy chuyến')
+            ) {
+              setBookingsInitialTab('cancelled');
+              navigateTo('BOOKINGS');
+              return;
+            }
+
+            // 3. Thông báo "Hoàn thành chuyến đi" -> Mở Chuyến đi của tôi (tab Đã hoàn thành)
+            if (
+              notif.type === 'trip_reminder' ||
+              notif.title?.toLowerCase().includes('hoàn thành') ||
+              notif.actionText === 'Viết đánh giá ngay'
+            ) {
+              setBookingsInitialTab('completed');
+              navigateTo('BOOKINGS');
+              return;
+            }
+
+            // 4. Thông báo "Đặt chuyến thành công" -> Mở Chuyến đi của tôi (tab Chuyến sắp tới)
+            if (notif.type === 'booking_success' || notif.bookingId) {
+              setBookingsInitialTab('upcoming');
+              navigateTo('BOOKINGS');
+              return;
+            }
+
+            // 5. Thông báo ưu đãi / hệ thống khác -> Mở Khám phá
+            setCurrentScreen('HOME');
+            setHistory(['HOME']);
           }}
         />
       )}

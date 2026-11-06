@@ -388,9 +388,13 @@ export const AiSupportScreen: React.FC<AiSupportScreenProps> = ({
             placeholderTextColor="#9CA3AF"
             value={inputMessage}
             onChangeText={setInputMessage}
-            multiline
             maxLength={500}
             editable={!isLoading}
+            returnKeyType="send"
+            blurOnSubmit={true}
+            onSubmitEditing={() => {
+              if (inputMessage.trim() && !isLoading) handleSend();
+            }}
           />
           <TouchableOpacity
             style={[

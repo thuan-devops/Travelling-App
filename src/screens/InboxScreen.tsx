@@ -43,12 +43,14 @@ interface InboxScreenProps {
   onTabChange: (tab: BottomTabType) => void;
   onOpenAiSupport?: () => void;
   onViewBooking?: (bookingId?: string) => void;
+  onSelectNotification?: (notif: AppNotification) => void;
 }
 
 export const InboxScreen: React.FC<InboxScreenProps> = ({
   onTabChange,
   onOpenAiSupport,
   onViewBooking,
+  onSelectNotification,
 }) => {
   const { isDarkMode, colors } = useTheme();
   const [inboxTab, setInboxTab] = useState<'messages' | 'notifications'>('messages');
@@ -191,6 +193,11 @@ export const InboxScreen: React.FC<InboxScreenProps> = ({
     if (!notif.read) {
       const updated = await notificationService.markAsRead(notif.id);
       setNotifications(updated);
+    }
+
+    if (onSelectNotification) {
+      onSelectNotification(notif);
+      return;
     }
 
     if (notif.bookingId) {
@@ -460,8 +467,12 @@ export const InboxScreen: React.FC<InboxScreenProps> = ({
                           </View>
 
                           <TouchableOpacity
-                            onPress={() => handleDeleteNotif(notif.id)}
+                            onPress={(e: any) => {
+                              e?.stopPropagation?.();
+                              handleDeleteNotif(notif.id);
+                            }}
                             style={styles.notifDeleteBtn}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                           >
                             <Ionicons name="trash-outline" size={14} color="#9CA3AF" />
                           </TouchableOpacity>
@@ -565,7 +576,11 @@ export const InboxScreen: React.FC<InboxScreenProps> = ({
                     placeholderTextColor="#9CA3AF"
                     value={inputMessage}
                     onChangeText={setInputMessage}
-                    multiline
+                    returnKeyType="send"
+                    blurOnSubmit={true}
+                    onSubmitEditing={() => {
+                      if (inputMessage.trim()) handleSendMessage();
+                    }}
                   />
                   <TouchableOpacity
                     style={[styles.sendBtn, !inputMessage.trim() && styles.sendBtnDisabled]}

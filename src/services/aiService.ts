@@ -46,10 +46,12 @@ const GEMINI_API_KEY =
   '';
 
 // Primary & Fallback models
+// (Các model 1.5 / 2.0 / 2.5 cũ đã bị Google ngừng hỗ trợ -> trả về 404)
 const GEMINI_MODELS = [
-  'gemini-1.5-flash',
-  'gemini-2.0-flash',
-  'gemini-1.5-pro',
+  'gemini-3.5-flash',
+  'gemini-flash-lite-latest',
+  'gemini-3.1-flash-lite',
+  'gemini-flash-latest',
 ];
 
 class AiService {
@@ -578,19 +580,27 @@ QUAN TRỌNG: Bạn PHẢI trả về duy nhất một chuỗi JSON hợp lệ (
             ],
             generationConfig: {
               temperature: 0.1,
-              maxOutputTokens: 200,
+              maxOutputTokens: 1024,
             },
           }),
         });
 
         if (!response.ok) {
+          console.warn(`transcribeAudio: model ${model} trả về status ${response.status}`);
           continue;
         }
 
         const data = await response.json();
-        const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (candidateText && typeof candidateText === 'string') {
-          const cleanText = candidateText.replace(/^["'“”‘’\s]+|["'“”‘’\s]+$/g, '').trim();
+        const parts: any[] = data.candidates?.[0]?.content?.parts || [];
+        const candidateText = parts
+          .filter((p) => typeof p?.text === 'string' && !p.thought)
+          .map((p) => p.text)
+          .join(' ');
+        if (candidateText) {
+          const cleanText = candidateText
+            .replace(/^["'“”‘’\s]+|["'“”‘’\s]+$/g, '')
+            .replace(/[.!?。]+$/g, '')
+            .trim();
           if (cleanText) {
             return cleanText;
           }

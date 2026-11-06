@@ -24,7 +24,13 @@
     "plugins": [
       "expo-font",
       "expo-sharing",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Cho phép Travelling App sử dụng micro để tìm kiếm bằng giọng nói."
+        }
+      ]
     ]
   }
 }

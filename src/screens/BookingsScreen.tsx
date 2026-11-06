@@ -42,6 +42,7 @@ const RATING_EMOTIONS: Record<number, string> = {
 
 interface BookingsScreenProps {
   bookings: BookingDetails[];
+  initialTab?: 'upcoming' | 'completed' | 'cancelled';
   onExplore: () => void;
   onSelectBookingDetail: (booking: BookingDetails) => void;
   onRebook?: (stay: Accommodation) => void;
@@ -52,6 +53,7 @@ interface BookingsScreenProps {
 
 export const BookingsScreen: React.FC<BookingsScreenProps> = ({
   bookings = [],
+  initialTab = 'upcoming',
   onExplore,
   onSelectBookingDetail,
   onRebook,
@@ -66,8 +68,14 @@ export const BookingsScreen: React.FC<BookingsScreenProps> = ({
   const insets = useSafeAreaInsets();
   const mobileTopInset = isMobile ? Math.max(insets.top, Platform.OS === 'android' ? (RNStatusBar.currentHeight || 28) : 0) : 0;
 
-  const [activeTab, setActiveTab] = useState<'upcoming' | 'completed' | 'cancelled'>('upcoming');
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'completed' | 'cancelled'>(initialTab);
   const [localBookings, setLocalBookings] = useState<BookingDetails[]>(bookings);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   // Cancel modal state
   const [cancelModalVisible, setCancelModalVisible] = useState<boolean>(false);

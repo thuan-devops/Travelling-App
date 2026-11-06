@@ -363,6 +363,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange, onOpe
                 onChangeText={setDisplayName}
                 placeholder="Nhập họ và tên của bạn"
                 placeholderTextColor={colors.textSecondary}
+                returnKeyType="done"
+                onSubmitEditing={handleSaveProfile}
               />
 
               <Text style={[styles.inputLabel, { color: colors.text }]}>Số điện thoại</Text>
@@ -373,6 +375,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange, onOpe
                 placeholder="Nhập số điện thoại"
                 placeholderTextColor={colors.textSecondary}
                 keyboardType="phone-pad"
+                returnKeyType="done"
+                onSubmitEditing={handleSaveProfile}
               />
 
               <Text style={[styles.inputLabel, { color: colors.text }]}>Địa chỉ Email</Text>
@@ -383,6 +387,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange, onOpe
                 placeholder="Nhập email"
                 placeholderTextColor={colors.textSecondary}
                 keyboardType="email-address"
+                returnKeyType="done"
+                onSubmitEditing={handleSaveProfile}
               />
 
               <TouchableOpacity
@@ -435,6 +441,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange, onOpe
                   placeholder="Nhập mật khẩu hiện tại"
                   placeholderTextColor={colors.textSecondary}
                   secureTextEntry={!showCurrentPassword}
+                  returnKeyType="done"
+                  onSubmitEditing={handleChangePassword}
                 />
                 <TouchableOpacity
                   style={styles.eyeBtn}
@@ -458,6 +466,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange, onOpe
                   placeholder="Nhập mật khẩu mới (ít nhất 6 ký tự)"
                   placeholderTextColor={colors.textSecondary}
                   secureTextEntry={!showNewPassword}
+                  returnKeyType="done"
+                  onSubmitEditing={handleChangePassword}
                 />
                 <TouchableOpacity
                   style={styles.eyeBtn}
@@ -481,6 +491,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onTabChange, onOpe
                   placeholder="Nhập lại mật khẩu mới"
                   placeholderTextColor={colors.textSecondary}
                   secureTextEntry={!showConfirmNewPassword}
+                  returnKeyType="done"
+                  onSubmitEditing={handleChangePassword}
                 />
                 <TouchableOpacity
                   style={styles.eyeBtn}

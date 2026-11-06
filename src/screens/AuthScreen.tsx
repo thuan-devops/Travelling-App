@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -121,6 +121,23 @@ export const AuthScreen: React.FC = () => {
   };
 
   const isFormBusy = isLoading;
+
+  // Hỗ trợ nhấn phím Enter trên máy tính để Đăng nhập / Tạo tài khoản ngay
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.shiftKey && !isFormBusy) {
+        e.preventDefault();
+        if (mode === 'login') {
+          handleLogin();
+        } else {
+          handleRegister();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mode, username, password, confirmPassword, isFormBusy]);
 
   return (
     <View style={styles.rootContainer}>
@@ -330,6 +347,11 @@ export const AuthScreen: React.FC = () => {
                             if (successMessage) setSuccessMessage('');
                           }}
                           editable={!isFormBusy}
+                          returnKeyType="go"
+                          blurOnSubmit={true}
+                          onSubmitEditing={
+                            mode === 'login' ? handleLogin : handleRegister
+                          }
                         />
                       </View>
                     </View>
@@ -383,6 +405,11 @@ export const AuthScreen: React.FC = () => {
                             if (successMessage) setSuccessMessage('');
                           }}
                           editable={!isFormBusy}
+                          returnKeyType="go"
+                          blurOnSubmit={true}
+                          onSubmitEditing={
+                            mode === 'login' ? handleLogin : handleRegister
+                          }
                         />
                         <TouchableOpacity
                           style={styles.eyeButton}
@@ -449,6 +476,9 @@ export const AuthScreen: React.FC = () => {
                               if (successMessage) setSuccessMessage('');
                             }}
                             editable={!isFormBusy}
+                            returnKeyType="go"
+                            blurOnSubmit={true}
+                            onSubmitEditing={handleRegister}
                           />
                           <TouchableOpacity
                             style={styles.eyeButton}

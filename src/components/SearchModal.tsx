@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -161,8 +161,10 @@ export const SearchModal: React.FC<SearchModalProps> = ({
       nights = dateRange.nights || 1;
     }
 
+    const finalDestination = searchQuery.trim() || destination || 'Anywhere';
+
     const finalState: SearchFilterState = {
-      destination: destination || 'Anywhere',
+      destination: finalDestination,
       startDate: startStr,
       endDate: endStr,
       daysCount: nights,
@@ -181,6 +183,33 @@ export const SearchModal: React.FC<SearchModalProps> = ({
     onSearch(finalState);
     onClose();
   };
+
+  // Hỗ trợ nhấn phím Enter trên máy tính để tìm kiếm ngay ở bất kỳ bước nào trong Modal
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined' || !visible || isVoiceModalOpen) {
+      return;
+    }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleExecuteSearch();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    visible,
+    isVoiceModalOpen,
+    searchQuery,
+    destination,
+    whenMode,
+    dateRange,
+    adults,
+    children,
+    minPrice,
+    maxPrice,
+    selectedRating,
+  ]);
 
   const dateSummaryText =
     whenMode === 'choose' && dateRange.startDate && dateRange.endDate
@@ -213,7 +242,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
               </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+            <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               {/* STEP 1: WHERE TO? */}
               {currentStep === 1 && (
                 <View style={styles.stepContainer}>
@@ -231,6 +260,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                         if (text.trim()) setDestination(text.trim());
                         else setDestination('Anywhere');
                       }}
+                      returnKeyType="search"
+                      blurOnSubmit={true}
+                      onSubmitEditing={handleExecuteSearch}
                     />
                     <TouchableOpacity
                       onPress={() => setIsVoiceModalOpen(true)}
