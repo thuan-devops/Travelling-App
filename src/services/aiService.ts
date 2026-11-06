@@ -545,6 +545,64 @@ QUAN TRỌNG: Bạn PHẢI trả về duy nhất một chuỗi JSON hợp lệ (
   }
 
   /**
+   * Transcribe recorded audio (base64) using Gemini Multimodal Speech Recognition
+   */
+  async transcribeAudio(base64Audio: string, mimeType: string = 'audio/mp4'): Promise<string> {
+    if (!GEMINI_API_KEY || !base64Audio) {
+      return '';
+    }
+
+    for (const model of GEMINI_MODELS) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    inlineData: {
+                      mimeType,
+                      data: base64Audio,
+                    },
+                  },
+                  {
+                    text: 'Hãy chuyển toàn bộ giọng nói tiếng Việt trong đoạn ghi âm thành văn bản chính xác nhất. Chỉ trả về duy nhất nội dung văn bản mà người dùng nói, không thêm bất kỳ lời chào, giải thích, dấu ngoặc kép hay định dạng nào khác.',
+                  },
+                ],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.1,
+              maxOutputTokens: 200,
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          continue;
+        }
+
+        const data = await response.json();
+        const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (candidateText && typeof candidateText === 'string') {
+          const cleanText = candidateText.replace(/^["'“”‘’\s]+|["'“”‘’\s]+$/g, '').trim();
+          if (cleanText) {
+            return cleanText;
+          }
+        }
+      } catch (err) {
+        console.warn(`transcribeAudio failed with model ${model}:`, err);
+      }
+    }
+    return '';
+  }
+
+  /**
    * AI Voice Search Processor:
    * Semantically analyzes spoken Vietnamese queries, extracts destination,
    * category, amenities, detects itinerary/FAQ requests, and finds matching stays.

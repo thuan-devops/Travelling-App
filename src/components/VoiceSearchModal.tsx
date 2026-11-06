@@ -11,9 +11,12 @@ import {
   ActivityIndicator,
   TextInput,
   KeyboardAvoidingView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
 import { useTheme } from '../context/ThemeContext';
+import { aiService } from '../services/aiService';
 
 interface VoiceSearchModalProps {
   visible: boolean;
@@ -38,13 +41,16 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
   onClose,
   onResult,
   title = 'AI Tìm kiếm bằng giọng nói',
-  placeholderPrompt = 'Nói điều bạn muốn tìm hoặc chọn câu mẫu bên dưới:',
+  placeholderPrompt = 'Hoặc chọn câu gợi ý bên dưới:',
 }) => {
   const { isDarkMode, colors } = useTheme();
   const [isListening, setIsListening] = useState<boolean>(false);
-  const [isSimulating, setIsSimulating] = useState<boolean>(false);
+  const [isRecording, setIsRecording] = useState<boolean>(false);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [spokenText, setSpokenText] = useState<string>('');
+  const [statusMessage, setStatusMessage] = useState<string>(
+    'Chạm micro để nói hoặc dùng bàn phím bên dưới'
+  );
   const [hasSpeechSupport, setHasSpeechSupport] = useState<boolean>(true);
 
   // Pulse animation for mic
@@ -56,9 +62,9 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
   const waveAnim4 = useRef(new Animated.Value(0.9)).current;
 
   const recognitionRef = useRef<any>(null);
+  const recordingRef = useRef<Audio.Recording | null>(null);
+  const recordingTimeout = useRef<any>(null);
   const autoSubmitTimeout = useRef<any>(null);
-  const typingIntervalRef = useRef<any>(null);
-  const promptIndexRef = useRef<number>(0);
   const latestSpokenText = useRef<string>('');
   const isTriggeredRef = useRef<boolean>(false);
 
@@ -68,9 +74,19 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
       latestSpokenText.current = '';
       isTriggeredRef.current = false;
       setIsAnalyzing(false);
-      setIsSimulating(false);
+      setIsListening(false);
+      setIsRecording(false);
+      setStatusMessage('Chạm micro để nói hoặc dùng bàn phím bên dưới');
       startPulse();
-      initAndStartListening();
+
+      // Check speech support
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        const SpeechRec =
+          (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        setHasSpeechSupport(!!SpeechRec);
+      } else {
+        setHasSpeechSupport(true);
+      }
     } else {
       cleanupAudio();
     }
@@ -80,9 +96,9 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
     };
   }, [visible]);
 
-  // Handle sound wave animation when listening or simulating
+  // Handle sound wave animation when listening or recording
   useEffect(() => {
-    if (isListening || isSimulating) {
+    if (isListening || isRecording) {
       const animateWave = (anim: Animated.Value, toVal: number, duration: number) => {
         return Animated.loop(
           Animated.sequence([
@@ -126,22 +142,38 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
       waveAnim3.setValue(0.4);
       waveAnim4.setValue(0.9);
     }
-  }, [isListening, isSimulating]);
+  }, [isListening, isRecording]);
 
-  const cleanupAudio = () => {
-    stopListening();
+  const cleanupAudio = async () => {
     if (autoSubmitTimeout.current) clearTimeout(autoSubmitTimeout.current);
-    if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
+    if (recordingTimeout.current) clearTimeout(recordingTimeout.current);
+
+    // Stop web speech
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {}
+      recognitionRef.current = null;
+    }
+
+    // Stop mobile recording
+    if (recordingRef.current) {
+      try {
+        await recordingRef.current.stopAndUnloadAsync();
+      } catch {}
+      recordingRef.current = null;
+    }
+
     pulseAnim.setValue(1);
-    setIsSimulating(false);
     setIsListening(false);
+    setIsRecording(false);
   };
 
   const startPulse = () => {
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: 1.22,
+          toValue: 1.2,
           duration: 900,
           useNativeDriver: true,
         }),
@@ -158,144 +190,234 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
     const clean = textToSubmit.trim();
     if (!clean || isTriggeredRef.current) return;
     isTriggeredRef.current = true;
-    stopListening();
-    setIsSimulating(false);
+    cleanupAudio();
     setIsAnalyzing(true);
+    setStatusMessage('✨ AI đang xử lý yêu cầu tìm kiếm...');
 
-    // Tự động đóng và tìm kiếm ngay lập tức sau 500ms để người dùng thấy phản hồi AI
     setTimeout(() => {
       onResult(clean);
       onClose();
       setIsAnalyzing(false);
       isTriggeredRef.current = false;
-    }, 550);
+    }, 500);
   };
 
-  const simulateVoiceRecognition = (targetText: string) => {
-    if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
-    if (autoSubmitTimeout.current) clearTimeout(autoSubmitTimeout.current);
+  /**
+   * Start Web Speech Recognition in browser
+   */
+  const startWebListening = () => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
-    setIsListening(true);
-    setIsSimulating(true);
-    setSpokenText('');
-    latestSpokenText.current = '';
+    if (!SpeechRecognition) {
+      setHasSpeechSupport(false);
+      setStatusMessage('Trình duyệt chưa hỗ trợ Web Speech API.');
+      return;
+    }
 
-    let currentIndex = 0;
-    const chars = Array.from(targetText);
-    const intervalMs = Math.max(20, Math.min(45, Math.floor(750 / chars.length)));
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'vi-VN';
+      recognition.continuous = false;
+      recognition.interimResults = true;
 
-    typingIntervalRef.current = setInterval(() => {
-      currentIndex += 1;
-      if (currentIndex <= chars.length) {
-        const currentSub = chars.slice(0, currentIndex).join('');
-        setSpokenText(currentSub);
-        latestSpokenText.current = currentSub;
-      } else {
-        if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
-        setIsSimulating(false);
-        setIsListening(false);
-
-        autoSubmitTimeout.current = setTimeout(() => {
-          triggerAutoSearch(targetText);
-        }, 650);
-      }
-    }, intervalMs);
-  };
-
-  const initAndStartListening = () => {
-    isTriggeredRef.current = false;
-
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      const SpeechRecognition =
-        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-      if (SpeechRecognition) {
-        try {
-          const recognition = new SpeechRecognition();
-          recognition.lang = 'vi-VN';
-          recognition.continuous = false;
-          recognition.interimResults = true;
-
-          recognition.onresult = (event: any) => {
-            let finalTranscript = '';
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-              finalTranscript += event.results[i][0].transcript;
-            }
-            if (finalTranscript) {
-              setSpokenText(finalTranscript);
-              latestSpokenText.current = finalTranscript;
-
-              if (autoSubmitTimeout.current) clearTimeout(autoSubmitTimeout.current);
-              autoSubmitTimeout.current = setTimeout(() => {
-                triggerAutoSearch(finalTranscript);
-              }, 1200);
-            }
-          };
-
-          recognition.onerror = (e: any) => {
-            console.warn('Speech recognition error:', e);
-            setIsListening(false);
-          };
-
-          recognition.onend = () => {
-            setIsListening(false);
-            if (latestSpokenText.current.trim() && !isTriggeredRef.current) {
-              if (autoSubmitTimeout.current) clearTimeout(autoSubmitTimeout.current);
-              triggerAutoSearch(latestSpokenText.current);
-            }
-          };
-
-          recognition.start();
-          recognitionRef.current = recognition;
-          setIsListening(true);
-          setHasSpeechSupport(true);
-          return;
-        } catch (err) {
-          console.warn('Could not start web speech:', err);
+      recognition.onresult = (event: any) => {
+        let finalTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          finalTranscript += event.results[i][0].transcript;
         }
+        if (finalTranscript) {
+          setSpokenText(finalTranscript);
+          latestSpokenText.current = finalTranscript;
+          setStatusMessage('🎙️ Đã nghe: "' + finalTranscript + '"');
+
+          if (autoSubmitTimeout.current) clearTimeout(autoSubmitTimeout.current);
+          autoSubmitTimeout.current = setTimeout(() => {
+            triggerAutoSearch(finalTranscript);
+          }, 1200);
+        }
+      };
+
+      recognition.onerror = (e: any) => {
+        console.warn('Speech recognition error:', e);
+        setIsListening(false);
+        setStatusMessage('Chưa nghe rõ câu nói. Hãy chạm micro để nói lại!');
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        if (latestSpokenText.current.trim() && !isTriggeredRef.current) {
+          if (autoSubmitTimeout.current) clearTimeout(autoSubmitTimeout.current);
+          triggerAutoSearch(latestSpokenText.current);
+        }
+      };
+
+      recognition.start();
+      recognitionRef.current = recognition;
+      setIsListening(true);
+      setStatusMessage('🎙️ Đang lắng nghe bạn nói... (Hãy nói vào micro)');
+    } catch (err) {
+      console.warn('Could not start web speech:', err);
+      setIsListening(false);
+    }
+  };
+
+  /**
+   * Start mobile audio recording with expo-av
+   */
+  const startMobileRecording = async () => {
+    try {
+      const perm = await Audio.requestPermissionsAsync();
+      if (perm.status !== 'granted') {
+        Alert.alert(
+          'Quyền truy cập Micro',
+          'Ứng dụng cần quyền Micro để nhận diện giọng nói. Bạn có thể cấp quyền trong Cài đặt hoặc dùng micro trên bàn phím nhé!'
+        );
+        setStatusMessage('Chưa có quyền micro. Bạn hãy dùng micro bàn phím bên dưới!');
+        return;
       }
-    }
 
-    // Trên Mobile hoặc trình duyệt không hỗ trợ Web Speech API trực tiếp
-    setHasSpeechSupport(false);
-    setIsListening(false);
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      const recording = new Audio.Recording();
+      await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      await recording.startAsync();
+      recordingRef.current = recording;
+
+      setSpokenText('');
+      latestSpokenText.current = '';
+      setIsListening(true);
+      setIsRecording(true);
+      setStatusMessage('🎙️ Đang thu âm... Hãy nói câu bạn muốn tìm (Chạm lại vào mic khi nói xong)');
+
+      // Tự động dừng sau tối đa 8 giây nếu người dùng không chạm dừng
+      if (recordingTimeout.current) clearTimeout(recordingTimeout.current);
+      recordingTimeout.current = setTimeout(() => {
+        stopAndTranscribeMobileRecording();
+      }, 8000);
+    } catch (err) {
+      console.warn('Lỗi ghi âm:', err);
+      setStatusMessage('💡 Hãy chạm ô bên dưới và nhấn biểu tượng 🎙️ trên bàn phím để nói!');
+      setIsListening(false);
+      setIsRecording(false);
+    }
   };
 
-  const stopListening = () => {
+  /**
+   * Stop mobile recording and transcribe via Gemini AI
+   */
+  const stopAndTranscribeMobileRecording = async () => {
+    if (recordingTimeout.current) clearTimeout(recordingTimeout.current);
+    if (!recordingRef.current) {
+      setIsListening(false);
+      setIsRecording(false);
+      return;
+    }
+
+    const rec = recordingRef.current;
+    recordingRef.current = null;
     setIsListening(false);
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch {}
-      recognitionRef.current = null;
+    setIsRecording(false);
+    setIsAnalyzing(true);
+    setStatusMessage('✨ AI đang giải mã giọng nói của bạn...');
+
+    try {
+      await rec.stopAndUnloadAsync();
+      const uri = rec.getURI();
+
+      if (!uri) {
+        setIsAnalyzing(false);
+        setStatusMessage('Không có file ghi âm. Hãy chạm micro và thử lại!');
+        return;
+      }
+
+      // Đọc base64 qua fetch + FileReader
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const base64Audio = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const res = reader.result as string;
+          resolve(res.split(',')[1] || res);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+
+      if (!base64Audio) {
+        setIsAnalyzing(false);
+        setStatusMessage('Không đọc được dữ liệu ghi âm. Hãy thử lại!');
+        return;
+      }
+
+      const mimeType = Platform.OS === 'ios' ? 'audio/m4a' : 'audio/mp4';
+      const transcribed = await aiService.transcribeAudio(base64Audio, mimeType);
+
+      if (transcribed && transcribed.trim()) {
+        const clean = transcribed.trim();
+        setSpokenText(clean);
+        latestSpokenText.current = clean;
+        setIsAnalyzing(false);
+        setStatusMessage('✨ AI đã nhận diện thành công!');
+
+        // Tự động kích hoạt tìm kiếm sau 700ms
+        setTimeout(() => {
+          triggerAutoSearch(clean);
+        }, 700);
+      } else {
+        setIsAnalyzing(false);
+        setStatusMessage('Chưa nghe rõ câu nói. Hãy nói to hơn hoặc dùng micro bàn phím!');
+      }
+    } catch (err) {
+      console.warn('Lỗi xử lý file âm thanh:', err);
+      setIsAnalyzing(false);
+      setStatusMessage('Không thể giải mã âm thanh. Bạn hãy dùng micro bàn phím bên dưới!');
     }
   };
 
+  /**
+   * Handle user pressing the big microphone button
+   */
   const handleMicPress = () => {
     if (isAnalyzing) return;
 
-    if (hasSpeechSupport && Platform.OS === 'web') {
-      if (isListening) {
-        stopListening();
+    // Nếu đang lắng nghe hoặc đang ghi âm: dừng và xử lý
+    if (isListening || isRecording) {
+      if (Platform.OS === 'web') {
+        if (recognitionRef.current) {
+          try {
+            recognitionRef.current.stop();
+          } catch {}
+        }
+        setIsListening(false);
       } else {
-        initAndStartListening();
+        stopAndTranscribeMobileRecording();
       }
+      return;
+    }
+
+    // Nếu chưa lắng nghe: bắt đầu lắng nghe
+    if (Platform.OS === 'web') {
+      startWebListening();
     } else {
-      // Trên điện thoại hoặc trình duyệt không có Web Speech API:
-      if (spokenText.trim()) {
-        triggerAutoSearch(spokenText);
-      } else {
-        // Kích hoạt mô phỏng nhận diện câu lệnh du lịch
-        const prompt = VOICE_PROMPTS[promptIndexRef.current % VOICE_PROMPTS.length];
-        promptIndexRef.current += 1;
-        simulateVoiceRecognition(prompt);
-      }
+      startMobileRecording();
     }
   };
 
+  /**
+   * When user explicitly taps a suggestion chip
+   */
   const handleSelectPrompt = (prompt: string) => {
     if (isAnalyzing) return;
-    simulateVoiceRecognition(prompt);
+    cleanupAudio();
+    setSpokenText(prompt);
+    latestSpokenText.current = prompt;
+    setStatusMessage('✨ Đã chọn câu gợi ý, đang tìm kiếm...');
+    triggerAutoSearch(prompt);
   };
 
   const handleConfirmResult = () => {
@@ -305,14 +427,12 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
   };
 
   const handleRetry = () => {
-    if (autoSubmitTimeout.current) clearTimeout(autoSubmitTimeout.current);
-    if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
+    cleanupAudio();
     isTriggeredRef.current = false;
     setSpokenText('');
     latestSpokenText.current = '';
     setIsAnalyzing(false);
-    setIsSimulating(false);
-    initAndStartListening();
+    setStatusMessage('Chạm micro để nói hoặc dùng bàn phím bên dưới');
   };
 
   return (
@@ -360,8 +480,8 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
                 style={[
                   styles.micPulseRing,
                   {
-                    transform: [{ scale: isListening || isSimulating ? pulseAnim : 1 }],
-                    opacity: isListening || isSimulating ? 0.75 : 0.25,
+                    transform: [{ scale: isListening || isRecording ? pulseAnim : 1 }],
+                    opacity: isListening || isRecording ? 0.75 : 0.25,
                   },
                 ]}
               />
@@ -369,7 +489,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
               <TouchableOpacity
                 style={[
                   styles.micButton,
-                  (isListening || isSimulating) && styles.micButtonActive,
+                  (isListening || isRecording) && styles.micButtonActive,
                   isAnalyzing && styles.micButtonAnalyzing,
                 ]}
                 onPress={handleMicPress}
@@ -379,15 +499,15 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <Ionicons
-                    name={isListening || isSimulating ? 'mic' : 'mic-outline'}
+                    name={isListening || isRecording ? 'mic' : 'mic-outline'}
                     size={36}
                     color="#FFFFFF"
                   />
                 )}
               </TouchableOpacity>
 
-              {/* Animated Waveform Bars */}
-              {(isListening || isSimulating) && (
+              {/* Animated Waveform Bars when recording/listening */}
+              {(isListening || isRecording) && (
                 <View style={styles.waveformRow}>
                   {[waveAnim1, waveAnim2, waveAnim3, waveAnim4].map((anim, idx) => (
                     <Animated.View
@@ -405,15 +525,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
               )}
 
               <Text style={[styles.statusText, { color: colors.textSecondary }]}>
-                {isAnalyzing
-                  ? '✨ AI đang phân tích & tự động tìm kiếm...'
-                  : isSimulating
-                  ? '🎙️ Đang nghe giọng nói của bạn...'
-                  : isListening
-                  ? 'Đang lắng nghe...'
-                  : spokenText
-                  ? 'Đã nhận diện giọng nói'
-                  : 'Chạm micro hoặc nói qua bàn phím bên dưới'}
+                {statusMessage}
               </Text>
             </View>
 
@@ -499,14 +611,6 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
               </View>
               <Text style={[styles.mobileHintText, { color: colors.textSecondary }]}>
                 💡 Chạm vào ô trên, sau đó chạm biểu tượng 🎙️ trên bàn phím ảo (Gboard / iOS) để nói tiếng Việt trực tiếp!
-              </Text>
-            </View>
-
-            {/* Smart Auto Search Notice */}
-            <View style={styles.autoSearchTip}>
-              <Ionicons name="flash" size={14} color="#0D9488" style={{ marginRight: 6 }} />
-              <Text style={styles.autoSearchTipText}>
-                Hệ thống AI sẽ tự động phân tích & tìm kiếm ngay khi nhận diện xong!
               </Text>
             </View>
 
@@ -640,7 +744,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   micButtonActive: {
-    backgroundColor: '#0891B2',
+    backgroundColor: '#DC2626', // Màu đỏ khi đang ghi âm/lắng nghe
   },
   micButtonAnalyzing: {
     backgroundColor: '#0D9488',
@@ -665,6 +769,7 @@ const styles = StyleSheet.create({
     color: '#0F766E',
     marginTop: 10,
     textAlign: 'center',
+    paddingHorizontal: 16,
   },
   transcriptBox: {
     backgroundColor: '#F8FAFC',
@@ -737,23 +842,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 16,
     marginTop: 6,
-  },
-  autoSearchTip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F0FDFA',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#CCFBF1',
-  },
-  autoSearchTipText: {
-    fontSize: 12,
-    color: '#0F766E',
-    fontWeight: '500',
-    flex: 1,
   },
   promptsSectionTitle: {
     fontSize: 13,
