@@ -1017,7 +1017,16 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
 
               <TouchableOpacity
                 style={[styles.confirmModalBtn, { marginTop: 16 }]}
-                onPress={() => setIsDatesModalVisible(false)}
+                onPress={async () => {
+                  const conflict = await mockApi.checkBookingConflict(stay.id, startDate, endDate);
+                  if (conflict) {
+                    setIsDatesModalVisible(false);
+                    setConflictBooking(conflict);
+                    setIsConflictModalOpen(true);
+                    return;
+                  }
+                  setIsDatesModalVisible(false);
+                }}
               >
                 <Text style={styles.confirmModalBtnText}>Xong</Text>
               </TouchableOpacity>

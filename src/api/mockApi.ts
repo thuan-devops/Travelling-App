@@ -17,6 +17,7 @@ const MOCK_API_URL = 'https://6adf391c8e42963c8d5d9b65.mockapi.io/travelling';
 const FAVORITES_STORAGE_KEY = '@travelling_app_favorite_ids';
 const REVIEWS_STORAGE_KEY = '@travelling_app_all_reviews_v2';
 const BOOKINGS_STORAGE_KEY = '@travelling_app_bookings';
+const GLOBAL_BOOKINGS_KEY = '@travelling_app_global_all_bookings_v3';
 const REMOTE_CACHE_KEY = '@travelling_app_remote_cache_v6';
 
 export const parseBookingDate = (dateStr: string): Date | null => {
@@ -787,28 +788,135 @@ class MockApiService {
     }
   }
 
+  // Helper đồng bộ đơn đặt phòng vào kho lưu trữ toàn hệ thống (mọi user đều đọc được)
+  private async syncToGlobalBookings(bookingOrBookings: BookingDetails | BookingDetails[]): Promise<void> {
+    try {
+      const items = Array.isArray(bookingOrBookings) ? bookingOrBookings : [bookingOrBookings];
+      const raw = await AsyncStorage.getItem(GLOBAL_BOOKINGS_KEY);
+      let list: BookingDetails[] = [];
+      if (raw) {
+        try {
+          list = JSON.parse(raw);
+        } catch {}
+      }
+      const map = new Map<string, BookingDetails>();
+      for (const b of list) {
+        if (b && b.bookingId) map.set(b.bookingId, b);
+      }
+      for (const item of items) {
+        if (item && item.bookingId) map.set(item.bookingId, item);
+      }
+      await AsyncStorage.setItem(GLOBAL_BOOKINGS_KEY, JSON.stringify(Array.from(map.values())));
+    } catch (e) {
+      console.warn('Lỗi khi đồng bộ global bookings:', e);
+    }
+  }
+
+  // Lấy toàn bộ danh sách đơn đặt phòng của MỌI TÀI KHOẢN trên toàn hệ thống
+  async getAllSystemBookings(): Promise<BookingDetails[]> {
+    try {
+      const allKeys = await AsyncStorage.getAllKeys();
+      const bookingKeys = allKeys.filter((k) => k.startsWith('@travelling_app_bookings_'));
+      const allBookingsMap = new Map<string, BookingDetails>();
+
+      // 1. Đọc từ kho lưu trữ global
+      const globalRaw = await AsyncStorage.getItem(GLOBAL_BOOKINGS_KEY);
+      if (globalRaw) {
+        try {
+          const globalList: BookingDetails[] = JSON.parse(globalRaw);
+          if (Array.isArray(globalList)) {
+            for (const b of globalList) {
+              if (b && b.bookingId) {
+                allBookingsMap.set(b.bookingId, b);
+              }
+            }
+          }
+        } catch {}
+      }
+
+      // 2. Quét qua tất cả các key bookings của từng tài khoản người dùng
+      if (bookingKeys.length > 0) {
+        const pairs = await AsyncStorage.multiGet(bookingKeys);
+        for (const [_, value] of pairs) {
+          if (value) {
+            try {
+              const list: BookingDetails[] = JSON.parse(value);
+              if (Array.isArray(list)) {
+                for (const b of list) {
+                  if (b && b.bookingId) {
+                    allBookingsMap.set(b.bookingId, b);
+                  }
+                }
+              }
+            } catch {}
+          }
+        }
+      }
+
+      const mergedList = Array.from(allBookingsMap.values());
+      if (mergedList.length > 0) {
+        AsyncStorage.setItem(GLOBAL_BOOKINGS_KEY, JSON.stringify(mergedList)).catch(() => {});
+      }
+      return mergedList;
+    } catch (e) {
+      console.warn('Lỗi khi lấy danh sách đặt phòng toàn hệ thống:', e);
+      return await this.getBookings();
+    }
+  }
+
+  // Lấy danh sách các đơn đang chiếm chỗ (kín lịch) của một chỗ nghỉ cụ thể
+  async getBookedDateRanges(stayId: string): Promise<BookingDetails[]> {
+    try {
+      const bookings = await this.getAllSystemBookings();
+      return bookings.filter((b) => {
+        if (b.accommodation?.id !== stayId) return false;
+        // Bỏ qua nếu đơn đã hủy hoặc đã trả phòng hoàn tất
+        if (b.status === 'cancelled' || b.status === 'completed') return false;
+
+        const remaining = b.dueAmount !== undefined ? b.dueAmount : (b.totalPrice - b.paidAmount);
+        const isPartUnpaid = b.paymentType === 'part' && remaining > 0;
+        // Nếu đã qua ngày checkout nhưng chưa thanh toán nốt/chưa trả phòng thì vẫn đang chiếm phòng
+        if (isPastCheckout(b.checkOut) && !isPartUnpaid) return false;
+        return true;
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  // Kiểm tra trùng lịch: kiểm tra trên TOÀN BỘ đơn đặt phòng của mọi tài khoản trong hệ thống
   async checkBookingConflict(
     stayId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    excludeBookingId?: string
   ): Promise<BookingDetails | null> {
     try {
-      const bookings = await this.getBookings();
+      // Đọc toàn bộ đơn đặt phòng của mọi tài khoản trên hệ thống
+      const bookings = await this.getAllSystemBookings();
       const reqStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0, 0);
       const reqEnd = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 0, 0, 0, 0);
 
       for (const b of bookings) {
+        if (excludeBookingId && b.bookingId === excludeBookingId) continue;
         if (b.accommodation?.id !== stayId) continue;
+
+        // Bỏ qua nếu đơn đã hủy hoặc đã trả phòng hoàn tất
         if (b.status === 'cancelled' || b.status === 'completed') continue;
 
+        // Nếu mới thanh toán 50% (còn nợ), dù qua ngày check-out thì khách vẫn đang nợ/chưa trả phòng -> phòng vẫn bị giữ!
         const remaining = b.dueAmount !== undefined ? b.dueAmount : (b.totalPrice - b.paidAmount);
         const isPartUnpaid = b.paymentType === 'part' && remaining > 0;
+
+        // Nếu đã qua ngày check-out và đã thanh toán đủ 100% -> đã xong kỳ nghỉ
         if (isPastCheckout(b.checkOut) && !isPartUnpaid) continue;
 
         const existingStart = parseBookingDate(b.checkIn);
         const existingEnd = parseBookingDate(b.checkOut);
         if (!existingStart || !existingEnd) continue;
 
+        // Hai khoảng ngày [reqStart, reqEnd] và [existingStart, existingEnd] bị trùng/giao nhau khi:
+        // reqStart < existingEnd && reqEnd > existingStart
         if (reqStart.getTime() < existingEnd.getTime() && reqEnd.getTime() > existingStart.getTime()) {
           return b;
         }
@@ -825,6 +933,8 @@ class MockApiService {
       const existing = await this.getBookings();
       const updated = [newBooking, ...existing];
       await AsyncStorage.setItem(key, JSON.stringify(updated));
+      // Đồng bộ đơn mới vào kho toàn hệ thống
+      await this.syncToGlobalBookings(newBooking);
       return updated;
     } catch {
       return [];
@@ -846,6 +956,10 @@ class MockApiService {
           : b
       );
       await AsyncStorage.setItem(key, JSON.stringify(updated));
+      const target = updated.find((b) => b.bookingId === bookingId);
+      if (target) {
+        await this.syncToGlobalBookings(target);
+      }
       return updated;
     } catch {
       return [];
@@ -866,6 +980,10 @@ class MockApiService {
           : b
       );
       await AsyncStorage.setItem(key, JSON.stringify(updated));
+      const target = updated.find((b) => b.bookingId === bookingId);
+      if (target) {
+        await this.syncToGlobalBookings(target);
+      }
       return updated;
     } catch {
       return [];
@@ -890,6 +1008,10 @@ class MockApiService {
           : b
       );
       await AsyncStorage.setItem(key, JSON.stringify(updated));
+      const target = updated.find((b) => b.bookingId === bookingId);
+      if (target) {
+        await this.syncToGlobalBookings(target);
+      }
       return updated;
     } catch {
       return [];
